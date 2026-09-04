@@ -8,9 +8,13 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
+  --color-surface-card: var(--surface-card);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-hover: var(--surface-hover);
 
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
 
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -34,6 +38,8 @@
   --color-info-foreground: var(--info-foreground);
 
   --color-border: var(--border);
+  --color-border-gold: var(--border-gold);
+  --color-border-gold-glow: var(--border-gold-glow);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
@@ -47,6 +53,7 @@
   --color-gold-700: var(--gold-700);
   --color-gold-800: var(--gold-800);
   --color-gold-900: var(--gold-900);
+  --color-gold-champagne: var(--gold-champagne);
 
   --color-charcoal-50: var(--charcoal-50);
   --color-charcoal-100: var(--charcoal-100);
@@ -58,10 +65,11 @@
   --color-charcoal-700: var(--charcoal-700);
   --color-charcoal-800: var(--charcoal-800);
   --color-charcoal-900: var(--charcoal-900);
+  --color-charcoal-950: var(--charcoal-950);
 
   --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 3px);
+  --radius-sm: calc(var(--radius) - 6px);
 }
 
 @layer base {
@@ -73,15 +81,14 @@
     font-feature-settings: "ss01", "ss02";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold tracking-tight;
   }
-  /* Smooth scrolling */
   html {
     scroll-behavior: smooth;
   }
-  /* Focus ring */
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
@@ -89,22 +96,28 @@
   }
 }
 
-/* ─── Utility classes ─── */
+/* ─── Luxury Utilities & Brand Elements ─── */
 @layer utilities {
   .text-gradient-gold {
-    background: linear-gradient(135deg, var(--gold-400), var(--gold-600));
+    background: linear-gradient(135deg, #e5c06e 0%, #c5a059 50%, #997d33 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   .bg-gradient-gold {
-    background: linear-gradient(135deg, var(--gold-500), var(--gold-600));
+    background: linear-gradient(135deg, #d4ab44 0%, #c5a059 50%, #b58d3c 100%);
+  }
+  .bg-gradient-gold-metallic {
+    background: linear-gradient(135deg, #f4ecce 0%, #dec070 30%, #c5a059 70%, #936e2b 100%);
   }
   .bg-gradient-hero {
-    background: linear-gradient(135deg, var(--charcoal-800) 0%, var(--charcoal-900) 50%, var(--charcoal-800) 100%);
+    background: radial-gradient(circle at 50% 20%, #222731 0%, #181a20 70%, #121419 100%);
   }
   .shadow-gold {
     box-shadow: var(--shadow-gold);
+  }
+  .shadow-gold-lg {
+    box-shadow: var(--shadow-gold-lg);
   }
   .container-site {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
@@ -114,5 +127,58 @@
   }
   .section-padding-sm {
     padding-block: var(--section-py-sm);
+  }
+
+  /* Golden Pill Badge directly from petbossclinic.jpeg */
+  .badge-pill-gold {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 1.25rem;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: #181a20;
+    background: linear-gradient(135deg, #f4ecce 0%, #dec070 35%, #c5a059 85%, #b58d3c 100%);
+    box-shadow: 0 2px 8px rgba(197, 160, 89, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .badge-pill-gold:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(197, 160, 89, 0.5);
+  }
+
+  .badge-pill-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 1.15rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--primary);
+    border: 1px solid var(--border-gold);
+    background: rgba(197, 160, 89, 0.08);
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+  }
+  .badge-pill-outline:hover {
+    border-color: var(--primary);
+    background: rgba(197, 160, 89, 0.16);
+  }
+
+  /* Luxury Card */
+  .card-luxury {
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  }
+  .card-luxury:hover {
+    border-color: var(--border-gold-glow);
+    box-shadow: var(--shadow-gold);
+    transform: translateY(-2px);
   }
 }

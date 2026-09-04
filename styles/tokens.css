@@ -1,108 +1,193 @@
 /* ============================================================
  * Pet Boss Clinic — Design Tokens
- * Brand: Gold #C9A227 / Charcoal #3A3D42
- * These are consumed by globals.css via @theme
+ * Master Theme: Luxury Matte Charcoal #181A20 & Metallic Gold #C5A059
+ * Matches physical branding from petbossclinic.jpeg
  * ============================================================ */
 
-:root {
-  /* ─── Brand Colors ─── */
-  --gold-50: #faf6e9;
-  --gold-100: #f5edce;
-  --gold-200: #eddda3;
-  --gold-300: #e4c97e;
-  --gold-400: #d4b03c;
-  --gold-500: #c9a227;
-  --gold-600: #a87f1e;
-  --gold-700: #8a6518;
-  --gold-800: #6d4f14;
-  --gold-900: #513a10;
+:root,
+[data-theme="petboss-luxury-dark"] {
+  /* ─── Luxury Matte Charcoal & Slate ─── */
+  --charcoal-50: #f4f5f7;
+  --charcoal-100: #e5e7eb;
+  --charcoal-200: #caced8;
+  --charcoal-300: #9ba1ad;
+  --charcoal-400: #676e7d;
+  --charcoal-500: #464b56;
+  --charcoal-600: #323846;
+  --charcoal-700: #2b303b;
+  --charcoal-800: #23272f;
+  --charcoal-900: #1e2229;
+  --charcoal-950: #181a20;
 
-  --charcoal-50: #f5f5f4;
-  --charcoal-100: #e7e7e6;
-  --charcoal-200: #d1d1d0;
-  --charcoal-300: #acacab;
-  --charcoal-400: #7a7a79;
-  --charcoal-500: #5a5a59;
-  --charcoal-600: #3a3d42;
-  --charcoal-700: #2f3236;
-  --charcoal-800: #22252a;
-  --charcoal-900: #18191c;
+  /* ─── Metallic Gold & Champagne ─── */
+  --gold-50: #faf6eb;
+  --gold-100: #f4ecce;
+  --gold-200: #ead89f;
+  --gold-300: #dec070;
+  --gold-400: #d4ab44;
+  --gold-500: #c5a059;
+  --gold-600: #b58d3c;
+  --gold-700: #936e2b;
+  --gold-800: #745423;
+  --gold-900: #553c19;
+  --gold-champagne: #e5c06e;
 
-  /* ─── Semantic Colors (Light Theme) ─── */
-  --background: #ffffff;
-  --foreground: #22252a;
-  --surface: #f5f5f3;
+  /* ─── Semantic Tokens (Luxury Dark Default) ─── */
+  --background: #181a20;
+  --foreground: #f6f6f8;
+  --surface: #1e2229;
+  --surface-card: #23272f;
+  --surface-elevated: #2b303b;
+  --surface-hover: #323846;
 
-  --primary: #c9a227;
-  --primary-foreground: #ffffff;
-  --primary-hover: #a87f1e;
+  --primary: #c5a059;
+  --primary-foreground: #181a20;
+  --primary-hover: #d4ab44;
 
-  --secondary: #3a3d42;
-  --secondary-foreground: #f5f5f3;
+  --secondary: #2b303b;
+  --secondary-foreground: #f6f6f8;
 
-  --muted: #f5f5f3;
-  --muted-foreground: #5a5a59;
+  --muted: #23272f;
+  --muted-foreground: #9ba1ad;
 
-  --accent: #e4c97e;
-  --accent-foreground: #22252a;
+  --accent: #dec070;
+  --accent-foreground: #181a20;
 
-  --destructive: #dc2626;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  --success: #16a34a;
+  --success: #10b981;
   --success-foreground: #ffffff;
 
   --warning: #f59e0b;
-  --warning-foreground: #22252a;
+  --warning-foreground: #181a20;
 
-  --info: #2563eb;
+  --info: #38bdf8;
   --info-foreground: #ffffff;
 
-  --border: #e7e7e6;
-  --input: #e7e7e6;
-  --ring: #c9a227;
+  --border: #2e3442;
+  --border-gold: rgba(197, 160, 89, 0.35);
+  --border-gold-glow: rgba(212, 175, 55, 0.6);
+  --input: #272c38;
+  --ring: #c5a059;
 
-  /* ─── Radius ─── */
-  --radius: 0.75rem;
+  /* ─── Radii ─── */
+  --radius: 0.875rem;
   --radius-full: 9999px;
 
-  /* ─── Shadows ─── */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-  --shadow-gold: 0 4px 14px rgba(201, 162, 39, 0.25);
+  /* ─── Luxury Glows & Shadows ─── */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.55);
+  --shadow-gold: 0 4px 20px rgba(197, 160, 89, 0.28);
+  --shadow-gold-lg: 0 10px 30px rgba(197, 160, 89, 0.42);
 
-  /* ─── Spacing (for consistent section padding) ─── */
-  --section-py: 5rem;
-  --section-py-sm: 3rem;
-  --container-px: 1rem;
+  /* ─── Layout Spacing ─── */
+  --section-py: 5.5rem;
+  --section-py-sm: 3.5rem;
+  --container-px: 1.25rem;
 
   /* ─── Transitions ─── */
-  --transition-fast: 150ms ease;
-  --transition-base: 250ms ease;
-  --transition-slow: 400ms ease;
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ─── Dark Theme ─── */
-[data-theme="dark"] {
-  --background: #18191c;
-  --foreground: #f5f5f3;
-  --surface: #22252a;
+/* ─── Preset: Pet Boss Luxury Light ─── */
+[data-theme="petboss-luxury-light"] {
+  --background: #fbf9f5;
+  --foreground: #1e2229;
+  --surface: #f4efe4;
+  --surface-card: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-hover: #ece5d7;
 
-  --primary: #e4c97e;
-  --primary-foreground: #22252a;
-  --primary-hover: #c9a227;
+  --primary: #b58d3c;
+  --primary-foreground: #ffffff;
+  --primary-hover: #936e2b;
 
-  --secondary: #d1d1d0;
-  --secondary-foreground: #22252a;
+  --secondary: #ece6da;
+  --secondary-foreground: #1e2229;
 
-  --muted: #2f3236;
-  --muted-foreground: #acacab;
+  --muted: #f4efe4;
+  --muted-foreground: #676e7d;
 
-  --accent: #c9a227;
-  --accent-foreground: #ffffff;
+  --accent: #d4ab44;
+  --accent-foreground: #1e2229;
 
-  --border: #3a3d42;
-  --input: #3a3d42;
-  --ring: #e4c97e;
+  --border: #e3dcd0;
+  --border-gold: rgba(181, 141, 60, 0.45);
+  --border-gold-glow: rgba(181, 141, 60, 0.65);
+  --input: #ede7dc;
+  --ring: #b58d3c;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+  --shadow-gold: 0 4px 18px rgba(181, 141, 60, 0.22);
+  --shadow-gold-lg: 0 10px 28px rgba(181, 141, 60, 0.32);
+}
+
+/* ─── Preset: Emerald Prestige (Dark Forest & Gold) ─── */
+[data-theme="emerald-prestige"] {
+  --background: #0c1813;
+  --foreground: #f4f7f5;
+  --surface: #12231c;
+  --surface-card: #182e25;
+  --surface-elevated: #203c31;
+  --surface-hover: #26473a;
+
+  --primary: #d4ab44;
+  --primary-foreground: #0c1813;
+  --primary-hover: #e5c06e;
+
+  --secondary: #203c31;
+  --secondary-foreground: #f4f7f5;
+
+  --muted: #182e25;
+  --muted-foreground: #98aba2;
+
+  --accent: #e5c06e;
+  --accent-foreground: #0c1813;
+
+  --border: #234337;
+  --border-gold: rgba(212, 171, 68, 0.4);
+  --border-gold-glow: rgba(212, 171, 68, 0.65);
+  --input: #1a3229;
+  --ring: #d4ab44;
+
+  --shadow-gold: 0 4px 20px rgba(212, 171, 68, 0.26);
+  --shadow-gold-lg: 0 10px 30px rgba(212, 171, 68, 0.38);
+}
+
+/* ─── Preset: Royal Obsidian (Midnight Black & Champagne Gold) ─── */
+[data-theme="royal-obsidian"] {
+  --background: #0d0e10;
+  --foreground: #f8f8f9;
+  --surface: #141519;
+  --surface-card: #1a1c22;
+  --surface-elevated: #22252e;
+  --surface-hover: #292d37;
+
+  --primary: #e5c06e;
+  --primary-foreground: #0d0e10;
+  --primary-hover: #dec070;
+
+  --secondary: #22252e;
+  --secondary-foreground: #f8f8f9;
+
+  --muted: #1a1c22;
+  --muted-foreground: #8e94a0;
+
+  --accent: #f4ecce;
+  --accent-foreground: #0d0e10;
+
+  --border: #262933;
+  --border-gold: rgba(229, 192, 110, 0.45);
+  --border-gold-glow: rgba(229, 192, 110, 0.7);
+  --input: #1f222a;
+  --ring: #e5c06e;
+
+  --shadow-gold: 0 4px 22px rgba(229, 192, 110, 0.3);
+  --shadow-gold-lg: 0 12px 35px rgba(229, 192, 110, 0.45);
 }

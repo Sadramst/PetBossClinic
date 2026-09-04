@@ -1,5 +1,2 @@
-/**
- * @file index.ts
- * @description TODO(phase-1): Implement index.ts
- */
-export {};
+export * from './types';
+export * from './theme-provider';

@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 
 export default async function FaqPage() {
   const t = await getTranslations('FAQ');
@@ -18,33 +19,36 @@ export default async function FaqPage() {
   });
 
   return (
-    <div className="section-padding">
+    <div className="section-padding bg-background">
       <div className="container-site max-w-4xl">
         {/* Page Header */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-charcoal-800 mb-4">{t('title')}</h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto text-lg">{t('subtitle')}</p>
+          <LuxuryPillBadge variant="outline" className="mb-3">
+            مرکز پاسخ به پرسش‌ها
+          </LuxuryPillBadge>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4">{t('title')}</h1>
+          <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed">{t('subtitle')}</p>
         </div>
 
         {/* FAQ by Category */}
         <div className="space-y-12">
           {categories.map((category) => (
-            <div key={category.id}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-1.5 h-6 bg-gradient-gold rounded-full" />
-                <h2 className="text-xl font-bold text-charcoal-800">{category.nameFa}</h2>
-                <span className="text-xs bg-gold-50 text-gold-600 px-2 py-0.5 rounded-full font-medium">
-                  {category.faqs.length}
+            <div key={category.id} className="card-luxury p-6 md:p-8">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
+                <div className="w-2 h-6 bg-gradient-gold rounded-full" />
+                <h2 className="text-xl font-bold text-foreground">{category.nameFa}</h2>
+                <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-0.5 rounded-full font-bold ms-auto">
+                  {category.faqs.length} پرسش
                 </span>
               </div>
               <div className="space-y-3">
                 {category.faqs.map((faq) => (
-                  <details key={faq.id} className="group bg-white rounded-xl border border-border/50 overflow-hidden">
-                    <summary className="flex items-center justify-between cursor-pointer px-6 py-4 text-sm font-semibold text-charcoal-800 hover:bg-gold-50/50 transition-colors list-none">
+                  <details key={faq.id} className="group rounded-xl bg-surface border border-border/60 overflow-hidden cursor-pointer">
+                    <summary className="flex items-center justify-between px-5 py-4 text-sm font-bold text-foreground hover:text-primary transition-colors list-none">
                       <span>{faq.questionFa}</span>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gold-500 transition-transform group-open:rotate-180"><path d="m6 9 6 6 6-6"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-primary transition-transform group-open:rotate-180"><path d="m6 9 6 6 6-6"/></svg>
                     </summary>
-                    <div className="px-6 pb-4 text-sm text-muted-foreground leading-relaxed border-t border-border/30 pt-3">
+                    <div className="px-5 pb-4 text-sm text-muted-foreground leading-relaxed border-t border-border/40 pt-3">
                       {faq.answerFa}
                     </div>
                   </details>
@@ -55,15 +59,15 @@ export default async function FaqPage() {
         </div>
 
         {/* Still have questions? */}
-        <div className="mt-16 text-center bg-charcoal-800 rounded-2xl p-10 text-white">
-          <h3 className="text-xl font-bold mb-3">{t('stillHaveQuestions')}</h3>
-          <p className="text-charcoal-300 mb-6">{t('contactPrompt')}</p>
-          <div className="flex flex-col sm:flex-row justify-center gap-3">
-            <Button asChild className="bg-gradient-gold hover:opacity-90 text-white rounded-full shadow-gold px-8">
-              <a href="tel:+982122000000">تماس بگیرید</a>
+        <div className="mt-16 text-center card-luxury p-10 border-border-gold shadow-gold">
+          <h3 className="text-2xl font-bold mb-3 text-foreground">{t('stillHaveQuestions')}</h3>
+          <p className="text-muted-foreground mb-8 max-w-md mx-auto text-sm leading-relaxed">{t('contactPrompt')}</p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Button asChild className="bg-gradient-gold hover:opacity-90 text-charcoal-950 font-bold rounded-full shadow-gold px-8 py-6">
+              <a href="tel:+982122000000">تماس تلفنی مستقیم</a>
             </Button>
-            <Button asChild variant="outline" className="rounded-full border-charcoal-500 text-charcoal-200 hover:bg-charcoal-700 px-8">
-              <Link href="/contact">ارسال پیام</Link>
+            <Button asChild variant="outline" className="rounded-full border-border-gold text-foreground hover:bg-surface-elevated px-8 py-6">
+              <Link href="/contact">ارسال پیام به کلینیک</Link>
             </Button>
           </div>
         </div>
