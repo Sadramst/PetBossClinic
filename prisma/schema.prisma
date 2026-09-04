@@ -1,0 +1,1221 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// IDENTITY & ACCESS
+// -----------------------------------------------------------------------------
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  AUTHOR
+  VIEWER
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role      @default(VIEWER)
+  totpSecret    String?
+  totpEnabled   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  accounts      Account[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  loginAttempts LoginAttempt[]
+
+  @@index([email])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  role         Role
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([role, permissionId])
+}
+
+model TwoFactorToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+
+  @@unique([email, token])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String
+  before    Json?
+  after     Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@index([userId])
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String?
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  user   User?   @relation(fields: [email], references: [email], onDelete: Cascade)
+
+  @@index([email])
+}
+
+// -----------------------------------------------------------------------------
+// SITE CONFIG
+// -----------------------------------------------------------------------------
+model SiteSetting {
+  id            String   @id @default(cuid())
+  nameFa        String
+  nameEn        String?
+  logoId        String?
+  faviconId     String?
+  taglineFa     String?
+  taglineEn     String?
+  addresses     Json?
+  geo           Json?
+  emails        Json?
+  phones        Json?
+  workingHours  Json?
+  holidayNotice Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  updatedById   String?
+}
+
+enum SocialPlatform {
+  INSTAGRAM
+  TELEGRAM
+  WHATSAPP
+  FACEBOOK
+  X
+  LINKEDIN
+  YOUTUBE
+  APARAT
+  TIKTOK
+  PINTEREST
+}
+
+model SocialLink {
+  id        String         @id @default(cuid())
+  platform  SocialPlatform @unique
+  url       String
+  icon      String?
+  isActive  Boolean        @default(true)
+  sortOrder Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model ContactChannel {
+  id        String   @id @default(cuid())
+  type      String
+  value     String
+  labelFa   String?
+  labelEn   String?
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model NavigationMenu {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  items     MenuItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model MenuItem {
+  id        String         @id @default(cuid())
+  menuId    String
+  parentId  String?
+  labelFa   String
+  labelEn   String?
+  url       String
+  isActive  Boolean        @default(true)
+  sortOrder Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  menu     NavigationMenu  @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parent   MenuItem?       @relation("MenuHierarchy", fields: [parentId], references: [id])
+  children MenuItem[]      @relation("MenuHierarchy")
+
+  @@index([menuId])
+  @@index([parentId])
+  @@index([isActive, sortOrder])
+}
+
+model Redirect {
+  id         String   @id @default(cuid())
+  source     String   @unique
+  destination String
+  permanent  Boolean  @default(true)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([source])
+}
+
+model SeoSetting {
+  id              String   @id @default(cuid())
+  gscVerification String?
+  ga4Id           String?
+  gtmId           String?
+  googleAdsId     String?
+  bingId          String?
+  enamadCode      String?
+  samandehiCode   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AnalyticsSetting {
+  id        String   @id @default(cuid())
+  metaPixel String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MaintenanceMode {
+  id        String   @id @default(cuid())
+  isActive  Boolean  @default(false)
+  messageFa String?
+  messageEn String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Announcement {
+  id        String    @id @default(cuid())
+  titleFa   String
+  titleEn   String?
+  link      String?
+  isActive  Boolean   @default(false)
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([isActive, sortOrder])
+}
+
+// -----------------------------------------------------------------------------
+// THEMING
+// -----------------------------------------------------------------------------
+model Theme {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isDefault Boolean  @default(false)
+  tokens    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ThemePreset {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  tokens    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FontSetting {
+  id        String   @id @default(cuid())
+  primary   String   @default("Vazirmatn")
+  secondary String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserThemePreference {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  preference String   @default("system") // dark, light, system
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// -----------------------------------------------------------------------------
+// CLINIC CONTENT
+// -----------------------------------------------------------------------------
+model Division {
+  id                 String    @id @default(cuid())
+  slugFa             String    @unique
+  slugEn             String?   @unique
+  nameFa             String
+  nameEn             String?
+  descriptionFa      String?
+  descriptionEn      String?
+  metaTitleFa        String?
+  metaTitleEn        String?
+  metaDescriptionFa  String?
+  metaDescriptionEn  String?
+  ogImageId          String?
+  canonicalUrl       String?
+  noindex            Boolean   @default(false)
+  priority           Float     @default(0.8)
+  changefreq         String    @default("monthly")
+  focusKeyword       String?
+  jsonLdOverride     Json?
+  isActive           Boolean   @default(true)
+  sortOrder          Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  services Service[]
+
+  @@index([slugFa])
+  @@index([isActive, sortOrder])
+}
+
+model ServiceCategory {
+  id        String    @id @default(cuid())
+  nameFa    String
+  nameEn    String?
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([isActive, sortOrder])
+}
+
+model Service {
+  id                 String    @id @default(cuid())
+  divisionId         String
+  slugFa             String    @unique
+  slugEn             String?   @unique
+  nameFa             String
+  nameEn             String?
+  descriptionFa      String?
+  descriptionEn      String?
+  benefitsFa         String?
+  benefitsEn         String?
+  durationFa         String?
+  durationEn         String?
+  priceFrom          Int?
+  priceTo            Int?
+  priceNoteFa        String?
+  priceNoteEn        String?
+  metaTitleFa        String?
+  metaTitleEn        String?
+  metaDescriptionFa  String?
+  metaDescriptionEn  String?
+  ogImageId          String?
+  canonicalUrl       String?
+  noindex            Boolean   @default(false)
+  priority           Float     @default(0.8)
+  changefreq         String    @default("monthly")
+  focusKeyword       String?
+  jsonLdOverride     Json?
+  isActive           Boolean   @default(true)
+  sortOrder          Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  division Division @relation(fields: [divisionId], references: [id])
+  relatedServices Service[] @relation("RelatedServices")
+  relatedTo       Service[] @relation("RelatedServices")
+  faqs            Faq[]
+
+  @@index([divisionId])
+  @@index([slugFa])
+  @@index([isActive, sortOrder])
+}
+
+model StaffMember {
+  id          String    @id @default(cuid())
+  nameFa      String
+  nameEn      String?
+  titleFa     String?
+  titleEn     String?
+  specialtyFa String?
+  specialtyEn String?
+  bioFa       String?
+  bioEn       String?
+  photoId     String?
+  licenseNo   String?
+  socials     Json?
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([isActive, sortOrder])
+}
+
+model Specialty {
+  id        String    @id @default(cuid())
+  nameFa    String
+  nameEn    String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model WorkingHour {
+  id        String   @id @default(cuid())
+  dayOfWeek Int
+  openTime  String
+  closeTime String
+  isClosed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Certificate {
+  id        String    @id @default(cuid())
+  nameFa    String
+  nameEn    String?
+  issuerFa  String?
+  issuerEn  String?
+  year      Int?
+  imageId   String?
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model Facility {
+  id          String    @id @default(cuid())
+  nameFa      String
+  nameEn      String?
+  descriptionFa String?
+  descriptionEn String?
+  imageId     String?
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+// -----------------------------------------------------------------------------
+// ANIMALS
+// -----------------------------------------------------------------------------
+model Species {
+  id        String    @id @default(cuid())
+  nameFa    String
+  nameEn    String?
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  breeds Breed[]
+  products Product[] @relation("SpeciesProducts")
+  // PHASE 2
+  // pets Pet[]
+
+  @@index([isActive, sortOrder])
+}
+
+model Breed {
+  id                 String    @id @default(cuid())
+  speciesId          String
+  slugFa             String    @unique
+  slugEn             String?   @unique
+  nameFa             String
+  nameEn             String?
+  originFa           String?
+  originEn           String?
+  sizeFa             String?
+  sizeEn             String?
+  weightRangeFa      String?
+  weightRangeEn      String?
+  lifespanFa         String?
+  lifespanEn         String?
+  temperamentFa      String?
+  temperamentEn      String?
+  groomingNeedsFa    String?
+  groomingNeedsEn    String?
+  commonHealthIssuesFa String?
+  commonHealthIssuesEn String?
+  imageId            String?
+  metaTitleFa        String?
+  metaTitleEn        String?
+  metaDescriptionFa  String?
+  metaDescriptionEn  String?
+  ogImageId          String?
+  canonicalUrl       String?
+  noindex            Boolean   @default(false)
+  priority           Float     @default(0.7)
+  changefreq         String    @default("monthly")
+  focusKeyword       String?
+  jsonLdOverride     Json?
+  isActive           Boolean   @default(true)
+  sortOrder          Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  species Species @relation(fields: [speciesId], references: [id])
+  careGuides BreedCareGuide[]
+  // PHASE 2
+  // pets Pet[]
+
+  @@index([speciesId])
+  @@index([slugFa])
+  @@index([isActive, sortOrder])
+}
+
+model BreedCareGuide {
+  id        String   @id @default(cuid())
+  breedId   String
+  titleFa   String
+  titleEn   String?
+  contentFa String?
+  contentEn String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  breed Breed @relation(fields: [breedId], references: [id], onDelete: Cascade)
+
+  @@index([breedId])
+}
+
+// -----------------------------------------------------------------------------
+// SHOP (PHASE 1)
+// -----------------------------------------------------------------------------
+model ProductCategory {
+  id                 String    @id @default(cuid())
+  parentId           String?
+  slugFa             String    @unique
+  slugEn             String?   @unique
+  nameFa             String
+  nameEn             String?
+  descriptionFa      String?
+  descriptionEn      String?
+  imageId            String?
+  metaTitleFa        String?
+  metaTitleEn        String?
+  metaDescriptionFa  String?
+  metaDescriptionEn  String?
+  ogImageId          String?
+  canonicalUrl       String?
+  noindex            Boolean   @default(false)
+  priority           Float     @default(0.8)
+  changefreq         String    @default("weekly")
+  focusKeyword       String?
+  jsonLdOverride     Json?
+  isActive           Boolean   @default(true)
+  sortOrder          Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  parent   ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children ProductCategory[] @relation("CategoryHierarchy")
+  products Product[]
+
+  @@index([parentId])
+  @@index([slugFa])
+  @@index([isActive, sortOrder])
+}
+
+model Brand {
+  id          String    @id @default(cuid())
+  nameFa      String
+  nameEn      String?
+  slugFa      String    @unique
+  slugEn      String?   @unique
+  logoId      String?
+  descriptionFa String?
+  descriptionEn String?
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  products Product[]
+
+  @@index([slugFa])
+  @@index([isActive, sortOrder])
+}
+
+enum StockStatus {
+  IN_STOCK
+  LOW_STOCK
+  OUT_OF_STOCK
+  ON_BACKORDER
+}
+
+model Product {
+  id                 String    @id @default(cuid())
+  categoryId         String
+  brandId            String?
+  sku                String?   @unique
+  slugFa             String    @unique
+  slugEn             String?   @unique
+  nameFa             String
+  nameEn             String?
+  shortDescFa        String?
+  shortDescEn        String?
+  descriptionFa      String?
+  descriptionEn      String?
+  price              Int
+  comparePrice       Int?
+  stockStatus        StockStatus @default(OUT_OF_STOCK)
+  isPurchasable      Boolean   @default(false)
+  weight             Float?
+  dimensions         String?
+  badges             Json?
+  rating             Float     @default(0)
+  reviewCount        Int       @default(0)
+  metaTitleFa        String?
+  metaTitleEn        String?
+  metaDescriptionFa  String?
+  metaDescriptionEn  String?
+  ogImageId          String?
+  canonicalUrl       String?
+  noindex            Boolean   @default(false)
+  priority           Float     @default(0.8)
+  changefreq         String    @default("daily")
+  focusKeyword       String?
+  jsonLdOverride     Json?
+  isActive           Boolean   @default(true)
+  sortOrder          Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+  createdById        String?
+
+  category ProductCategory @relation(fields: [categoryId], references: [id])
+  brand    Brand?          @relation(fields: [brandId], references: [id])
+  images   ProductImage[]
+  variants ProductVariant[]
+  attributes ProductAttribute[]
+  speciesCompatibility Species[] @relation("SpeciesProducts")
+  inventory Inventory[]
+  wishlistedBy Wishlist[]
+  // PHASE 2
+  // orderItems OrderItem[]
+  // cartItems CartItem[]
+
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([slugFa])
+  @@index([isActive, sortOrder])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  imageId   String
+  isPrimary Boolean  @default(false)
+  sortOrder Int      @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model ProductVariant {
+  id        String   @id @default(cuid())
+  productId String
+  sku       String?  @unique
+  nameFa    String
+  nameEn    String?
+  price     Int?
+  comparePrice Int?
+  stockStatus StockStatus @default(OUT_OF_STOCK)
+  isActive  Boolean  @default(true)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model ProductAttribute {
+  id        String   @id @default(cuid())
+  productId String
+  nameFa    String
+  nameEn    String?
+  valueFa   String
+  valueEn   String?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model Inventory {
+  id          String   @id @default(cuid())
+  productId   String
+  quantity    Int      @default(0)
+  location    String?
+  updatedAt   DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+}
+
+// -----------------------------------------------------------------------------
+// SHOP (PHASE 2 - COMMENTED OUT)
+// -----------------------------------------------------------------------------
+/*
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String?
+  sessionId String?
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  productId String
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  customerId      String?
+  totalAmount     Int
+  status          String
+  shippingAddress String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  items OrderItem[]
+  payment Payment?
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Int
+  
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  orderId       String   @unique
+  gateway       String
+  transactionId String?
+  status        String
+  amount        Int
+  createdAt     DateTime @default(now())
+  
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+*/
+
+// -----------------------------------------------------------------------------
+// MARKETING & CONTENT
+// -----------------------------------------------------------------------------
+model PostCategory {
+  id        String    @id @default(cuid())
+  slugFa    String    @unique
+  slugEn    String?   @unique
+  nameFa    String
+  nameEn    String?
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  posts Post[]
+
+  @@index([slugFa])
+  @@index([isActive, sortOrder])
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  slugFa    String    @unique
+  slugEn    String?   @unique
+  nameFa    String
+  nameEn    String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  postTags PostTag[]
+
+  @@index([slugFa])
+}
+
+model Author {
+  id        String    @id @default(cuid())
+  nameFa    String
+  nameEn    String?
+  bioFa     String?
+  bioEn     String?
+  avatarId  String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  posts Post[]
+}
+
+model Post {
+  id                 String    @id @default(cuid())
+  categoryId         String
+  authorId           String?
+  slugFa             String    @unique
+  slugEn             String?   @unique
+  titleFa            String
+  titleEn            String?
+  excerptFa          String?
+  excerptEn          String?
+  contentFa          String?
+  contentEn          String?
+  readingTime        Int?
+  imageId            String?
+  metaTitleFa        String?
+  metaTitleEn        String?
+  metaDescriptionFa  String?
+  metaDescriptionEn  String?
+  ogImageId          String?
+  canonicalUrl       String?
+  noindex            Boolean   @default(false)
+  priority           Float     @default(0.7)
+  changefreq         String    @default("monthly")
+  focusKeyword       String?
+  jsonLdOverride     Json?
+  isActive           Boolean   @default(true)
+  publishedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  category PostCategory @relation(fields: [categoryId], references: [id])
+  author   Author?      @relation(fields: [authorId], references: [id])
+  postTags PostTag[]
+
+  @@index([categoryId])
+  @@index([slugFa])
+  @@index([isActive])
+}
+
+model PostTag {
+  postId String
+  tagId  String
+  
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+}
+
+model FaqCategory {
+  id        String    @id @default(cuid())
+  nameFa    String
+  nameEn    String?
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  faqs Faq[]
+
+  @@index([isActive, sortOrder])
+}
+
+model Faq {
+  id                 String    @id @default(cuid())
+  categoryId         String?
+  serviceId          String?
+  questionFa         String
+  questionEn         String?
+  answerFa           String
+  answerEn           String?
+  isActive           Boolean   @default(true)
+  sortOrder          Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  category FaqCategory? @relation(fields: [categoryId], references: [id])
+  service  Service?     @relation(fields: [serviceId], references: [id])
+
+  @@index([categoryId])
+  @@index([serviceId])
+  @@index([isActive, sortOrder])
+}
+
+model Testimonial {
+  id          String   @id @default(cuid())
+  nameFa      String
+  nameEn      String?
+  contentFa   String
+  contentEn   String?
+  rating      Int      @default(5)
+  avatarId    String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model GalleryAlbum {
+  id          String    @id @default(cuid())
+  nameFa      String
+  nameEn      String?
+  isActive    Boolean   @default(true)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  images GalleryImage[]
+
+  @@index([isActive, sortOrder])
+}
+
+model GalleryImage {
+  id          String   @id @default(cuid())
+  albumId     String
+  imageId     String
+  captionFa   String?
+  captionEn   String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  album GalleryAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+
+  @@index([albumId])
+  @@index([isActive, sortOrder])
+}
+
+model Banner {
+  id          String   @id @default(cuid())
+  titleFa     String?
+  titleEn     String?
+  subtitleFa  String?
+  subtitleEn  String?
+  linkUrl     String?
+  imageId     String
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model LandingPage {
+  id                 String    @id @default(cuid())
+  slugFa             String    @unique
+  slugEn             String?   @unique
+  titleFa            String
+  titleEn            String?
+  contentFa          String?
+  contentEn          String?
+  metaTitleFa        String?
+  metaTitleEn        String?
+  metaDescriptionFa  String?
+  metaDescriptionEn  String?
+  noindex            Boolean   @default(true) // often true for ad landings
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  @@index([slugFa])
+}
+
+model Page {
+  id                 String    @id @default(cuid())
+  slugFa             String    @unique
+  slugEn             String?   @unique
+  titleFa            String
+  titleEn            String?
+  contentFa          String?
+  contentEn          String?
+  metaTitleFa        String?
+  metaTitleEn        String?
+  metaDescriptionFa  String?
+  metaDescriptionEn  String?
+  ogImageId          String?
+  canonicalUrl       String?
+  noindex            Boolean   @default(false)
+  priority           Float     @default(0.5)
+  changefreq         String    @default("monthly")
+  focusKeyword       String?
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  @@index([slugFa])
+}
+
+model Keyword {
+  id          String   @id @default(cuid())
+  term        String
+  locale      String   @default("fa-IR")
+  volume      Int?
+  difficulty  Int?
+  mappedUrl   String?
+  priority    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([term, locale])
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  name      String?
+  phone     String
+  message   String?
+  source    String?
+  utmSource String?
+  utmMedium String?
+  utmCamp   String?
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String
+  subject   String?
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// -----------------------------------------------------------------------------
+// APPOINTMENTS (PHASE 2 - SCHEMA ONLY, NO UI)
+// -----------------------------------------------------------------------------
+model AppointmentRequest {
+  id          String   @id @default(cuid())
+  patientName String?
+  phone       String
+  serviceId   String?
+  preferredDate DateTime?
+  notes       String?
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AppointmentSlot {
+  id          String   @id @default(cuid())
+  vetId       String
+  startTime   DateTime
+  endTime     DateTime
+  isBooked    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model PetOwner {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String   @unique
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  pets      Pet[]
+}
+
+model Pet {
+  id        String   @id @default(cuid())
+  ownerId   String
+  name      String
+  speciesId String
+  breedId   String?
+  age       Float?
+  weight    Float?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner     PetOwner @relation(fields: [ownerId], references: [id])
+  // species   Species  @relation(fields: [speciesId], references: [id])
+  // breed     Breed?   @relation(fields: [breedId], references: [id])
+  medicalRecords MedicalRecord[]
+  vaccinations   VaccinationRecord[]
+  
+  @@index([ownerId])
+}
+
+model MedicalRecord {
+  id          String   @id @default(cuid())
+  petId       String
+  vetId       String?
+  date        DateTime @default(now())
+  diagnosis   String
+  treatment   String
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  pet         Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  
+  @@index([petId])
+}
+
+model VaccinationRecord {
+  id          String   @id @default(cuid())
+  petId       String
+  vaccineName String
+  dateGiven   DateTime
+  nextDueDate DateTime?
+  vetId       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  pet         Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  
+  @@index([petId])
+}
+
+// -----------------------------------------------------------------------------
+// MEDIA
+// -----------------------------------------------------------------------------
+model MediaFolder {
+  id        String   @id @default(cuid())
+  name      String
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent    MediaFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children  MediaFolder[] @relation("FolderHierarchy")
+  media     Media[]
+
+  @@index([parentId])
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  url       String
+  key       String   @unique
+  mime      String
+  size      Int
+  width     Int?
+  height    Int?
+  blurhash  String?
+  altFa     String
+  altEn     String?
+  caption   String?
+  folderId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  folder    MediaFolder? @relation(fields: [folderId], references: [id])
+
+  @@index([folderId])
+}
