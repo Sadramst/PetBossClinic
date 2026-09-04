@@ -7,10 +7,24 @@ async function main() {
 
   // Clean up
   await prisma.service.deleteMany()
-  await prisma.staff.deleteMany()
+  await prisma.division.deleteMany()
+  await prisma.staffMember.deleteMany()
+
+  // Seed Division
+  const clinicDiv = await prisma.division.create({
+    data: {
+      slugFa: 'clinic',
+      slugEn: 'clinic',
+      nameFa: 'کلینیک دامپزشکی',
+      nameEn: 'Veterinary Clinic',
+      descriptionFa: 'بخش اصلی خدمات درمانی حیوانات',
+      isActive: true,
+      sortOrder: 1,
+    }
+  })
 
   // Seed Staff
-  const drAhmadi = await prisma.staff.create({
+  const drAhmadi = await prisma.staffMember.create({
     data: {
       nameFa: 'دکتر احمدی',
       nameEn: 'Dr. Ahmadi',
@@ -18,7 +32,6 @@ async function main() {
       titleEn: 'Senior Veterinarian',
       bioFa: 'دکتر احمدی با بیش از ۱۰ سال سابقه در زمینه جراحی حیوانات خانگی.',
       bioEn: 'Dr. Ahmadi has over 10 years of experience in pet surgery.',
-      role: 'VET',
       isActive: true,
       sortOrder: 1,
     }
@@ -28,38 +41,35 @@ async function main() {
   await prisma.service.createMany({
     data: [
       {
+        divisionId: clinicDiv.id,
         slugFa: 'veterinary-checkup',
         slugEn: 'veterinary-checkup',
-        titleFa: 'معاینه عمومی',
-        titleEn: 'General Checkup',
-        shortDescFa: 'معاینه کامل سلامت حیوان خانگی شما',
-        shortDescEn: 'Complete health checkup for your pet',
-        contentFa: 'در این سرویس حیوان شما به طور کامل معاینه می‌شود...',
-        contentEn: 'In this service, your pet gets a full medical checkup...',
+        nameFa: 'معاینه عمومی',
+        nameEn: 'General Checkup',
+        descriptionFa: 'در این سرویس حیوان شما به طور کامل معاینه می‌شود...',
+        descriptionEn: 'In this service, your pet gets a full medical checkup...',
         isActive: true,
         sortOrder: 1,
       },
       {
+        divisionId: clinicDiv.id,
         slugFa: 'pet-grooming',
         slugEn: 'pet-grooming',
-        titleFa: 'آرایش و شستشو',
-        titleEn: 'Pet Grooming',
-        shortDescFa: 'شستشو و کوتاهی موی سگ و گربه',
-        shortDescEn: 'Washing and haircut for dogs and cats',
-        contentFa: 'استفاده از بهترین شامپوها برای سلامت پوست و مو...',
-        contentEn: 'Using the best shampoos for skin and hair health...',
+        nameFa: 'آرایش و شستشو',
+        nameEn: 'Pet Grooming',
+        descriptionFa: 'استفاده از بهترین شامپوها برای سلامت پوست و مو...',
+        descriptionEn: 'Using the best shampoos for skin and hair health...',
         isActive: true,
         sortOrder: 2,
       },
       {
+        divisionId: clinicDiv.id,
         slugFa: 'dental-care',
         slugEn: 'dental-care',
-        titleFa: 'خدمات دندانپزشکی',
-        titleEn: 'Dental Care',
-        shortDescFa: 'جرم‌گیری و کشیدن دندان',
-        shortDescEn: 'Teeth cleaning and extraction',
-        contentFa: 'جرم‌گیری دندان حیوانات با دستگاه‌های پیشرفته و بیهوشی ایمن.',
-        contentEn: 'Pet dental scaling with advanced devices and safe anesthesia.',
+        nameFa: 'خدمات دندانپزشکی',
+        nameEn: 'Dental Care',
+        descriptionFa: 'جرم‌گیری دندان حیوانات با دستگاه‌های پیشرفته و بیهوشی ایمن.',
+        descriptionEn: 'Pet dental scaling with advanced devices and safe anesthesia.',
         isActive: true,
         sortOrder: 3,
       }
