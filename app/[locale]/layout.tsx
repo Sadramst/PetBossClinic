@@ -16,6 +16,9 @@ const vazirmatn = Vazirmatn({
   variable: '--font-vazirmatn',
 });
 
+import { Header } from '@/components/layout/header';
+import { Footer } from '@/components/layout/footer';
+
 export function generateStaticParams() {
   return [{ locale: 'fa' }, { locale: 'en' }];
 }
@@ -42,9 +45,13 @@ export default async function LocaleLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
-      <body className={`${fontClass} antialiased text-gray-900 bg-white`}>
+      <body className={`${fontClass} antialiased text-gray-900 bg-white min-h-screen flex flex-col`}>
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <Header />
+          <main className="flex-grow">
+            {children}
+          </main>
+          <Footer />
         </NextIntlClientProvider>
       </body>
     </html>

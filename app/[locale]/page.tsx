@@ -1,42 +1,99 @@
 import { db } from "@/lib/db";
+import { getTranslations } from "next-intl/server";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default async function Page() {
-  // Quick DB check
-  let serviceCount = 0;
-  try {
-    serviceCount = await db.service.count();
-  } catch (e) {
-    console.error("DB connection failed:", e);
-  }
+  const t = await getTranslations('Home');
+  
+  // Fetch services and staff for previews
+  const services = await db.service.findMany({
+    where: { isActive: true },
+    orderBy: { sortOrder: 'asc' },
+    take: 3
+  });
+
+  const staff = await db.staffMember.findMany({
+    where: { isActive: true },
+    orderBy: { sortOrder: 'asc' },
+    take: 4
+  });
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center space-y-6">
-        <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-          </svg>
-        </div>
-        
-        <h1 className="text-3xl font-bold text-gray-900">
-          Pet Boss Clinic
-        </h1>
-        
-        <p className="text-gray-600">
-          The application scaffold is successfully deployed and running!
-        </p>
-
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">System Status</h2>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Database Connection</span>
-            <span className="flex items-center text-emerald-600 font-medium">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>
-              {serviceCount} Services Found
-            </span>
+    <div className="flex flex-col items-center">
+      
+      {/* Hero Section */}
+      <section className="w-full bg-blue-50 py-24 md:py-32">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 tracking-tight mb-6">
+            {t('heroTitle')}
+          </h1>
+          <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
+            {t('heroSubtitle')}
+          </p>
+          <div className="flex justify-center gap-4">
+            <Button size="lg" className="rounded-full shadow-lg shadow-blue-500/30">
+              {t('heroCta')}
+            </Button>
+            <Button variant="outline" size="lg" className="rounded-full bg-white">
+              {t('heroSecondaryCta')}
+            </Button>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* Services Section */}
+      <section className="w-full py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">{t('servicesTitle')}</h2>
+            <p className="text-gray-600">{t('servicesSubtitle')}</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {services.map((service) => (
+              <Card key={service.id} className="hover:shadow-lg transition-shadow border-blue-100/50">
+                <CardHeader>
+                  <CardTitle className="text-xl text-blue-900">{service.nameFa}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base text-gray-600 line-clamp-3">
+                    {service.descriptionFa}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Team Section */}
+      <section className="w-full py-20 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">{t('teamTitle')}</h2>
+            <p className="text-gray-600">{t('teamSubtitle')}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {staff.map((member) => (
+              <div key={member.id} className="flex flex-col items-center text-center">
+                <Avatar className="w-32 h-32 mb-4 border-4 border-white shadow-md">
+                  <AvatarImage src={`https://api.dicebear.com/7.x/notionists/svg?seed=${member.id}`} />
+                  <AvatarFallback className="text-2xl bg-blue-100 text-blue-700">
+                    {member.nameFa.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <h3 className="text-lg font-bold text-gray-900">{member.nameFa}</h3>
+                <p className="text-sm text-blue-600 mb-2 font-medium">{member.titleFa}</p>
+                <p className="text-sm text-gray-500 line-clamp-2">{member.bioFa}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }

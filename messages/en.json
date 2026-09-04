@@ -1,5 +1,26 @@
 {
   "Index": {
-    "title": "Pet Boss"
+    "title": "Pet Boss Clinic"
+  },
+  "Navigation": {
+    "home": "Home",
+    "services": "Services",
+    "about": "About Us",
+    "contact": "Contact",
+    "bookAppointment": "Book Appointment"
+  },
+  "Footer": {
+    "rights": "All rights reserved.",
+    "description": "The best care for your furry friends."
+  },
+  "Home": {
+    "heroTitle": "Expert Care for Your Best Friend",
+    "heroSubtitle": "We provide compassionate, state-of-the-art veterinary services to keep your pets healthy and happy.",
+    "heroCta": "Book a Visit",
+    "heroSecondaryCta": "Our Services",
+    "servicesTitle": "Our Services",
+    "servicesSubtitle": "Comprehensive veterinary care tailored to your pet's unique needs.",
+    "teamTitle": "Meet Our Vets",
+    "teamSubtitle": "Experienced professionals who love animals as much as you do."
   }
 }
