@@ -26,20 +26,20 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: pnpm/action-setup@v3
+    - 
       with:
-        version: 9
+        
     - uses: actions/setup-node@v4
       with:
         node-version: 20
-        cache: 'pnpm'
+        
     - name: Install dependencies
-      run: pnpm install
+      run: npm install
     - name: Install Playwright Browsers
-      run: pnpm exec playwright install --with-deps
+      run: npx playwright install --with-deps
     - name: Run Playwright tests
       run: |
-        pnpm db:push
-        pnpm test:e2e
+        npx prisma db push
+        npm run test:e2e
       env:
         DATABASE_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"

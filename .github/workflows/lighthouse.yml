@@ -6,15 +6,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - 
         with:
-          version: 9
+          
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
-      - run: pnpm install
+          
+      - run: npm install
       - run: pnpm build
       - name: Run Lighthouse CI
         run: pnpm dlx @lhci/cli@0.13.x autorun

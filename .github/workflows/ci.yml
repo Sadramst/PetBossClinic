@@ -27,22 +27,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - uses: pnpm/action-setup@v3
+    - 
       with:
-        version: 9
+        
     - name: Use Node.js 20
       uses: actions/setup-node@v4
       with:
         node-version: 20
-        cache: 'pnpm'
+        
     
-    - run: pnpm install
-    - run: pnpm typecheck
-    - run: pnpm lint
+    - run: npm install
+    - run: npm run typecheck
+    - run: npm run lint
     
     - name: Run Tests
       env:
         DATABASE_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
       run: |
-        pnpm db:push
-        pnpm test
+        npx prisma db push
+        npm run test
