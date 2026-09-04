@@ -1,12 +1,18 @@
 import { db } from "@/lib/db";
 import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const isEn = locale === 'en';
   const t = await getTranslations('Admin');
 
   // Fetch stats safely
@@ -33,11 +39,11 @@ export default async function AdminDashboard() {
 
   const stats = [
     { label: t('totalServices'), value: serviceCount, icon: '💊', color: 'bg-primary/10 text-primary border-primary/20', href: '/admin/services' },
-    { label: 'کادر درمانی', value: staffCount, icon: '👨‍⚕️', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', href: '/admin/staff' },
-    { label: 'پرسش‌های متداول', value: faqCount, icon: '❓', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20', href: '/admin/faqs' },
-    { label: 'نظرات مراجعین', value: testimonialCount, icon: '💬', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', href: '/admin/testimonials' },
+    { label: isEn ? 'Medical Staff' : 'کادر درمانی', value: staffCount, icon: '👨‍⚕️', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', href: '/admin/staff' },
+    { label: isEn ? 'FAQs' : 'پرسش‌های متداول', value: faqCount, icon: '❓', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20', href: '/admin/faqs' },
+    { label: isEn ? 'Testimonials' : 'نظرات مراجعین', value: testimonialCount, icon: '💬', color: 'bg-amber-500/10 text-amber-400 border-amber-500/20', href: '/admin/testimonials' },
     { label: t('totalLeads'), value: leadCount, icon: '📋', color: 'bg-primary/15 text-primary border-primary/30', href: '/admin/leads' },
-    { label: 'پیام‌های ورودی', value: messageCount, icon: '✉️', color: 'bg-rose-500/10 text-rose-400 border-rose-500/20', href: '/admin/messages' },
+    { label: isEn ? 'Incoming Messages' : 'پیام‌های ورودی', value: messageCount, icon: '✉️', color: 'bg-rose-500/10 text-rose-400 border-rose-500/20', href: '/admin/messages' },
   ];
 
   return (
@@ -45,12 +51,23 @@ export default async function AdminDashboard() {
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 rounded-2xl bg-surface border border-border-gold/50 shadow-gold">
         <div>
-          <h1 className="text-2xl font-bold text-foreground mb-1">{t('dashboard')} کلینیک پت‌باس</h1>
-          <p className="text-xs text-muted-foreground">خلاصه فعالیت‌ها، سرنخ‌ها و وضعیت کلی پلتفرم دامپزشکی</p>
+          <h1 className="text-2xl font-bold text-foreground mb-1">
+            {isEn ? 'Pet Boss Clinic Dashboard' : `${t('dashboard')} کلینیک پت‌باس`}
+          </h1>
+          <p className="text-xs text-muted-foreground">
+            {isEn
+              ? 'Activity overview, inquiries, and platform health telemetry'
+              : 'خلاصه فعالیت‌ها، سرنخ‌ها و وضعیت کلی پلتفرم دامپزشکی'}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <Button asChild className="bg-gradient-gold text-charcoal-950 font-bold rounded-xl text-xs shadow-gold">
-            <Link href="/admin/theme">🎨 تغییر پویای قالب سایت</Link>
+            <Link href="/admin/theme">
+              <span>🎨</span>
+              <span className="ms-1.5">
+                {isEn ? 'Live Dynamic Theme Studio' : 'تغییر پویای قالب سایت'}
+              </span>
+            </Link>
           </Button>
         </div>
       </div>
@@ -67,7 +84,7 @@ export default async function AdminDashboard() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
-                      {stat.value.toLocaleString('fa-IR')}
+                      {isEn ? stat.value.toLocaleString('en-US') : stat.value.toLocaleString('fa-IR')}
                     </p>
                     <p className="text-xs text-muted-foreground">{stat.label}</p>
                   </div>
@@ -84,17 +101,23 @@ export default async function AdminDashboard() {
         <Card className="card-luxury">
           <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between">
             <CardTitle className="text-base font-bold text-foreground">{t('recentLeads')}</CardTitle>
-            <Link href="/admin/leads" className="text-xs text-primary hover:underline">مشاهده همه</Link>
+            <Link href="/admin/leads" className="text-xs text-primary hover:underline">
+              {isEn ? 'View all' : 'مشاهده همه'}
+            </Link>
           </CardHeader>
           <CardContent className="p-5">
             {recentLeads.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-6 text-center">هنوز درخواستی ثبت نشده است</p>
+              <p className="text-xs text-muted-foreground py-6 text-center">
+                {isEn ? 'No inquiry records logged yet' : 'هنوز درخواستی ثبت نشده است'}
+              </p>
             ) : (
               <div className="space-y-3">
                 {recentLeads.map((lead) => (
                   <div key={lead.id} className="flex items-center justify-between text-xs border-b border-border/40 pb-2.5 last:border-0 last:pb-0">
                     <div>
-                      <p className="font-bold text-foreground">{lead.name || 'مراجعه‌کننده ناشناس'}</p>
+                      <p className="font-bold text-foreground">
+                        {lead.name || (isEn ? 'Anonymous Client' : 'مراجعه‌کننده ناشناس')}
+                      </p>
                       <p className="text-[11px] text-muted-foreground font-mono mt-0.5">{lead.phone}</p>
                     </div>
                     <span className="text-[10px] bg-primary/15 text-primary border border-primary/25 px-2 py-0.5 rounded-full font-semibold">
@@ -111,11 +134,15 @@ export default async function AdminDashboard() {
         <Card className="card-luxury">
           <CardHeader className="pb-3 border-b border-border flex flex-row items-center justify-between">
             <CardTitle className="text-base font-bold text-foreground">{t('recentMessages')}</CardTitle>
-            <Link href="/admin/messages" className="text-xs text-primary hover:underline">مشاهده همه</Link>
+            <Link href="/admin/messages" className="text-xs text-primary hover:underline">
+              {isEn ? 'View all' : 'مشاهده همه'}
+            </Link>
           </CardHeader>
           <CardContent className="p-5">
             {recentMessages.length === 0 ? (
-              <p className="text-xs text-muted-foreground py-6 text-center">هنوز پیامی دریافت نشده است</p>
+              <p className="text-xs text-muted-foreground py-6 text-center">
+                {isEn ? 'No messages received yet' : 'هنوز پیامی دریافت نشده است'}
+              </p>
             ) : (
               <div className="space-y-3">
                 {recentMessages.map((msg) => (

@@ -1,39 +1,33 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useTranslations, useLocale } from 'next-intl';
+import { Link, usePathname } from '@/i18n/routing';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PetBossLogo } from '@/components/shared/pet-boss-logo';
 
 export function Header() {
   const t = useTranslations('Navigation');
+  const locale = useLocale();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Determine current locale from pathname
-  const isEnglish = pathname.startsWith('/en');
-  const langSwitchHref = isEnglish
-    ? pathname.replace(/^\/en/, '') || '/'
-    : `/en${pathname === '/' ? '' : pathname}`;
-
-  const navPrefix = isEnglish ? '/en' : '';
+  const isEnglish = locale === 'en';
 
   const navLinks = [
-    { href: `${navPrefix}/`, label: t('home') },
-    { href: `${navPrefix}/services`, label: t('services') },
-    { href: `${navPrefix}/about`, label: t('about') },
-    { href: `${navPrefix}/faq`, label: t('faq') },
-    { href: `${navPrefix}/contact`, label: t('contact') },
-    { href: `${navPrefix}/admin`, label: t('admin') },
+    { href: '/', label: t('home') },
+    { href: '/services', label: t('services') },
+    { href: '/about', label: t('about') },
+    { href: '/faq', label: t('faq') },
+    { href: '/contact', label: t('contact') },
+    { href: '/admin', label: t('admin') },
   ];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80 transition-colors duration-200">
       <div className="container-site flex h-20 items-center justify-between">
         {/* Crowned Lion Brand Logo */}
-        <Link href={navPrefix || '/'} className="flex items-center gap-2 group">
+        <Link href="/" className="flex items-center gap-2 group">
           <PetBossLogo size="md" variant="gold" />
         </Link>
 
@@ -41,8 +35,8 @@ export function Header() {
         <nav className="hidden lg:flex items-center gap-1">
           {navLinks.map((link) => {
             const isActive =
-              link.href === `${navPrefix}/`
-                ? pathname === `${navPrefix}/` || pathname === navPrefix || (pathname === '/' && !isEnglish)
+              link.href === '/'
+                ? pathname === '/'
                 : pathname.startsWith(link.href);
 
             return (
@@ -65,7 +59,8 @@ export function Header() {
         <div className="flex items-center gap-3">
           {/* Language Switcher */}
           <Link
-            href={langSwitchHref}
+            href={pathname}
+            locale={isEnglish ? 'fa' : 'en'}
             className="text-xs font-semibold px-3 py-1.5 rounded-full border border-border-gold bg-surface-card/60 text-foreground hover:border-primary hover:text-primary transition-all"
             title="Switch Language"
           >

@@ -2,7 +2,13 @@ import { db } from "@/lib/db";
 import { getTranslations } from "next-intl/server";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 
-export default async function AboutPage() {
+export default async function AboutPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const isEn = locale === 'en';
   const t = await getTranslations('About');
 
   const staff = await db.staffMember.findMany({
@@ -16,7 +22,7 @@ export default async function AboutPage() {
         {/* Page Header */}
         <div className="text-center mb-16">
           <LuxuryPillBadge variant="outline" className="mb-3">
-            شناخت بیشتر کلینیک پت باس
+            {t('badge')}
           </LuxuryPillBadge>
           <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4">{t('title')}</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed">{t('subtitle')}</p>
@@ -44,25 +50,63 @@ export default async function AboutPage() {
           </div>
         </div>
 
+        {/* Facility Gallery Highlights */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
+          <div className="rounded-3xl overflow-hidden border border-border-gold/50 shadow-gold relative group">
+            <div className="aspect-[16/10] w-full bg-charcoal-900 overflow-hidden">
+              <img
+                src="/images/reception.jpg"
+                alt="Pet Boss Lounge"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+            <div className="p-4 bg-surface border-t border-border">
+              <p className="text-xs font-semibold text-foreground">
+                {isEn ? 'Signature Welcome Lounge & Diagnostics' : 'سالن اختصاصی پذیرش و امکانات تشخیصی'}
+              </p>
+            </div>
+          </div>
+          <div className="rounded-3xl overflow-hidden border border-border-gold/50 shadow-gold relative group">
+            <div className="aspect-[16/10] w-full bg-charcoal-900 overflow-hidden">
+              <img
+                src="/images/veterinarian.jpg"
+                alt="Pet Boss Care"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+            <div className="p-4 bg-surface border-t border-border">
+              <p className="text-xs font-semibold text-foreground">
+                {isEn ? 'Compassionate Surgical & Internal Medicine' : 'معاینات بالینی، درمان و جراحی‌های تخصصی'}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Team */}
         <div className="text-center mb-12">
-          <span className="badge-pill-outline mb-3">تیم تخصصی</span>
+          <span className="badge-pill-outline mb-3">{t('teamBadge')}</span>
           <h2 className="text-3xl font-extrabold text-foreground mb-4">{t('teamTitle')}</h2>
           <p className="text-muted-foreground max-w-xl mx-auto text-base">{t('teamSubtitle')}</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {staff.map((member) => (
-            <div key={member.id} className="card-luxury p-6 text-center">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-surface-elevated border-2 border-border-gold flex items-center justify-center text-primary text-2xl font-bold shadow-gold">
-                {member.nameFa.charAt(0)}
+          {staff.map((member) => {
+            const mName = isEn ? (member.nameEn || member.nameFa) : member.nameFa;
+            const mTitle = isEn ? (member.titleEn || member.titleFa) : member.titleFa;
+            const mBio = isEn ? (member.bioEn || member.bioFa) : member.bioFa;
+
+            return (
+              <div key={member.id} className="card-luxury p-6 text-center">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-surface-elevated border-2 border-border-gold flex items-center justify-center text-primary text-2xl font-bold shadow-gold">
+                  {mName.charAt(0)}
+                </div>
+                <h3 className="text-lg font-bold text-foreground mb-1">{mName}</h3>
+                <p className="text-xs text-primary font-semibold mb-2">{mTitle}</p>
+                {mBio && (
+                  <p className="text-xs text-muted-foreground leading-relaxed">{mBio}</p>
+                )}
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-1">{member.nameFa}</h3>
-              <p className="text-xs text-primary font-semibold mb-2">{member.titleFa}</p>
-              {member.bioFa && (
-                <p className="text-xs text-muted-foreground leading-relaxed">{member.bioFa}</p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

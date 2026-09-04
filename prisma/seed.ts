@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { hashPassword } from '../lib/auth'
 
 const prisma = new PrismaClient()
 
@@ -490,16 +491,57 @@ async function main() {
     ]
   })
 
-  // ─── Announcement / Top Bar ───────────────────────────
-  await prisma.announcement.create({
-    data: {
-      titleFa: '🐾 کلینیک پت‌باس — اکنون پذیرش فعال',
-      titleEn: '🐾 Pet Boss Clinic — Now Accepting Patients',
-      isActive: true,
-      sortOrder: 1,
-    }
+  // ─── Identity & Admin Users ─────────────────────────
+  const superAdminPassword = hashPassword('SuperAdmin@PetBoss2026!')
+  const adminPassword = hashPassword('Admin@PetBoss2026!')
+  const editorPassword = hashPassword('Editor@PetBoss2026!')
+
+  await prisma.user.upsert({
+    where: { email: 'superadmin@petboss.com' },
+    update: {
+      password: superAdminPassword,
+      role: 'SUPER_ADMIN',
+      name: 'مدیر ارشد پت‌باس (Super Admin)',
+    },
+    create: {
+      email: 'superadmin@petboss.com',
+      password: superAdminPassword,
+      role: 'SUPER_ADMIN',
+      name: 'مدیر ارشد پت‌باس (Super Admin)',
+    },
   })
 
+  await prisma.user.upsert({
+    where: { email: 'admin@petboss.com' },
+    update: {
+      password: adminPassword,
+      role: 'ADMIN',
+      name: 'مدیر کلینیک (Clinic Admin)',
+    },
+    create: {
+      email: 'admin@petboss.com',
+      password: adminPassword,
+      role: 'ADMIN',
+      name: 'مدیر کلینیک (Clinic Admin)',
+    },
+  })
+
+  await prisma.user.upsert({
+    where: { email: 'editor@petboss.com' },
+    update: {
+      password: editorPassword,
+      role: 'EDITOR',
+      name: 'کارشناس محتوا (Content Editor)',
+    },
+    create: {
+      email: 'editor@petboss.com',
+      password: editorPassword,
+      role: 'EDITOR',
+      name: 'کارشناس محتوا (Content Editor)',
+    },
+  })
+
+  console.log('Seeded users: superadmin@petboss.com, admin@petboss.com, editor@petboss.com')
   console.log('Seeding finished successfully! ✅')
 }
 

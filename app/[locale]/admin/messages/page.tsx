@@ -3,7 +3,14 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminMessagesPage() {
+export default async function AdminMessagesPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const isEn = locale === 'en';
+
   const messages = await db.contactMessage.findMany({
     orderBy: { createdAt: 'desc' },
     take: 50,
@@ -12,32 +19,40 @@ export default async function AdminMessagesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">پیام‌های فرم تماس</h1>
-        <p className="text-sm text-muted-foreground">صندوق پیام‌های ارسال شده از طریق صفحه تماس با ما</p>
+        <h1 className="text-2xl font-bold text-foreground">
+          {isEn ? 'Contact Form Inbox' : 'پیام‌های فرم تماس'}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {isEn
+            ? 'Incoming contact messages submitted through the website contact page'
+            : 'صندوق پیام‌های ارسال شده از طریق صفحه تماس با ما'}
+        </p>
       </div>
 
       <Card className="card-luxury">
         <CardHeader className="pb-3 border-b border-border">
           <CardTitle className="text-base font-bold text-foreground">
-            پیام‌های دریافتی ({messages.length} پیام)
+            {isEn
+              ? `Received Inquiries (${messages.length} messages)`
+              : `پیام‌های دریافتی (${messages.length} پیام)`}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           <table className="w-full text-sm text-start">
             <thead className="text-xs uppercase bg-surface-elevated text-muted-foreground border-b border-border">
               <tr>
-                <th className="px-5 py-3.5 text-start font-semibold">فرستنده</th>
-                <th className="px-5 py-3.5 text-start font-semibold">تماس / ایمیل</th>
-                <th className="px-5 py-3.5 text-start font-semibold">موضوع و پیام</th>
-                <th className="px-5 py-3.5 text-start font-semibold">وضعیت</th>
-                <th className="px-5 py-3.5 text-start font-semibold">تاریخ</th>
+                <th className="px-5 py-3.5 text-start font-semibold">{isEn ? 'Sender' : 'فرستنده'}</th>
+                <th className="px-5 py-3.5 text-start font-semibold">{isEn ? 'Phone / Email' : 'تماس / ایمیل'}</th>
+                <th className="px-5 py-3.5 text-start font-semibold">{isEn ? 'Subject & Content' : 'موضوع و پیام'}</th>
+                <th className="px-5 py-3.5 text-start font-semibold">{isEn ? 'Status' : 'وضعیت'}</th>
+                <th className="px-5 py-3.5 text-start font-semibold">{isEn ? 'Date' : 'تاریخ'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {messages.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="text-center py-8 text-muted-foreground text-sm">
-                    پیامی در صندوق ورودی وجود ندارد
+                    {isEn ? 'No messages in the inbox' : 'پیامی در صندوق ورودی وجود ندارد'}
                   </td>
                 </tr>
               ) : (
@@ -51,7 +66,9 @@ export default async function AdminMessagesPage() {
                       <div className="text-[11px] opacity-75">{msg.email || ''}</div>
                     </td>
                     <td className="px-5 py-4 text-xs text-foreground/90 max-w-sm">
-                      <div className="font-bold text-primary mb-0.5">{msg.subject || 'بدون موضوع'}</div>
+                      <div className="font-bold text-primary mb-0.5">
+                        {msg.subject || (isEn ? 'No Subject' : 'بدون موضوع')}
+                      </div>
                       <p className="line-clamp-2 text-muted-foreground">{msg.message}</p>
                     </td>
                     <td className="px-5 py-4">
@@ -60,11 +77,11 @@ export default async function AdminMessagesPage() {
                           ? 'text-muted-foreground bg-surface-elevated'
                           : 'text-emerald-400 bg-emerald-500/15 border border-emerald-500/30'
                       }`}>
-                        {msg.isRead ? 'خوانده شده' : 'جدید'}
+                        {msg.isRead ? (isEn ? 'Read' : 'خوانده شده') : (isEn ? 'New' : 'جدید')}
                       </span>
                     </td>
                     <td className="px-5 py-4 text-xs text-muted-foreground">
-                      {new Date(msg.createdAt).toLocaleDateString('fa-IR')}
+                      {new Date(msg.createdAt).toLocaleDateString(isEn ? 'en-US' : 'fa-IR')}
                     </td>
                   </tr>
                 ))

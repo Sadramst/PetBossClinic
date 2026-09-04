@@ -2,7 +2,13 @@ import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 
-export default async function ContactPage() {
+export default async function ContactPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const isEn = locale === 'en';
   const t = await getTranslations('Contact');
 
   return (
@@ -11,7 +17,7 @@ export default async function ContactPage() {
         {/* Page Header */}
         <div className="text-center mb-16">
           <LuxuryPillBadge variant="outline" className="mb-3">
-            راه ارتباطی با کلینیک
+            {t('badge')}
           </LuxuryPillBadge>
           <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4">{t('title')}</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed">{t('subtitle')}</p>
@@ -26,7 +32,7 @@ export default async function ContactPage() {
                 <label className="block text-sm font-medium text-foreground/90 mb-1.5">{t('name')}</label>
                 <input
                   type="text"
-                  placeholder="مثال: علی رضایی"
+                  placeholder={t('namePlaceholder')}
                   className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition placeholder:text-muted-foreground"
                 />
               </div>
@@ -35,7 +41,7 @@ export default async function ContactPage() {
                   <label className="block text-sm font-medium text-foreground/90 mb-1.5">{t('phone')}</label>
                   <input
                     type="tel"
-                    placeholder="۰۹۱۲XXXXXXX"
+                    placeholder={t('phonePlaceholder')}
                     className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition placeholder:text-muted-foreground"
                   />
                 </div>
@@ -43,7 +49,7 @@ export default async function ContactPage() {
                   <label className="block text-sm font-medium text-foreground/90 mb-1.5">{t('email')}</label>
                   <input
                     type="email"
-                    placeholder="info@example.com"
+                    placeholder={t('emailPlaceholder')}
                     className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition placeholder:text-muted-foreground"
                   />
                 </div>
@@ -52,7 +58,7 @@ export default async function ContactPage() {
                 <label className="block text-sm font-medium text-foreground/90 mb-1.5">{t('subject')}</label>
                 <input
                   type="text"
-                  placeholder="موضوع پیام یا نوبت درخواستی"
+                  placeholder={t('subjectPlaceholder')}
                   className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition placeholder:text-muted-foreground"
                 />
               </div>
@@ -60,7 +66,7 @@ export default async function ContactPage() {
                 <label className="block text-sm font-medium text-foreground/90 mb-1.5">{t('message')}</label>
                 <textarea
                   rows={4}
-                  placeholder="متن پیام یا توضیحات وضعیت حیوان خانگی..."
+                  placeholder={t('messagePlaceholder')}
                   className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition resize-none placeholder:text-muted-foreground"
                 />
               </div>
@@ -76,19 +82,23 @@ export default async function ContactPage() {
             <div className="card-luxury p-8 space-y-6">
               <div>
                 <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-1.5">{t('addressTitle')}</h3>
-                <p className="text-sm text-foreground/90 leading-relaxed">تهران، خیابان شریعتی، بالاتر از پل صدر، نرسیده به ایستگاه مترو قیطریه، پلاک ۱۷۳۳</p>
+                <p className="text-sm text-foreground/90 leading-relaxed">{t('addressText')}</p>
               </div>
               <div>
                 <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-1.5">{t('phoneTitle')}</h3>
-                <a href="tel:+982122000000" className="text-base font-bold text-primary hover:underline">۰۲۱-۲۲۰۰۰۰۰۰</a>
+                <a href="tel:+982122000000" className="text-base font-bold text-primary hover:underline dir-ltr inline-block">
+                  {isEn ? '+98 21 2200 0000' : '۰۲۱-۲۲۰۰۰۰۰۰'}
+                </a>
               </div>
               <div>
                 <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-1.5">{t('emailTitle')}</h3>
-                <a href="mailto:info@petbossclinic.com" className="text-sm text-foreground/90 hover:text-primary transition-colors">info@petbossclinic.com</a>
+                <a href="mailto:info@petbossclinic.com" className="text-sm text-foreground/90 hover:text-primary transition-colors">
+                  info@petbossclinic.com
+                </a>
               </div>
               <div>
                 <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-1.5">{t('hoursTitle')}</h3>
-                <p className="text-sm text-foreground/90 font-medium">همه روزه حتی ایام تعطیل: ۱۰:۰۰ صبح الی ۲۲:۰۰ شب</p>
+                <p className="text-sm text-foreground/90 font-medium">{t('hoursText')}</p>
               </div>
             </div>
 
@@ -102,23 +112,9 @@ export default async function ContactPage() {
                 scrolling="no"
                 marginHeight={0}
                 marginWidth={0}
-                src="https://maps.google.com/maps?q=35.790937,51.4350853&hl=fa&z=16&output=embed"
+                src={`https://maps.google.com/maps?q=35.790937,51.4350853&hl=${isEn ? 'en' : 'fa'}&z=16&output=embed`}
                 className="w-full h-full grayscale contrast-125 opacity-90 hover:grayscale-0 transition-all duration-300"
               />
-            </div>
-
-            {/* Quick Action Buttons */}
-            <div className="flex gap-4">
-              <Button asChild className="flex-1 bg-gradient-gold hover:opacity-90 text-charcoal-950 font-bold rounded-full shadow-gold py-3">
-                <a href="https://maps.google.com/?q=35.790937,51.4350853" target="_blank" rel="noopener noreferrer">
-                  مسیریابی گوگل مپ
-                </a>
-              </Button>
-              <Button asChild variant="outline" className="flex-1 rounded-full border-border-gold text-foreground hover:bg-surface-elevated py-3">
-                <a href="https://wa.me/989120000000" target="_blank" rel="noopener noreferrer">
-                  ارتباط واتساپ
-                </a>
-              </Button>
             </div>
           </div>
         </div>
