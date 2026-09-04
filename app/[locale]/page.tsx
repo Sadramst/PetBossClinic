@@ -1,9 +1,6 @@
 import { db } from "@/lib/db";
-import { getTranslations } from "next-intl/server";
 
 export default async function Page() {
-  const t = await getTranslations();
-  
   // Quick DB check
   let serviceCount = 0;
   try {
