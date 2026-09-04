@@ -76,9 +76,11 @@ It will be parsed by `prisma/seed.ts` to populate the database.
 | 6 | 10:00 | 22:00 | false |
 
 ## Staff / Vets
-| nameFa | titleFa | specialtyFa | licenseNo | # VERIFY |
-|---|---|---|---|---|
-| // نام پزشک | // عنوان | // تخصص | // شماره نظام دامپزشکی | # VERIFY |
+| nameFa | nameEn | titleFa | titleEn | specialtyFa | specialtyEn | licenseNo |
+|---|---|---|---|---|---|---|
+| دکتر علیرضا تهرانی | Dr. Alireza Tehrani | جراح ارشد دامپزشکی | Chief Veterinary Surgeon | جراحی بافت نرم و ارتوپدی | Soft Tissue & Orthopedic Surgery | ۹۸/د/۱۴۲۰ |
+| دکتر سارا مرادی | Dr. Sarah Moradi | متخصص بیماری‌های داخلی | Internal Medicine Specialist | بیماری‌های گوارشی، تنفسی و سونوگرافی | Internal Disorders & Ultrasound | ۹۹/د/۲۳۰۵ |
+| مهسا راد | Mahsa Rad | متخصص ارشد گرومینگ | Senior Grooming Specialist | اصلاح و آرایش استاندارد نژادی و بهداشت | Breed-Standard Grooming & Hygiene | گرومر بین‌المللی |
 
 ### HOW TO EDIT
-You can edit this Markdown file directly to add, remove, or modify seed data. Once you have made your changes, run `pnpm db:seed` to parse this file and populate the database.
+You can edit this Markdown file directly to add, remove, or modify seed data. Once you have made your changes, run `npx tsx prisma/seed.ts` to parse this data and populate the database.
