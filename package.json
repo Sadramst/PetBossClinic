@@ -26,7 +26,7 @@
     "dayjs": "^1.11.13",
     "dayjs-jalali": "^0.0.2",
     "lucide-react": "^0.400.0",
-    "next": "15.0.0",
+    "next": "15.0.7",
     "next-auth": "5.0.0-beta.25",
     "next-intl": "^3.22.0",
     "pg": "^8.13.0",
