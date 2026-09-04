@@ -8,6 +8,22 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: petboss
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - uses: actions/checkout@v4
     - uses: pnpm/action-setup@v3
@@ -22,6 +38,8 @@ jobs:
     - name: Install Playwright Browsers
       run: pnpm exec playwright install --with-deps
     - name: Run Playwright tests
-      run: pnpm test:e2e
+      run: |
+        pnpm db:push
+        pnpm test:e2e
       env:
         DATABASE_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
