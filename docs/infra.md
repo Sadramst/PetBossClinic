@@ -60,8 +60,8 @@ The Next.js 15 frontend and API routes are deployed directly to Vercel with auto
 ### 2.2 Production Environment Variables
 | Variable | Description | Example / Required Format |
 |---|---|---|
-| `DATABASE_URL` | PostgreSQL direct connection | `postgresql://postgres:<PASS>@95.179.243.160:5432/petboss_db?schema=public` |
-| `DIRECT_URL` | Unpooled connection for Prisma migrations | `postgresql://postgres:<PASS>@95.179.243.160:5432/petboss_db?schema=public` |
+| `DATABASE_URL` | PostgreSQL direct connection | `postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public` |
+| `DIRECT_URL` | Unpooled connection for Prisma migrations | `postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public` |
 | `NEXTAUTH_SECRET` | NextAuth encryption secret | 32-character random hex string |
 | `NEXTAUTH_URL` | Base canonical application URL | `https://www.petbossclinic.com` |
 | `NEXT_PUBLIC_APP_URL` | Client-accessible URL | `https://www.petbossclinic.com` |

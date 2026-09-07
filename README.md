@@ -98,9 +98,9 @@ npm install
 ### 2. Configure Environment
 Create `.env` based on `.env.example`:
 ```bash
-DATABASE_URL="postgresql://user:password@localhost:5432/petboss?schema=public"
-DIRECT_URL="postgresql://user:password@localhost:5432/petboss?schema=public"
-AUTH_SECRET="your-generated-secret"
+DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST:-localhost}:5432/${DB_NAME:-petboss}?schema=public"
+DIRECT_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST:-localhost}:5432/${DB_NAME:-petboss}?schema=public"
+AUTH_SECRET="your-random-32-character-secret"
 ```
 
 ### 3. Setup Database
