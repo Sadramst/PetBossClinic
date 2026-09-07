@@ -1,5 +1,2 @@
-/**
- * @file index.ts
- * @description TODO(phase-1): Implement index.ts
- */
-export {};
+export { ShopCatalogClient } from './shop-catalog-client'
+export type { ShopCategory, ShopProduct } from './shop-catalog-client'

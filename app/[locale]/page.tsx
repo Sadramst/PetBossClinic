@@ -17,7 +17,7 @@ export default async function HomePage({
   const t = await getTranslations('Home');
 
   // Fetch data from DB safely
-  const [divisions, services, staff, testimonials, faqs, sitePictures] = await Promise.all([
+  const [divisions, services, staff, testimonials, faqs, sitePictures, featuredProducts] = await Promise.all([
     db.division.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
@@ -44,6 +44,12 @@ export default async function HomePage({
       take: 6,
     }),
     getSitePictures(),
+    db.product.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+      take: 4,
+      include: { category: true },
+    }),
   ]);
 
   // Division icons
@@ -183,10 +189,10 @@ export default async function HomePage({
                       {divDesc}
                     </p>
                     <Link
-                      href="/services"
+                      href={idx === 2 ? "/shop" : "/services"}
                       className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary-hover group-hover:underline"
                     >
-                      <span>{t('learnMoreServices')}</span>
+                      <span>{idx === 2 ? t('viewShop') : t('learnMoreServices')}</span>
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="rtl:rotate-180"><path d="m9 18 6-6-6-6"/></svg>
                     </Link>
                   </div>
@@ -283,6 +289,81 @@ export default async function HomePage({
           </div>
         </div>
       </section>
+
+      {/* ═══ FEATURED PET SHOP & BOUTIQUE SHOWCASE ═══ */}
+      {featuredProducts.length > 0 && (
+        <section className="section-padding bg-surface border-t border-border/60">
+          <div className="container-site">
+            <div className="text-center mb-14">
+              <span className="badge-pill-outline mb-3">
+                ✨ {isEn ? 'Signature Pet Boutique' : 'ویترین برگزیده پت‌شاپ پت باس'}
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-4">
+                {t('shopTitle')}
+              </h2>
+              <p className="text-muted-foreground max-w-xl mx-auto text-base">
+                {t('shopSubtitle')}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredProducts.map((prod) => {
+                const pName = isEn ? (prod.nameEn || prod.nameFa) : prod.nameFa;
+                const pDesc = isEn ? (prod.shortDescEn || prod.shortDescFa) : prod.shortDescFa;
+                const cName = isEn ? (prod.category.nameEn || prod.category.nameFa) : prod.category.nameFa;
+                const priceFormatted = isEn
+                  ? `${prod.price.toLocaleString('en-US')} Tomans`
+                  : `${prod.price.toLocaleString('fa-IR')} تومان`;
+
+                return (
+                  <div
+                    key={prod.id}
+                    className="card-luxury rounded-2xl overflow-hidden flex flex-col group border border-border hover:border-primary/60 transition-all hover:shadow-gold"
+                  >
+                    <div className="relative aspect-[4/3] bg-gradient-to-br from-charcoal-900 to-charcoal-950 flex items-center justify-center p-6 border-b border-border/40 text-center">
+                      <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-border-gold/50 flex items-center justify-center text-xl shadow-gold group-hover:scale-105 transition-transform duration-300">
+                        👑
+                      </div>
+                      <span className="absolute bottom-2 start-3 text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                        {cName}
+                      </span>
+                    </div>
+
+                    <div className="p-5 flex flex-col flex-grow">
+                      <h3 className="text-sm font-bold text-foreground mb-1.5 line-clamp-2 group-hover:text-primary transition-colors">
+                        {pName}
+                      </h3>
+                      {pDesc && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-grow">
+                          {pDesc}
+                        </p>
+                      )}
+                      <div className="pt-3 border-t border-border flex items-center justify-between mt-auto">
+                        <span className="text-xs font-bold text-gradient-gold">
+                          {priceFormatted}
+                        </span>
+                        <Link
+                          href="/shop"
+                          className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+                        >
+                          <span>{t('viewShop')}</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="rtl:rotate-180"><path d="m9 18 6-6-6-6"/></svg>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="text-center mt-12">
+              <Button asChild size="lg" className="rounded-full px-9 bg-gradient-gold text-charcoal-950 font-bold shadow-gold hover:opacity-95">
+                <Link href="/shop">{t('viewShop')}</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ═══ VETERINARY TEAM ═══ */}
       {staff.length > 0 && (
