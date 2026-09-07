@@ -91,6 +91,7 @@ Next.js 15 compiled all **40 routes** cleanly with zero errors:
 - `/[locale]/admin` (`/fa/admin`, `/en/admin`)
 - `/[locale]/admin/login`
 - `/[locale]/admin/users`
+- `/[locale]/admin/media`
 - `/[locale]/admin/theme`
 - `/[locale]/admin/divisions`
 - `/[locale]/admin/services`
@@ -101,10 +102,32 @@ Next.js 15 compiled all **40 routes** cleanly with zero errors:
 - `/[locale]/admin/settings`
 - `/[locale]/admin/faqs`
 
+---
+
+## 5. Media & Picture Management System (`/admin/media`)
+
+### Authentic 3D Gold Logo & Signboard
+- Extracted and optimized the high-fidelity 3D gold crowned lion emblem with black & gold animal reliefs (cat, dog, rabbit) from the official luxury outdoor sign (`media_1788762067395.jpg`).
+- Deployed to `public/images/logo.png` (512x512 transparent cut-out) and `public/images/logo-64.png`.
+- Added the full official facade signboard asset (`public/images/petboss-signboard.jpg`).
+- Synchronized the official clinic contact phone number across all components, headers, footers, CTAs, and settings to **021-26429715** (`+982126429715`).
+
+### Admin Media Manager
+- **Path**: `/fa/admin/media` and `/en/admin/media`
+- **Core Picture Slots**: Real-time management and one-click replacement for:
+  1. Main Clinic Logo (`site_logo`)
+  2. Official Signboard Photo (`site_signboard`)
+  3. Homepage Hero & Lounge Showcase (`hero_reception`)
+  4. Clinical Medicine & Surgery Division (`division_veterinary`)
+  5. Spa & Luxury Grooming Division (`division_grooming`)
+  6. Boutique Pet Shop Division (`division_petshop`)
+  7. About Us Highlights (`about_clinic`, `about_veterinarian`)
+- **Direct File Uploader & Library**: Upload new photos directly (JPG, PNG, WEBP, SVG up to 15MB) with automatic indexing in `db.media` and instant assignment to any slot on the site.
+
 ### Git & Remote Push
 All changes committed and pushed to `origin main`:
 ```
 To https://github.com/Sadramst/PetBossClinic.git
-   0ba2c79..8f81f46  main -> main
+   bcda0d7..2f4bb59  main -> main
 ```
-Automatically triggers continuous deployment on Vercel.
+
