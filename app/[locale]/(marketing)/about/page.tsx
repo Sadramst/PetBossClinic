@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { getTranslations } from "next-intl/server";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
+import { getSitePictures } from "@/lib/media";
 
 export default async function AboutPage({
   params,
@@ -11,10 +12,13 @@ export default async function AboutPage({
   const isEn = locale === 'en';
   const t = await getTranslations('About');
 
-  const staff = await db.staffMember.findMany({
-    where: { isActive: true },
-    orderBy: { sortOrder: 'asc' },
-  });
+  const [staff, sitePictures] = await Promise.all([
+    db.staffMember.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+    }),
+    getSitePictures(),
+  ]);
 
   return (
     <div className="section-padding bg-background">
@@ -54,8 +58,9 @@ export default async function AboutPage({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
           <div className="rounded-3xl overflow-hidden border border-border-gold/50 shadow-gold relative group">
             <div className="aspect-[16/10] w-full bg-charcoal-900 overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/images/reception.jpg"
+                src={sitePictures.about_clinic}
                 alt="Pet Boss Lounge"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
@@ -68,8 +73,9 @@ export default async function AboutPage({
           </div>
           <div className="rounded-3xl overflow-hidden border border-border-gold/50 shadow-gold relative group">
             <div className="aspect-[16/10] w-full bg-charcoal-900 overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/images/veterinarian.jpg"
+                src={sitePictures.about_veterinarian}
                 alt="Pet Boss Care"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />

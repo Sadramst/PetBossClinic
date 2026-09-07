@@ -79,7 +79,7 @@ export default async function FaqPage({
           <p className="text-muted-foreground mb-8 max-w-md mx-auto text-sm leading-relaxed">{t('contactPrompt')}</p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Button asChild className="bg-gradient-gold hover:opacity-90 text-charcoal-950 font-bold rounded-full shadow-gold px-8 py-6">
-              <a href="tel:+982122000000">{t('callDirect')}</a>
+              <a href="tel:+982126429715">{t('callDirect')}</a>
             </Button>
             <Button asChild variant="outline" className="rounded-full border-border-gold text-foreground hover:bg-surface-elevated px-8 py-6">
               <Link href="/contact">{t('sendMessage')}</Link>

@@ -25,7 +25,7 @@ export function SettingsForm({ initialSettings, isEn }: Props) {
 
   const defaultPhone = Array.isArray(initialSettings?.phones)
     ? initialSettings.phones[0]
-    : '۰۲۱-۲۲۰۰۰۰۰۰'
+    : '۰۲۱-۲۶۴۲۹۷۱۵'
 
   const addresses = initialSettings?.addresses as { fa?: string; en?: string } | null
   const geoObj = initialSettings?.geo as { coordinates?: string } | null
@@ -35,7 +35,7 @@ export function SettingsForm({ initialSettings, isEn }: Props) {
   const [nameEn, setNameEn] = useState(initialSettings?.nameEn || 'Pet Boss Veterinary Clinic & Pet Shop')
   const [taglineFa, setTaglineFa] = useState(initialSettings?.taglineFa || 'مراقبت با عشق')
   const [taglineEn, setTaglineEn] = useState(initialSettings?.taglineEn || 'Care with love')
-  const [phone, setPhone] = useState(defaultPhone || '۰۲۱-۲۲۰۰۰۰۰۰')
+  const [phone, setPhone] = useState(defaultPhone || '۰۲۱-۲۶۴۲۹۷۱۵')
   const [addressFa, setAddressFa] = useState(addresses?.fa || 'تهران، خیابان شریعتی، بالاتر از پل صدر، نرسیده به ایستگاه مترو قیطریه، پلاک ۱۷۳۳')
   const [addressEn, setAddressEn] = useState(addresses?.en || 'Shariati St., north of Sadr Bridge, near Gheytarieh Metro Station, No. 1733, Tehran, Iran')
   const [geo, setGeo] = useState(geoObj?.coordinates || '35.790937, 51.4350853')

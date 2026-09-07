@@ -30,7 +30,7 @@ describe('Pet Boss Veterinary Clinic — End-to-End Business Scenarios', () => {
         status: isImmediateAttentionRequired ? 'TRIAGE_PRIORITY_1' : 'SCHEDULED_APPOINTMENT',
         assignedDivision,
         requiresOnCallSurgeon: input.urgency === 'CRITICAL',
-        directLine: '+982122000000',
+        directLine: '+982126429715',
       }
     }
 
@@ -47,7 +47,7 @@ describe('Pet Boss Veterinary Clinic — End-to-End Business Scenarios', () => {
       const triageResult = triagePatient(caseData)
       expect(triageResult.status).toBe('TRIAGE_PRIORITY_1')
       expect(triageResult.requiresOnCallSurgeon).toBe(true)
-      expect(triageResult.directLine).toBe('+982122000000')
+      expect(triageResult.directLine).toBe('+982126429715')
     })
 
     it('rejects invalid owner phone number during triage intake', () => {

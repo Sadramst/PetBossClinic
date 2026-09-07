@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PetBossLogo } from "@/components/shared/pet-boss-logo";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
+import { getSitePictures } from "@/lib/media";
 
 export default async function HomePage({
   params,
@@ -16,7 +17,7 @@ export default async function HomePage({
   const t = await getTranslations('Home');
 
   // Fetch data from DB safely
-  const [divisions, services, staff, testimonials, faqs] = await Promise.all([
+  const [divisions, services, staff, testimonials, faqs, sitePictures] = await Promise.all([
     db.division.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
@@ -42,6 +43,7 @@ export default async function HomePage({
       orderBy: { sortOrder: 'asc' },
       take: 6,
     }),
+    getSitePictures(),
   ]);
 
   // Division icons
@@ -97,7 +99,7 @@ export default async function HomePage({
               size="lg"
               className="bg-gradient-gold hover:opacity-95 text-charcoal-950 font-bold rounded-full px-9 py-6 text-base shadow-gold-lg border border-gold-300/40 w-full sm:w-auto"
             >
-              <a href="tel:+982122000000" className="flex items-center justify-center gap-2.5">
+              <a href="tel:+982126429715" className="flex items-center justify-center gap-2.5">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                 <span>{t('heroCta')}</span>
               </a>
@@ -115,8 +117,9 @@ export default async function HomePage({
           {/* Luxury Reception Showcase */}
           <div className="mt-14 w-full max-w-4xl mx-auto rounded-3xl overflow-hidden border-2 border-border-gold/60 shadow-gold-lg relative group">
             <div className="aspect-[16/9] w-full overflow-hidden bg-charcoal-900 relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/images/reception.jpg"
+                src={sitePictures.hero_reception}
                 alt="Pet Boss Luxury Clinic Lounge"
                 className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
               />
@@ -151,13 +154,18 @@ export default async function HomePage({
             {divisions.map((div, idx) => {
               const divName = isEn ? (div.nameEn || div.nameFa) : div.nameFa;
               const divDesc = isEn ? (div.descriptionEn || div.descriptionFa) : div.descriptionFa;
-              const divImage = idx === 0 ? '/images/veterinarian.jpg' : idx === 1 ? '/images/grooming.jpg' : '/images/petshop.jpg';
+              const divImage = idx === 0 
+                ? sitePictures.division_veterinary 
+                : idx === 1 
+                  ? sitePictures.division_grooming 
+                  : sitePictures.division_petshop;
               return (
                 <div
                   key={div.id}
                   className="card-luxury overflow-hidden flex flex-col group relative"
                 >
                   <div className="relative aspect-[16/10] w-full overflow-hidden bg-charcoal-900 border-b border-border-gold/30">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={divImage}
                       alt={divName}
@@ -259,7 +267,7 @@ export default async function HomePage({
                         )}
                       </div>
                       <Button asChild size="sm" variant="ghost" className="text-primary hover:text-primary hover:bg-primary/10 text-xs">
-                        <a href="tel:+982122000000">{t('bookNow')}</a>
+                        <a href="tel:+982126429715">{t('bookNow')}</a>
                       </Button>
                     </div>
                   </CardContent>
@@ -508,7 +516,7 @@ export default async function HomePage({
       {/* ═══ STICKY MOBILE EMERGENCY CALL BAR ═══ */}
       <div className="fixed bottom-0 inset-x-0 z-40 sm:hidden bg-surface-card/95 backdrop-blur border-t border-border-gold p-3 flex gap-3 shadow-2xl">
         <a
-          href="tel:+982122000000"
+          href="tel:+982126429715"
           className="flex-1 bg-gradient-gold text-charcoal-950 font-bold text-center py-3 rounded-full text-sm flex items-center justify-center gap-2 shadow-gold"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>

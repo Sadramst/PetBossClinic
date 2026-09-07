@@ -86,8 +86,8 @@ export default async function ContactPage({
               </div>
               <div>
                 <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-1.5">{t('phoneTitle')}</h3>
-                <a href="tel:+982122000000" className="text-base font-bold text-primary hover:underline dir-ltr inline-block">
-                  {isEn ? '+98 21 2200 0000' : '۰۲۱-۲۲۰۰۰۰۰۰'}
+                <a href="tel:+982126429715" className="text-base font-bold text-primary hover:underline dir-ltr inline-block">
+                  {isEn ? '+98 21 2642 9715' : '۰۲۱-۲۶۴۲۹۷۱۵'}
                 </a>
               </div>
               <div>

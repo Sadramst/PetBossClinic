@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
+import { getSitePictures } from "@/lib/media";
 
 export default async function ServicesPage({
   params,
@@ -13,16 +14,19 @@ export default async function ServicesPage({
   const isEn = locale === 'en';
   const t = await getTranslations('Services');
 
-  const divisions = await db.division.findMany({
-    where: { isActive: true },
-    orderBy: { sortOrder: 'asc' },
-    include: {
-      services: {
-        where: { isActive: true },
-        orderBy: { sortOrder: 'asc' },
+  const [divisions, sitePictures] = await Promise.all([
+    db.division.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        services: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+        },
       },
-    },
-  });
+    }),
+    getSitePictures(),
+  ]);
 
   return (
     <div className="section-padding bg-background">
@@ -43,10 +47,10 @@ export default async function ServicesPage({
             const divDesc = isEn ? (division.descriptionEn || division.descriptionFa) : division.descriptionFa;
 
             const divImage = division.slugEn === 'clinical'
-              ? '/images/veterinarian.jpg'
+              ? sitePictures.division_veterinary
               : division.slugEn === 'grooming'
-              ? '/images/grooming.jpg'
-              : '/images/petshop.jpg';
+              ? sitePictures.division_grooming
+              : sitePictures.division_petshop;
 
             return (
               <div key={division.id} className="p-8 rounded-2xl bg-surface border border-border/60 overflow-hidden">
@@ -117,7 +121,7 @@ export default async function ServicesPage({
                               )}
                             </div>
                             <Button asChild size="sm" className="bg-primary/15 text-primary hover:bg-primary hover:text-charcoal-950 font-semibold text-xs rounded-full">
-                              <a href="tel:+982122000000">{t('bookAppointment')}</a>
+                              <a href="tel:+982126429715">{t('bookAppointment')}</a>
                             </Button>
                           </div>
                         </CardContent>
