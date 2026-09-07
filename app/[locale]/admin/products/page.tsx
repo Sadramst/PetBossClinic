@@ -18,6 +18,9 @@ export default async function AdminProductsPage({
         category: {
           select: { id: true, nameFa: true, nameEn: true, slugFa: true },
         },
+        images: {
+          orderBy: { sortOrder: 'asc' },
+        },
       },
       take: 500,
     }),
@@ -33,6 +36,7 @@ export default async function AdminProductsPage({
         descriptionFa: true,
         descriptionEn: true,
         sortOrder: true,
+        imageId: true,
         _count: {
           select: { products: true },
         },

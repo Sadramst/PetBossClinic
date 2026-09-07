@@ -61,6 +61,7 @@ export default async function ShopPage({
         descriptionFa: true,
         descriptionEn: true,
         sortOrder: true,
+        imageId: true,
         _count: {
           select: {
             products: true,
@@ -83,12 +84,21 @@ export default async function ShopPage({
         stockStatus: true,
         isActive: true,
         createdAt: true,
+        ogImageId: true,
+        images: {
+          orderBy: { sortOrder: 'asc' },
+          select: {
+            imageId: true,
+            isPrimary: true,
+          },
+        },
         category: {
           select: {
             id: true,
             nameFa: true,
             nameEn: true,
             slugFa: true,
+            imageId: true,
           },
         },
       },

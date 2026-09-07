@@ -13,6 +13,7 @@ export interface ShopCategory {
   descriptionFa?: string | null
   descriptionEn?: string | null
   sortOrder: number
+  imageId?: string | null
   _count?: {
     products: number
   }
@@ -30,11 +31,17 @@ export interface ShopProduct {
   stockStatus: StockStatus
   isActive: boolean
   createdAt: string | Date
+  ogImageId?: string | null
+  images?: Array<{
+    imageId: string
+    isPrimary?: boolean
+  }>
   category: {
     id: string
     nameFa: string
     nameEn: string | null
     slugFa: string
+    imageId?: string | null
   }
 }
 
@@ -286,6 +293,13 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
                       : 'bg-surface-elevated border border-border text-foreground hover:border-primary/50'
                   }`}
                 >
+                  {cat.imageId ? (
+                    <img
+                      src={cat.imageId}
+                      alt={catName}
+                      className="w-4 h-4 rounded-full object-cover shrink-0 border border-primary/30"
+                    />
+                  ) : null}
                   <span>{catName}</span>
                   <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
                     isSelected ? 'bg-charcoal-950/20 text-charcoal-950' : 'bg-surface-card text-muted-foreground'
@@ -332,6 +346,7 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
               const pDesc = isEn ? (product.shortDescEn || product.shortDescFa) : product.shortDescFa
               const catName = isEn ? (product.category.nameEn || product.category.nameFa) : product.category.nameFa
               const isInStock = product.stockStatus === 'IN_STOCK'
+              const productImage = product.images?.[0]?.imageId || product.ogImageId
 
               return (
                 <div
@@ -339,12 +354,12 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
                   className="card-luxury rounded-2xl overflow-hidden flex flex-col group border border-border hover:border-primary/60 transition-all duration-300 hover:shadow-gold"
                 >
                   {/* Visual Header / Showcase Banner */}
-                  <div className="relative aspect-[4/3] w-full bg-gradient-to-br from-charcoal-900 to-charcoal-950 overflow-hidden border-b border-border/50 flex items-center justify-center p-6 text-center">
+                  <div className="relative aspect-[4/3] w-full bg-gradient-to-br from-charcoal-900 to-charcoal-950 overflow-hidden border-b border-border/50 flex items-center justify-center text-center">
                     {/* Background Pattern */}
                     <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#d4af37_1px,transparent_1px)] [background-size:16px_16px]" />
 
                     {/* Stock Status Badge */}
-                    <div className="absolute top-3 start-3 z-10">
+                    <div className="absolute top-3 start-3 z-20">
                       {isInStock ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-sm">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -363,24 +378,36 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
                         type="button"
                         onClick={() => handleCopySku(product.sku!)}
                         title={isEn ? 'Click to copy SKU' : 'برای کپی کد کالا کلیک کنید'}
-                        className="absolute top-3 end-3 z-10 text-[10px] font-mono px-2 py-0.5 rounded-md bg-surface/80 text-muted-foreground border border-border hover:border-primary transition-colors cursor-pointer"
+                        className="absolute top-3 end-3 z-20 text-[10px] font-mono px-2 py-0.5 rounded-md bg-surface/80 text-muted-foreground border border-border hover:border-primary transition-colors cursor-pointer backdrop-blur-sm"
                       >
                         {copiedSku === product.sku ? '✓ کپی شد' : product.sku}
                       </button>
                     )}
 
-                    {/* Luxury Product Art / Icon */}
-                    <div className="relative z-10 flex flex-col items-center justify-center transform group-hover:scale-105 transition-transform duration-500">
-                      <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-border-gold/50 flex items-center justify-center shadow-gold mb-3 text-2xl">
-                        👑
+                    {/* Product Photo or Placeholder Graphic */}
+                    {productImage ? (
+                      <div className="absolute inset-0 w-full h-full overflow-hidden bg-charcoal-900">
+                        <img
+                          src={productImage}
+                          alt={pName}
+                          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/70 via-transparent to-transparent pointer-events-none" />
                       </div>
-                      <span className="text-xs font-bold text-primary max-w-[200px] truncate">
-                        {catName}
-                      </span>
-                    </div>
+                    ) : (
+                      <div className="relative z-10 flex flex-col items-center justify-center transform group-hover:scale-105 transition-transform duration-500 p-6">
+                        <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-border-gold/50 flex items-center justify-center shadow-gold mb-3 text-2xl">
+                          🐾
+                        </div>
+                        <span className="text-xs font-bold text-primary max-w-[200px] truncate">
+                          {catName}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Quick View Overlay on Hover */}
-                    <div className="absolute inset-0 bg-charcoal-950/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4 backdrop-blur-xs">
+                    <div className="absolute inset-0 z-10 bg-charcoal-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-4 backdrop-blur-xs">
                       <button
                         type="button"
                         onClick={() => setActiveModalProduct(product)}
@@ -521,11 +548,31 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
               ✕
             </button>
 
+            {/* Product Image Banner if available */}
+            {(activeModalProduct.images?.[0]?.imageId || activeModalProduct.ogImageId) && (
+              <div className="relative w-full h-56 sm:h-72 rounded-2xl overflow-hidden bg-charcoal-900 border border-border shadow-md mt-4">
+                <img
+                  src={activeModalProduct.images?.[0]?.imageId || activeModalProduct.ogImageId || ''}
+                  alt={isEn ? (activeModalProduct.nameEn || activeModalProduct.nameFa) : activeModalProduct.nameFa}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/70 via-transparent to-transparent pointer-events-none" />
+              </div>
+            )}
+
             {/* Modal Header */}
             <div className="flex items-center gap-3">
-              <span className="w-12 h-12 rounded-2xl bg-primary/10 border border-border-gold flex items-center justify-center text-2xl shadow-gold shrink-0">
-                👑
-              </span>
+              {activeModalProduct.images?.[0]?.imageId || activeModalProduct.ogImageId ? (
+                <img
+                  src={activeModalProduct.images?.[0]?.imageId || activeModalProduct.ogImageId || ''}
+                  alt=""
+                  className="w-12 h-12 rounded-2xl object-cover border border-border-gold shadow-gold shrink-0 bg-surface-elevated"
+                />
+              ) : (
+                <span className="w-12 h-12 rounded-2xl bg-primary/10 border border-border-gold flex items-center justify-center text-2xl shadow-gold shrink-0">
+                  👑
+                </span>
+              )}
               <div>
                 <span className="text-xs font-bold text-primary block">
                   {isEn
