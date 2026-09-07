@@ -16,15 +16,27 @@ export default async function AdminProductsPage({
       orderBy: { createdAt: 'desc' },
       include: {
         category: {
-          select: { id: true, nameFa: true, nameEn: true },
+          select: { id: true, nameFa: true, nameEn: true, slugFa: true },
         },
       },
-      take: 100,
+      take: 500,
     }),
     db.productCategory.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
-      select: { id: true, nameFa: true, nameEn: true },
+      select: {
+        id: true,
+        nameFa: true,
+        nameEn: true,
+        slugFa: true,
+        slugEn: true,
+        descriptionFa: true,
+        descriptionEn: true,
+        sortOrder: true,
+        _count: {
+          select: { products: true },
+        },
+      },
     }),
   ]);
 

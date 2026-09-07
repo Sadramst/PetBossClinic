@@ -152,3 +152,139 @@ export async function deleteProductAction(productId: string): Promise<ProductAct
     return { error: 'خطا در حذف محصول.' }
   }
 }
+
+// ─────────────────────────────────────────────────────────────
+// PRODUCT CATEGORY MANAGEMENT (CRUD)
+// ─────────────────────────────────────────────────────────────
+
+export interface CategoryActionState {
+  error?: string
+  success?: boolean
+  message?: string
+}
+
+export async function createCategoryAction(formData: FormData): Promise<CategoryActionState> {
+  const session = await getSession()
+  if (!session) return { error: 'دسترسی غیرمجاز.' }
+
+  const nameFa = formData.get('nameFa')?.toString().trim()
+  const nameEn = formData.get('nameEn')?.toString().trim() || null
+  const slugFaInput = formData.get('slugFa')?.toString().trim()
+  const descriptionFa = formData.get('descriptionFa')?.toString().trim() || null
+  const descriptionEn = formData.get('descriptionEn')?.toString().trim() || null
+  const sortOrderStr = formData.get('sortOrder')?.toString().trim()
+  const isActive = formData.get('isActive') === 'true' || formData.get('isActive') === 'on'
+
+  if (!nameFa) {
+    return { error: 'نام فارسی دسته‌بندی الزامی است.' }
+  }
+
+  const slugFa = slugFaInput || generateSlug(nameFa)
+  const slugEn = nameEn ? generateSlug(nameEn) : null
+  const sortOrder = sortOrderStr ? parseInt(sortOrderStr, 10) : 0
+
+  try {
+    // Check slug collision
+    const existing = await db.productCategory.findFirst({
+      where: {
+        OR: [
+          { slugFa },
+          ...(slugEn ? [{ slugEn }] : []),
+        ],
+      },
+    })
+
+    if (existing) {
+      return { error: 'دسته‌بندی با این نام یا شناسه قبلاً ثبت شده است.' }
+    }
+
+    await db.productCategory.create({
+      data: {
+        nameFa,
+        nameEn,
+        slugFa,
+        slugEn,
+        descriptionFa,
+        descriptionEn,
+        sortOrder: isNaN(sortOrder) ? 0 : sortOrder,
+        isActive,
+      },
+    })
+
+    revalidatePath('/[locale]/admin/products', 'page')
+    revalidatePath('/[locale]/shop', 'page')
+    return { success: true, message: 'دسته‌بندی جدید با موفقیت ایجاد شد.' }
+  } catch (err: unknown) {
+    console.error('Error creating product category:', err)
+    return { error: 'خطا در ایجاد دسته‌بندی.' }
+  }
+}
+
+export async function updateCategoryAction(categoryId: string, formData: FormData): Promise<CategoryActionState> {
+  const session = await getSession()
+  if (!session) return { error: 'دسترسی غیرمجاز.' }
+
+  const nameFa = formData.get('nameFa')?.toString().trim()
+  const nameEn = formData.get('nameEn')?.toString().trim() || null
+  const descriptionFa = formData.get('descriptionFa')?.toString().trim() || null
+  const descriptionEn = formData.get('descriptionEn')?.toString().trim() || null
+  const sortOrderStr = formData.get('sortOrder')?.toString().trim()
+  const isActive = formData.get('isActive') === 'true' || formData.get('isActive') === 'on'
+
+  if (!nameFa) {
+    return { error: 'نام فارسی دسته‌بندی الزامی است.' }
+  }
+
+  const sortOrder = sortOrderStr ? parseInt(sortOrderStr, 10) : 0
+
+  try {
+    await db.productCategory.update({
+      where: { id: categoryId },
+      data: {
+        nameFa,
+        nameEn,
+        descriptionFa,
+        descriptionEn,
+        sortOrder: isNaN(sortOrder) ? 0 : sortOrder,
+        isActive,
+      },
+    })
+
+    revalidatePath('/[locale]/admin/products', 'page')
+    revalidatePath('/[locale]/shop', 'page')
+    return { success: true, message: 'دسته‌بندی با موفقیت ویرایش شد.' }
+  } catch (err: unknown) {
+    console.error('Error updating category:', err)
+    return { error: 'خطا در ویرایش دسته‌بندی.' }
+  }
+}
+
+export async function deleteCategoryAction(categoryId: string): Promise<CategoryActionState> {
+  const session = await getSession()
+  if (!session) return { error: 'دسترسی غیرمجاز.' }
+
+  try {
+    // Check if category has products
+    const productCount = await db.product.count({
+      where: { categoryId },
+    })
+
+    if (productCount > 0) {
+      return {
+        error: `این دسته‌بندی دارای ${productCount} محصول است. ابتدا محصولات مربوطه را حذف یا به دسته دیگری منتقل کنید.`,
+      }
+    }
+
+    await db.productCategory.delete({
+      where: { id: categoryId },
+    })
+
+    revalidatePath('/[locale]/admin/products', 'page')
+    revalidatePath('/[locale]/shop', 'page')
+    return { success: true, message: 'دسته‌بندی با موفقیت حذف گردید.' }
+  } catch (err: unknown) {
+    console.error('Error deleting category:', err)
+    return { error: 'خطا در حذف دسته‌بندی.' }
+  }
+}
+
