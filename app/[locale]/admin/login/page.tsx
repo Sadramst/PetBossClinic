@@ -34,12 +34,6 @@ export default function AdminLoginPage() {
     })
   }
 
-  const fillCredentials = (userEmail: string, userPass: string) => {
-    setEmail(userEmail)
-    setPassword(userPass)
-    setError(null)
-  }
-
   return (
     <div className="min-h-screen flex flex-col justify-center items-center px-4 py-12 bg-[#121418] text-[#F3F4F6] relative overflow-hidden">
       {/* Subtle luxury glow effect */}
@@ -91,7 +85,7 @@ export default function AdminLoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="superadmin@petboss.com"
+                placeholder="admin@petbossclinic.com"
                 className="w-full px-4 py-2.5 rounded-xl bg-[#121418] border border-border focus:border-primary focus:ring-1 focus:ring-primary text-sm text-foreground placeholder:text-muted-foreground/40 outline-none transition-all"
                 dir="ltr"
               />
@@ -123,29 +117,6 @@ export default function AdminLoginPage() {
               {isPending ? t('loggingIn') : t('loginButton')}
             </button>
           </form>
-
-          {/* Preset Roles Demo / Prototype Quick Fill */}
-          <div className="mt-6 pt-5 border-t border-border/60">
-            <p className="text-[11px] text-muted-foreground mb-3 text-center">
-              {t('demoCredentialsNotice')}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => fillCredentials('superadmin@petboss.com', 'SuperAdmin@PetBoss2026!')}
-                className="px-3 py-2 rounded-lg bg-surface-elevated hover:bg-primary/20 border border-primary/30 text-[11px] text-foreground transition-all text-center"
-              >
-                👑 {t('superAdminBadge')}
-              </button>
-              <button
-                type="button"
-                onClick={() => fillCredentials('admin@petboss.com', 'Admin@PetBoss2026!')}
-                className="px-3 py-2 rounded-lg bg-surface-elevated hover:bg-primary/20 border border-border text-[11px] text-foreground transition-all text-center"
-              >
-                🩺 {t('adminBadge')}
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Back Link */}

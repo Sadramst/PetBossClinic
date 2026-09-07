@@ -139,14 +139,14 @@ describe('Pet Boss Veterinary Clinic — End-to-End Business Scenarios', () => {
       id: 'usr_super_1',
       email: 'superadmin@petboss.com',
       role: 'SUPER_ADMIN',
-      passwordHash: hashPassword('SuperAdmin@PetBoss2026!'),
+      passwordHash: hashPassword('MockSecretAdminPass#1!'),
     }
 
     const clinicAdmin: SystemUser = {
       id: 'usr_admin_2',
       email: 'admin@petboss.com',
       role: 'ADMIN',
-      passwordHash: hashPassword('Admin@PetBoss2026!'),
+      passwordHash: hashPassword('MockSecretClinicPass#2!'),
     }
 
     function canManageUsers(user: SystemUser): boolean {
@@ -168,8 +168,8 @@ describe('Pet Boss Veterinary Clinic — End-to-End Business Scenarios', () => {
     })
 
     it('verifies password authentication for both administrative tiers', () => {
-      expect(verifyPassword('SuperAdmin@PetBoss2026!', superAdmin.passwordHash)).toBe(true)
-      expect(verifyPassword('Admin@PetBoss2026!', clinicAdmin.passwordHash)).toBe(true)
+      expect(verifyPassword('MockSecretAdminPass#1!', superAdmin.passwordHash)).toBe(true)
+      expect(verifyPassword('MockSecretClinicPass#2!', clinicAdmin.passwordHash)).toBe(true)
 
       // Test incorrect password
       expect(verifyPassword('WrongPass', superAdmin.passwordHash)).toBe(false)

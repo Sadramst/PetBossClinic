@@ -39,24 +39,12 @@ The bilingual web platform and administrative portal for **Pet Boss Clinic (کل
 - `setSessionCookie()` / `clearSessionCookie()`: Secure HTTP-only cookies (`petboss_session`).
 - `hasRoleAccess()`: Granular role hierarchy (`SUPER_ADMIN` > `ADMIN` > `EDITOR` > `AUTHOR` > `VIEWER`).
 
-### Seeded Administrative Accounts
-- **Super Administrator**:
-  - **Email**: `superadmin@petboss.com`
-  - **Password**: `SuperAdmin@PetBoss2026!`
-  - **Role**: `SUPER_ADMIN`
-  - **Permissions**: Full system control, exclusive access to `/admin/users` to create/delete users and adjust accessibility levels.
-- **Clinic Administrator**:
-  - **Email**: `admin@petboss.com`
-  - **Password**: `Admin@PetBoss2026!`
-  - **Role**: `ADMIN`
-  - **Permissions**: Manages clinic services, divisions, staff members, boutique products, CRM leads, and contact messages. Blocked from user management.
-- **Content Editor**:
-  - **Email**: `editor@petboss.com`
-  - **Password**: `Editor@PetBoss2026!`
-  - **Role**: `EDITOR`
+### Administrative Access & Security
+- Administrative access is guarded by role hierarchy (`SUPER_ADMIN` > `ADMIN` > `EDITOR` > `AUTHOR` > `VIEWER`).
+- Users and roles are managed exclusively in `/admin/users` by Super Administrators.
 
 ### Admin Portal Pages
-- `/admin/login`: Bilingual luxury login interface with 1-click test credential fill.
+- `/admin/login`: Bilingual luxury login interface with secure session management.
 - `/admin/users`: User management panel for Super Admin with role assignment, user listing, and self-deletion protection.
 - `/admin/layout.tsx`: Navigation bar with role badges, full-screen login isolation, and secure logout action.
 

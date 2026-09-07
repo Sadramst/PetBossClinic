@@ -467,9 +467,8 @@ async function main() {
   })
 
   // ─── Identity & Admin Users ─────────────────────────
-  const superAdminPassword = hashPassword('SuperAdmin@PetBoss2026!')
-  const adminPassword = hashPassword('Admin@PetBoss2026!')
-  const editorPassword = hashPassword('Editor@PetBoss2026!')
+  const adminSecret = process.env.INITIAL_ADMIN_PASSWORD || 'PetBoss#Clinic2026!Admin'
+  const superAdminPassword = hashPassword(adminSecret)
 
   await prisma.user.upsert({
     where: { email: 'superadmin@petboss.com' },
@@ -486,37 +485,7 @@ async function main() {
     },
   })
 
-  await prisma.user.upsert({
-    where: { email: 'admin@petboss.com' },
-    update: {
-      password: adminPassword,
-      role: 'ADMIN',
-      name: 'مدیر کلینیک (Clinic Admin)',
-    },
-    create: {
-      email: 'admin@petboss.com',
-      password: adminPassword,
-      role: 'ADMIN',
-      name: 'مدیر کلینیک (Clinic Admin)',
-    },
-  })
-
-  await prisma.user.upsert({
-    where: { email: 'editor@petboss.com' },
-    update: {
-      password: editorPassword,
-      role: 'EDITOR',
-      name: 'کارشناس محتوا (Content Editor)',
-    },
-    create: {
-      email: 'editor@petboss.com',
-      password: editorPassword,
-      role: 'EDITOR',
-      name: 'کارشناس محتوا (Content Editor)',
-    },
-  })
-
-  console.log('Seeded users: superadmin@petboss.com, admin@petboss.com, editor@petboss.com')
+  console.log('Seeded superadmin account securely.')
   console.log('Seeding finished successfully! ✅')
 }
 

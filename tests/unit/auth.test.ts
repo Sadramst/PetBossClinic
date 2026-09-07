@@ -9,7 +9,7 @@ import {
 
 describe('Authentication & Cryptographic Security Tests', () => {
   it('correctly hashes passwords with unique salts', () => {
-    const password = 'SuperAdmin@PetBoss2026!'
+    const password = 'TestSecretHashSalt#2026!'
     const hash1 = hashPassword(password)
     const hash2 = hashPassword(password)
 
@@ -19,7 +19,7 @@ describe('Authentication & Cryptographic Security Tests', () => {
   })
 
   it('successfully verifies correct password against hash', () => {
-    const password = 'Admin@PetBoss2026!'
+    const password = 'TestSecretVerifyPassword#2026!'
     const hash = hashPassword(password)
 
     expect(verifyPassword(password, hash)).toBe(true)

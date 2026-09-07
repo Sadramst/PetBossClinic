@@ -258,7 +258,6 @@
     "adminBadge": "مدیر کلینیک",
     "editorBadge": "کارشناس محتوا",
     "roleAccessDesc": "مدیر ارشد توانایی تعریف و تنظیم سطوح دسترسی سایر کاربران را دارد.",
-    "demoCredentialsNotice": "حساب‌های آزمایشی: superadmin@petboss.com و admin@petboss.com با رمز عبور مشخص",
     "name": "نام و نام خانوادگی",
     "role": "سطح دسترسی (نقش)",
     "actions": "عملیات",

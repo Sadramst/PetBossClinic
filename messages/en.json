@@ -258,7 +258,6 @@
     "adminBadge": "Clinic Admin",
     "editorBadge": "Content Editor",
     "roleAccessDesc": "Super Admin has full authority to manage users and configure access levels.",
-    "demoCredentialsNotice": "Demo test accounts: superadmin@petboss.com & admin@petboss.com with preset passwords",
     "name": "Full Name",
     "role": "Access Level (Role)",
     "actions": "Actions",
