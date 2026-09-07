@@ -2,12 +2,12 @@
 
 import { db } from '@/lib/db'
 import { verifyPassword, createSessionToken, setSessionCookie, clearSessionCookie, getSession } from '@/lib/auth'
-import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
 export interface AuthState {
   error?: string
   success?: boolean
+  redirectUrl?: string
 }
 
 export async function loginAction(
@@ -58,15 +58,20 @@ export async function loginAction(
     }
   }
 
-  // Redirect to admin dashboard on success
+  // Return target on success for clean client-side navigation
   const target = locale === 'en' ? '/en/admin' : '/admin'
-  redirect(target)
+  return {
+    success: true,
+    redirectUrl: target,
+  }
 }
 
 export async function logoutAction(locale: string = 'fa') {
   await clearSessionCookie()
-  const loginUrl = locale === 'en' ? '/en/admin/login' : '/admin/login'
-  redirect(loginUrl)
+  return {
+    success: true,
+    redirectUrl: locale === 'en' ? '/en/admin/login' : '/admin/login',
+  }
 }
 
 export async function getCurrentUser() {

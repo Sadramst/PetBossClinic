@@ -83,31 +83,35 @@ export default async function AboutPage({
         </div>
 
         {/* Team */}
-        <div className="text-center mb-12">
-          <span className="badge-pill-outline mb-3">{t('teamBadge')}</span>
-          <h2 className="text-3xl font-extrabold text-foreground mb-4">{t('teamTitle')}</h2>
-          <p className="text-muted-foreground max-w-xl mx-auto text-base">{t('teamSubtitle')}</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {staff.map((member) => {
-            const mName = isEn ? (member.nameEn || member.nameFa) : member.nameFa;
-            const mTitle = isEn ? (member.titleEn || member.titleFa) : member.titleFa;
-            const mBio = isEn ? (member.bioEn || member.bioFa) : member.bioFa;
+        {staff.length > 0 && (
+          <>
+            <div className="text-center mb-12">
+              <span className="badge-pill-outline mb-3">{t('teamBadge')}</span>
+              <h2 className="text-3xl font-extrabold text-foreground mb-4">{t('teamTitle')}</h2>
+              <p className="text-muted-foreground max-w-xl mx-auto text-base">{t('teamSubtitle')}</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {staff.map((member) => {
+                const mName = isEn ? (member.nameEn || member.nameFa) : member.nameFa;
+                const mTitle = isEn ? (member.titleEn || member.titleFa) : member.titleFa;
+                const mBio = isEn ? (member.bioEn || member.bioFa) : member.bioFa;
 
-            return (
-              <div key={member.id} className="card-luxury p-6 text-center">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-surface-elevated border-2 border-border-gold flex items-center justify-center text-primary text-2xl font-bold shadow-gold">
-                  {mName.charAt(0)}
-                </div>
-                <h3 className="text-lg font-bold text-foreground mb-1">{mName}</h3>
-                <p className="text-xs text-primary font-semibold mb-2">{mTitle}</p>
-                {mBio && (
-                  <p className="text-xs text-muted-foreground leading-relaxed">{mBio}</p>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                return (
+                  <div key={member.id} className="card-luxury p-6 text-center">
+                    <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-surface-elevated border-2 border-border-gold flex items-center justify-center text-primary text-2xl font-bold shadow-gold">
+                      {mName.charAt(0)}
+                    </div>
+                    <h3 className="text-lg font-bold text-foreground mb-1">{mName}</h3>
+                    <p className="text-xs text-primary font-semibold mb-2">{mTitle}</p>
+                    {mBio && (
+                      <p className="text-xs text-muted-foreground leading-relaxed">{mBio}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

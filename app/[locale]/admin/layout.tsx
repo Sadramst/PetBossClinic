@@ -49,6 +49,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isEn = locale === 'en';
   const t = useTranslations('Admin');
 
+  const handleLogout = async () => {
+    const res = await logoutAction(locale);
+    window.location.href = res?.redirectUrl || (isEn ? '/en/admin/login' : '/admin/login');
+  };
+
   // If viewing the login page, render full screen without sidebar
   if (pathname.includes('/admin/login')) {
     return <>{children}</>;
@@ -114,7 +119,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
 
           <button
-            onClick={() => logoutAction(locale)}
+            onClick={handleLogout}
             className="w-full flex items-center gap-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1.5 rounded-lg transition-colors cursor-pointer"
           >
             <span>🚪</span>
@@ -156,7 +161,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {t('viewSite')} {isEn ? '→' : '←'}
             </Link>
             <button
-              onClick={() => logoutAction(locale)}
+              onClick={handleLogout}
               className="text-xs px-2.5 py-1 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
               title={t('logout')}
             >

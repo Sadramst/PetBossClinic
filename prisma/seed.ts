@@ -207,31 +207,6 @@ async function main() {
     ]
   })
 
-  // ─── Staff — Placeholder entries (admin-addable) ──────
-  await prisma.staffMember.createMany({
-    data: [
-      {
-        nameFa: 'دکتر [نام دامپزشک]',
-        nameEn: 'Dr. [Vet Name]',
-        titleFa: 'دامپزشک متخصص — جراحی',
-        titleEn: 'Veterinary Surgeon',
-        bioFa: 'متخصص جراحی بافت نرم و سخت با بیش از ۱۰ سال تجربه در کلینیک‌های معتبر تهران.',
-        bioEn: 'Specialist in soft and hard tissue surgery with over 10 years of experience in top Tehran clinics.',
-        isActive: true,
-        sortOrder: 1,
-      },
-      {
-        nameFa: 'دکتر [نام دامپزشک]',
-        nameEn: 'Dr. [Vet Name]',
-        titleFa: 'دامپزشک متخصص — بیماری‌های داخلی',
-        titleEn: 'Internal Medicine Specialist',
-        bioFa: 'فارغ‌التحصیل دانشگاه تهران، متخصص بیماری‌های داخلی و تشخیص با سونوگرافی.',
-        bioEn: 'Graduate of University of Tehran, specialist in internal medicine and ultrasound diagnosis.',
-        isActive: true,
-        sortOrder: 2,
-      },
-    ]
-  })
 
   // ─── Social Links ──────────────────────────────────────
   await prisma.socialLink.createMany({

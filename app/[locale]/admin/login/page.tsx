@@ -28,6 +28,8 @@ export default function AdminLoginPage() {
       const res = await loginAction(undefined, formData)
       if (res?.error) {
         setError(res.error)
+      } else if (res?.redirectUrl) {
+        window.location.href = res.redirectUrl
       }
     })
   }

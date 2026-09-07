@@ -84,7 +84,6 @@ export default async function HomePage({
             <LuxuryPillBadge variant="gold">{t('specializedSurgery')}</LuxuryPillBadge>
             <LuxuryPillBadge variant="gold">{t('dentistry')}</LuxuryPillBadge>
             <LuxuryPillBadge variant="gold">{t('internalMedicine')}</LuxuryPillBadge>
-            <LuxuryPillBadge variant="gold">{t('hospitalization')}</LuxuryPillBadge>
             <LuxuryPillBadge variant="gold">{t('luxuryShop')}</LuxuryPillBadge>
           </div>
 
@@ -278,95 +277,98 @@ export default async function HomePage({
       </section>
 
       {/* ═══ VETERINARY TEAM ═══ */}
-      <section className="section-padding bg-surface border-y border-border/60">
-        <div className="container-site">
-          <div className="text-center mb-16">
-            <span className="badge-pill-outline mb-3">{t('teamBadge')}</span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-4">
-              {t('teamTitle')}
-            </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto text-base">
-              {t('teamSubtitle')}
-            </p>
-          </div>
+      {staff.length > 0 && (
+        <section className="section-padding bg-surface border-y border-border/60">
+          <div className="container-site">
+            <div className="text-center mb-16">
+              <span className="badge-pill-outline mb-3">{t('teamBadge')}</span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-4">
+                {t('teamTitle')}
+              </h2>
+              <p className="text-muted-foreground max-w-xl mx-auto text-base">
+                {t('teamSubtitle')}
+              </p>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {staff.map((vet) => {
-              const vName = isEn ? (vet.nameEn || vet.nameFa) : vet.nameFa;
-              const vTitle = isEn ? (vet.titleEn || vet.titleFa) : vet.titleFa;
-              const vSpecialty = isEn ? (vet.specialtyEn || vet.specialtyFa) : vet.specialtyFa;
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {staff.map((vet) => {
+                const vName = isEn ? (vet.nameEn || vet.nameFa) : vet.nameFa;
+                const vTitle = isEn ? (vet.titleEn || vet.titleFa) : vet.titleFa;
+                const vSpecialty = isEn ? (vet.specialtyEn || vet.specialtyFa) : vet.specialtyFa;
 
-              return (
-                <div key={vet.id} className="card-luxury p-6 text-center flex flex-col items-center">
-                  <div className="w-24 h-24 rounded-full bg-surface-elevated border-2 border-border-gold flex items-center justify-center text-primary mb-5 shadow-gold overflow-hidden">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                return (
+                  <div key={vet.id} className="card-luxury p-6 text-center flex flex-col items-center">
+                    <div className="w-24 h-24 rounded-full bg-surface-elevated border-2 border-border-gold flex items-center justify-center text-primary mb-5 shadow-gold overflow-hidden">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <h3 className="text-lg font-bold text-foreground mb-1">{vName}</h3>
+                    <p className="text-xs font-semibold text-primary mb-2">{vTitle}</p>
+                    {vSpecialty && (
+                      <p className="text-xs text-muted-foreground mb-3">{vSpecialty}</p>
+                    )}
+                    {vet.licenseNo && (
+                      <span className="text-[10px] text-muted-foreground bg-surface-elevated px-2.5 py-1 rounded-full border border-border">
+                        {t('medicalLicense')}: {vet.licenseNo}
+                      </span>
+                    )}
                   </div>
-                  <h3 className="text-lg font-bold text-foreground mb-1">{vName}</h3>
-                  <p className="text-xs font-semibold text-primary mb-2">{vTitle}</p>
-                  {vSpecialty && (
-                    <p className="text-xs text-muted-foreground mb-3">{vSpecialty}</p>
-                  )}
-                  {vet.licenseNo && (
-                    <span className="text-[10px] text-muted-foreground bg-surface-elevated px-2.5 py-1 rounded-full border border-border">
-                      {t('medicalLicense')}: {vet.licenseNo}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ═══ TESTIMONIALS ═══ */}
-      <section className="section-padding bg-background">
-        <div className="container-site">
-          <div className="text-center mb-16">
-            <span className="badge-pill-outline mb-3">
-              {isEn ? 'Client Satisfaction' : 'رضایت مراجعین'}
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-4">
-              {t('testimonialsTitle')}
-            </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto text-base">
-              {t('testimonialsSubtitle')}
-            </p>
-          </div>
+      {testimonials.length > 0 && (
+        <section className="section-padding bg-background">
+          <div className="container-site">
+            <div className="text-center mb-16">
+              <span className="badge-pill-outline mb-3">
+                {isEn ? 'Client Satisfaction' : 'رضایت مراجعین'}
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-4">
+                {t('testimonialsTitle')}
+              </h2>
+              <p className="text-muted-foreground max-w-xl mx-auto text-base">
+                {t('testimonialsSubtitle')}
+              </p>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((item) => {
-              const tName = isEn ? (item.nameEn || item.nameFa) : item.nameFa;
-              const tContent = isEn ? (item.contentEn || item.contentFa) : item.contentFa;
-              return (
-                <Card key={item.id} className="card-luxury p-6 flex flex-col justify-between">
-                  <div>
-                    {/* Golden Stars */}
-                    <div className="flex items-center gap-1 mb-4 text-primary">
-                      {[...Array(item.rating || 5)].map((_, i) => (
-                        <svg key={i} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                      ))}
-                    </div>
-                    <p className="text-sm text-foreground/90 leading-relaxed mb-6 italic">
-                      «{tContent}»
-                    </p>
-                  </div>
-                  <div className="pt-4 border-t border-border flex items-center justify-between text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {testimonials.map((item) => {
+                const tName = isEn ? (item.nameEn || item.nameFa) : item.nameFa;
+                const tContent = isEn ? (item.contentEn || item.contentFa) : item.contentFa;
+                return (
+                  <Card key={item.id} className="card-luxury p-6 flex flex-col justify-between">
                     <div>
-                      <span className="font-bold text-foreground block">{tName}</span>
-                      <span className="text-muted-foreground text-[11px]">
-                        {isEn ? 'Clinic Patient Parent' : 'مراجعه‌کننده به کلینیک'}
+                      <div className="flex items-center gap-1 mb-4 text-primary">
+                        {[...Array(item.rating || 5)].map((_, i) => (
+                          <svg key={i} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        ))}
+                      </div>
+                      <p className="text-sm text-foreground/90 leading-relaxed mb-6 italic">
+                        «{tContent}»
+                      </p>
+                    </div>
+                    <div className="pt-4 border-t border-border flex items-center justify-between text-xs">
+                      <div>
+                        <span className="font-bold text-foreground block">{tName}</span>
+                        <span className="text-muted-foreground text-[11px]">
+                          {isEn ? 'Clinic Patient Parent' : 'مراجعه‌کننده به کلینیک'}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded">
+                        {isEn ? 'Verified Client' : 'مراجع کلینیک'}
                       </span>
                     </div>
-                    <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded">
-                      {isEn ? 'Verified Client' : 'مراجع کلینیک'}
-                    </span>
-                  </div>
-                </Card>
-              );
-            })}
+                  </Card>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ═══ FAQS ACCORDION ═══ */}
       <section className="section-padding bg-surface border-t border-border/60">
