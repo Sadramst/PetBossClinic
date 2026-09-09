@@ -8,6 +8,7 @@ import { Outfit, Vazirmatn } from 'next/font/google';
 import { ThemeProvider, ThemePreset } from '@/lib/theme';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
+import { getClinicNAP } from '@/lib/clinic/nap';
 
 const outfit = Outfit({
   subsets: ['latin'],
@@ -76,6 +77,7 @@ export default async function LocaleLayout({
       : 'petboss-luxury-dark';
 
   const fontClass = locale === 'fa' ? vazirmatn.className : outfit.className;
+  const nap = await getClinicNAP();
 
   return (
     <html lang={locale} dir={locale === 'fa' ? 'rtl' : 'ltr'} data-theme={initialTheme} suppressHydrationWarning>
@@ -92,7 +94,7 @@ export default async function LocaleLayout({
           <NextIntlClientProvider messages={messages}>
             <Header />
             <main className="flex-grow">{children}</main>
-            <Footer />
+            <Footer nap={nap} />
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

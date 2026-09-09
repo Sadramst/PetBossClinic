@@ -2,6 +2,8 @@ import { Metadata } from 'next'
 import { db } from '@/lib/db'
 import { ShopCatalogClient } from '@/components/shop'
 
+export const revalidate = 60;
+
 export async function generateMetadata({
   params,
 }: {

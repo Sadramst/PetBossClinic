@@ -1,6 +1,9 @@
 import { getTranslations } from "next-intl/server";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { LeadForm } from "@/components/forms/lead-form";
+import { getClinicNAP } from "@/lib/clinic/nap";
+
+export const revalidate = 60;
 
 export default async function ContactPage({
   params,
@@ -9,7 +12,10 @@ export default async function ContactPage({
 }) {
   const { locale } = await params;
   const isEn = locale === 'en';
-  const t = await getTranslations('Contact');
+  const [t, nap] = await Promise.all([
+    getTranslations('Contact'),
+    getClinicNAP(),
+  ]);
 
   return (
     <div className="section-padding bg-background">
@@ -35,23 +41,23 @@ export default async function ContactPage({
             <div className="card-luxury p-8 space-y-6">
               <div>
                 <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-1.5">{t('addressTitle')}</h3>
-                <p className="text-sm text-foreground/90 leading-relaxed">{t('addressText')}</p>
+                <p className="text-sm text-foreground/90 leading-relaxed">{isEn ? nap.addressEn : nap.addressFa}</p>
               </div>
               <div>
                 <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-1.5">{t('phoneTitle')}</h3>
-                <a href="tel:+982126429715" className="text-base font-bold text-primary hover:underline dir-ltr inline-block">
-                  {isEn ? '+98 21 2642 9715' : '۰۲۱-۲۶۴۲۹۷۱۵'}
+                <a href={nap.telLink} className="text-base font-bold text-primary hover:underline dir-ltr inline-block">
+                  {isEn ? nap.phoneDisplayEn : nap.phoneDisplayFa}
                 </a>
               </div>
               <div>
                 <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-1.5">{t('emailTitle')}</h3>
-                <a href="mailto:info@petbossclinic.com" className="text-sm text-foreground/90 hover:text-primary transition-colors">
-                  info@petbossclinic.com
+                <a href={`mailto:${nap.email}`} className="text-sm text-foreground/90 hover:text-primary transition-colors">
+                  {nap.email}
                 </a>
               </div>
               <div>
                 <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-1.5">{t('hoursTitle')}</h3>
-                <p className="text-sm text-foreground/90 font-medium">{t('hoursText')}</p>
+                <p className="text-sm text-foreground/90 font-medium">{isEn ? nap.workingHoursSummaryEn : nap.workingHoursSummaryFa}</p>
               </div>
             </div>
 

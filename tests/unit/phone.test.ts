@@ -75,7 +75,7 @@ describe('Iranian Phone Utility & Normalization (lib/utils/phone.ts)', () => {
 
   it('generates correct tel: and wa.me links', () => {
     expect(getTelLink('02126429715')).toBe('tel:+982126429715')
-    expect(getWhatsAppLink('09122642971')).toBe('https://wa.me/989122642971')
-    expect(getWhatsAppLink('09122642971', 'سلام نوبت')).toBe('https://wa.me/989122642971?text=%D8%B3%D9%84%D8%A7%D9%85%20%D9%86%D9%88%D8%A8%D8%AA')
+    expect(getWhatsAppLink('09123456789')).toBe('https://wa.me/989123456789')
+    expect(getWhatsAppLink('09123456789', 'سلام نوبت')).toBe('https://wa.me/989123456789?text=%D8%B3%D9%84%D8%A7%D9%85%20%D9%86%D9%88%D8%A8%D8%AA')
   })
 })

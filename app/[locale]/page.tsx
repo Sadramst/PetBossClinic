@@ -7,6 +7,9 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PetBossLogo } from "@/components/shared/pet-boss-logo";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { getSitePictures } from "@/lib/media";
+import { getClinicNAP } from "@/lib/clinic/nap";
+
+export const revalidate = 60;
 
 export default async function HomePage({
   params,
@@ -18,7 +21,7 @@ export default async function HomePage({
   const t = await getTranslations('Home');
 
   // Fetch data from DB safely
-  const [divisions, services, staff, testimonials, faqs, sitePictures, featuredProducts] = await Promise.all([
+  const [divisions, services, staff, testimonials, faqs, sitePictures, featuredProducts, nap] = await Promise.all([
     db.division.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
@@ -51,6 +54,7 @@ export default async function HomePage({
       take: 4,
       include: { category: true },
     }),
+    getClinicNAP(),
   ]);
 
   // Division icons
@@ -534,9 +538,7 @@ export default async function HomePage({
                       {isEn ? 'Clinic Address' : 'نشانی کلینیک'}
                     </h4>
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      {isEn
-                        ? 'Shariati St., north of Sadr Bridge, near Gheytarieh Metro Station, No. 1733, Tehran, Iran'
-                        : 'تهران، خیابان شریعتی، بالاتر از پل صدر، نرسیده به ایستگاه مترو قیطریه، پلاک ۱۷۳۳'}
+                      {isEn ? nap.addressEn : nap.addressFa}
                     </p>
                   </div>
                 </div>
@@ -550,9 +552,7 @@ export default async function HomePage({
                       {isEn ? 'Working Hours' : 'ساعات کاری'}
                     </h4>
                     <p className="text-xs text-muted-foreground">
-                      {isEn
-                        ? 'Every day from 10:00 AM to 10:00 PM (including holidays)'
-                        : 'همه روزه از ۱۰:۰۰ صبح الی ۲۲:۰۰ شب (شامل روزهای تعطیل)'}
+                      {isEn ? nap.workingHoursSummaryEn : nap.workingHoursSummaryFa}
                     </p>
                   </div>
                 </div>
@@ -601,20 +601,11 @@ export default async function HomePage({
       {/* ═══ STICKY MOBILE EMERGENCY CALL BAR ═══ */}
       <div className="fixed bottom-0 inset-x-0 z-40 sm:hidden bg-surface-card/95 backdrop-blur border-t border-border-gold p-3 flex gap-3 shadow-2xl">
         <a
-          href="tel:+982126429715"
+          href={nap.telLink}
           className="flex-1 bg-gradient-gold text-charcoal-950 font-bold text-center py-3 rounded-full text-sm flex items-center justify-center gap-2 shadow-gold"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-          {isEn ? 'Emergency Call' : 'تماس فوری و اورژانس'}
-        </a>
-        <a
-          href="https://wa.me/989122642971"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-12 h-12 rounded-full bg-surface-elevated border border-border-gold flex items-center justify-center text-primary shrink-0"
-          aria-label="WhatsApp"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          {isEn ? `Emergency Call (${nap.phoneDisplayEn})` : `تماس فوری و اورژانس (${nap.phoneDisplayFa})`}
         </a>
       </div>
 

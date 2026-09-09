@@ -82,7 +82,7 @@ Injected on the homepage and contact page:
   "name": "کلینیک دامپزشکی و پت شاپ پت باس",
   "alternateName": "Pet Boss Clinic",
   "url": "https://www.petbossclinic.com",
-  "telephone": "+98-21-22000000",
+  "telephone": "+98-21-26429715",
   "priceRange": "$$",
   "image": "https://www.petbossclinic.com/icons/petboss-logo.png",
   "address": {
@@ -126,7 +126,7 @@ When users submit an inquiry form, the system captures:
 - Stored directly on the `Lead` database record for end-to-end ROAS calculation.
 
 ### 5.3 Conversion Actions
-- `call_click`: Clicking phone numbers (`tel:+982122000000`)
+- `call_click`: Clicking phone numbers (`tel:+982126429715`)
 - `whatsapp_click`: Clicking floating WhatsApp buttons
 - `direction_click`: Clicking Google Maps / Waze direction links
 - `lead_submit`: Submitting appointment inquiry forms

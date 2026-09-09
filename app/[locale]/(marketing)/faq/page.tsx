@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 
+export const revalidate = 60;
+
 export default async function FaqPage({
   params,
 }: {

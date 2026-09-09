@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import { useLocale } from 'next-intl'
+import { Link } from '@/i18n/routing'
 import { StockStatus } from '@prisma/client'
 
 export interface ShopCategory {
@@ -109,15 +110,6 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
     navigator.clipboard.writeText(sku)
     setCopiedSku(sku)
     setTimeout(() => setCopiedSku(null), 2000)
-  }
-
-  // Create WhatsApp order URL
-  const getWhatsAppUrl = (product: ShopProduct) => {
-    const text = isEn
-      ? `Hello Pet Boss Clinic. I would like to inquire about/order:\nProduct: ${product.nameEn || product.nameFa}\nSKU: ${product.sku || 'N/A'}\nPrice: ${formatPrice(product.price)}`
-      : `سلام و وقت بخیر، قصد خرید و استعلام محصول زیر از پت‌شاپ پت باس را دارم:\nنام محصول: ${product.nameFa}\nکد کالا: ${product.sku || '---'}\nقیمت: ${formatPrice(product.price)}`
-
-    return `https://wa.me/989122642971?text=${encodeURIComponent(text)}`
   }
 
   return (
@@ -470,13 +462,11 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
                         </button>
 
                         <a
-                          href={getWhatsAppUrl(product)}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          href="tel:+982126429715"
                           className="w-full py-2 px-2 rounded-xl bg-gradient-gold hover:opacity-95 text-charcoal-950 text-xs font-bold text-center shadow-gold transition-all flex items-center justify-center gap-1.5"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                          <span>{isEn ? 'Order' : 'سفارش'}</span>
+                          <span>{isEn ? 'Call Clinic' : 'تماس و سفارش'}</span>
                         </a>
                       </div>
                     </div>
@@ -517,15 +507,13 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
                 <span>{isEn ? 'Call Clinic Reception (021-26429715)' : 'تماس با پذیرش کلینیک (۰۲۱-۲۶۴۲۹۷۱۵)'}</span>
               </a>
 
-              <a
-                href="https://wa.me/989122642971"
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href="/contact"
                 className="px-6 py-3.5 rounded-full bg-surface-card border border-border-gold text-foreground font-bold text-xs sm:text-sm text-center hover:border-primary transition-all flex items-center justify-center gap-2"
               >
-                <span>💬</span>
-                <span>{isEn ? 'Inquire on WhatsApp' : 'مشاوره آنلاین در واتساپ'}</span>
-              </a>
+                <span>📝</span>
+                <span>{isEn ? 'Submit Online Inquiry' : 'استعلام آنلاین و مشاوره'}</span>
+              </Link>
             </div>
           </div>
         </div>
@@ -648,19 +636,16 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <a
                   href="tel:+982126429715"
-                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl border border-border text-foreground hover:border-primary text-xs font-bold text-center transition-colors"
-                >
-                  📞 {isEn ? 'Call Reception' : 'تماس تلفنی'}
-                </a>
-                <a
-                  href={getWhatsAppUrl(activeModalProduct)}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-gradient-gold text-charcoal-950 font-bold text-xs text-center shadow-gold hover:opacity-90 transition-all flex items-center justify-center gap-2"
                 >
-                  <span>💬</span>
-                  <span>{isEn ? 'Order via WhatsApp' : 'سفارش در واتساپ'}</span>
+                  📞 {isEn ? 'Call Reception (021-26429715)' : 'تماس با پذیرش (۰۲۱-۲۶۴۲۹۷۱۵)'}
                 </a>
+                <Link
+                  href="/contact"
+                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl border border-border text-foreground hover:border-primary text-xs font-bold text-center transition-colors"
+                >
+                  📝 {isEn ? 'Online Inquiry' : 'استعلام آنلاین'}
+                </Link>
               </div>
             </div>
           </div>

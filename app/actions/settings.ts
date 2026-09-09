@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 
 export interface SettingsActionState {
   error?: string
@@ -59,6 +59,9 @@ export async function updateSiteSettingsAction(formData: FormData): Promise<Sett
       })
     }
 
+    revalidateTag('site-settings')
+    revalidateTag('clinic-nap')
+    revalidatePath('/', 'layout')
     revalidatePath('/[locale]/admin/settings', 'page')
     revalidatePath('/[locale]', 'page')
     return { success: true, message: 'تنظیمات کلینیک با موفقیت ذخیره شد.' }

@@ -4,6 +4,8 @@ import { getTranslations } from "next-intl/server";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { getSitePictures } from "@/lib/media";
 
+export const revalidate = 60;
+
 export default async function AboutPage({
   params,
 }: {

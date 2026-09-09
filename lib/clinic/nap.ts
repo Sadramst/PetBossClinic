@@ -1,11 +1,14 @@
 /**
  * @file nap.ts
- * @description Centralized single-source-of-truth for Name, Address, Phone (NAP),
- * Working Hours, and Social Links. Read from DB with fallback defaults.
+ * @description Dynamic database accessor for Clinic Name, Address, Phone (NAP),
+ * Working Hours, and Social Links.
+ * Resolves directly from `SiteSetting` and `WorkingHour` in the database,
+ * cached with Next.js `unstable_cache` with tag-based on-demand revalidation.
  */
 
+import { unstable_cache } from 'next/cache';
 import { db } from '@/lib/db';
-import { formatPhoneDisplay, getTelLink, getWhatsAppLink, toPersianDigits } from '@/lib/utils/phone';
+import { formatPhoneDisplay, getTelLink, toPersianDigits } from '@/lib/utils/phone';
 
 export interface WorkingHourItem {
   dayOfWeek: number;
@@ -23,8 +26,8 @@ export interface ClinicNAP {
   phoneDisplayFa: string;
   phoneDisplayEn: string;
   telLink: string;
-  whatsappNumber: string;
-  whatsappLink: string;
+  whatsappNumber: string | null;
+  whatsappLink: string | null;
   email: string;
   addressFa: string;
   addressEn: string;
@@ -35,8 +38,8 @@ export interface ClinicNAP {
   workingHoursSummaryFa: string;
   workingHoursSummaryEn: string;
   workingHours: WorkingHourItem[];
-  instagramUrl: string;
-  telegramUrl: string;
+  instagramUrl: string | null;
+  telegramUrl: string | null;
 }
 
 const DAY_LABELS = [
@@ -49,134 +52,132 @@ const DAY_LABELS = [
   { fa: 'جمعه', en: 'Friday' },
 ];
 
-export const DEFAULT_CLINIC_NAP: ClinicNAP = {
-  nameFa: 'کلینیک تخصصی دامپزشکی و پت‌شاپ پت‌باس',
-  nameEn: 'Pet Boss Clinic & Luxury Pet Shop',
-  phone: '+982126429715',
-  phoneDisplayFa: '۰۲۱-۲۶۴۲۹۷۱۵',
-  phoneDisplayEn: '+98 21 2642 9715',
-  telLink: 'tel:+982126429715',
-  whatsappNumber: '+989122642971',
-  whatsappLink: 'https://wa.me/989122642971',
-  email: 'info@petbossclinic.com',
-  addressFa: 'تهران، خیابان شریعتی، نرسیده به مترو قیطریه، پلاک ۱۷۳۳',
-  addressEn: 'No. 1733, Shariati St., near Gheytariyeh Metro Station, Tehran, Iran',
-  geo: {
-    lat: 35.790937,
-    lng: 51.4350853,
-  },
-  workingHoursSummaryFa: 'همه روزه (شنبه تا جمعه): ۱۰:۰۰ الی ۲۲:۰۰',
-  workingHoursSummaryEn: 'Everyday (Saturday to Friday): 10:00 AM – 10:00 PM',
-  workingHours: DAY_LABELS.map((label, dayOfWeek) => ({
-    dayOfWeek,
-    openTime: '10:00',
-    closeTime: '22:00',
-    isClosed: false,
-    dayLabelFa: label.fa,
-    dayLabelEn: label.en,
-  })),
-  instagramUrl: 'https://instagram.com/petbossclinic',
-  telegramUrl: 'https://t.me/petbossclinic',
-};
+/**
+ * Low-level database fetcher querying SiteSetting, WorkingHour, and SocialLink.
+ */
+async function fetchClinicNAPFromDB(): Promise<ClinicNAP> {
+  const [siteSetting, workingHoursDb, socialLinksDb] = await Promise.all([
+    db.siteSetting.findFirst().catch(() => null),
+    db.workingHour.findMany({ orderBy: { dayOfWeek: 'asc' } }).catch(() => []),
+    db.socialLink.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } }).catch(() => []),
+  ]);
+
+  // Verified defaults (landline is clinic's real number +982126429715)
+  let phone = '+982126429715';
+  let waNumber: string | null = null;
+  let waLink: string | null = null;
+  let email = 'info@petbossclinic.com';
+  let addressFa = 'تهران، خیابان شریعتی، نرسیده به مترو قیطریه، پلاک ۱۷۳۳';
+  let addressEn = 'No. 1733, Shariati St., near Gheytariyeh Metro Station, Tehran, Iran';
+  let lat = 35.790937;
+  let lng = 51.4350853;
+  let nameFa = 'کلینیک تخصصی دامپزشکی و پت‌شاپ پت‌باس';
+  let nameEn = 'Pet Boss Clinic & Luxury Pet Shop';
+
+  if (siteSetting) {
+    if (siteSetting.nameFa) nameFa = siteSetting.nameFa;
+    if (siteSetting.nameEn) nameEn = siteSetting.nameEn;
+    if (siteSetting.phones) {
+      if (Array.isArray(siteSetting.phones)) {
+        const first = siteSetting.phones[0];
+        if (typeof first === 'string' && first.trim()) {
+          phone = first.trim();
+        }
+      } else if (typeof siteSetting.phones === 'object') {
+        const p = siteSetting.phones as Record<string, string | undefined>;
+        if (p.primary || p.landline) {
+          phone = (p.primary || p.landline)!;
+        }
+        if (p.whatsapp || p.mobile) {
+          waNumber = (p.whatsapp || p.mobile)!;
+          waLink = `https://wa.me/${waNumber.replace(/\D/g, '')}`;
+        }
+      } else if (typeof siteSetting.phones === 'string') {
+        phone = siteSetting.phones;
+      }
+    }
+    if (siteSetting.emails && typeof siteSetting.emails === 'object') {
+      const e = siteSetting.emails as Record<string, string | undefined>;
+      if (e.primary || e.info) email = (e.primary || e.info)!;
+    }
+    if (siteSetting.addresses && typeof siteSetting.addresses === 'object') {
+      const a = siteSetting.addresses as Record<string, string | undefined>;
+      if (a.fa) addressFa = a.fa;
+      if (a.en) addressEn = a.en;
+    }
+    if (siteSetting.geo && typeof siteSetting.geo === 'object') {
+      const g = siteSetting.geo as Record<string, number | undefined>;
+      if (typeof g.lat === 'number' && typeof g.lng === 'number') {
+        lat = g.lat;
+        lng = g.lng;
+      }
+    }
+  }
+
+  let instagramUrl: string | null = null;
+  let telegramUrl: string | null = null;
+  for (const s of socialLinksDb) {
+    if (s.platform === 'INSTAGRAM') instagramUrl = s.url;
+    if (s.platform === 'TELEGRAM') telegramUrl = s.url;
+    if (s.platform === 'WHATSAPP' && s.url) {
+      waLink = s.url;
+      const match = s.url.match(/wa\.me\/(\d+)/);
+      if (match) waNumber = `+${match[1]}`;
+    }
+  }
+
+  const workingHours: WorkingHourItem[] = workingHoursDb.map((wh) => ({
+    dayOfWeek: wh.dayOfWeek,
+    openTime: wh.openTime,
+    closeTime: wh.closeTime,
+    isClosed: wh.isClosed,
+    dayLabelFa: DAY_LABELS[wh.dayOfWeek]?.fa || `روز ${wh.dayOfWeek}`,
+    dayLabelEn: DAY_LABELS[wh.dayOfWeek]?.en || `Day ${wh.dayOfWeek}`,
+  }));
+
+  let workingHoursSummaryFa = '۱۰:۰۰ الی ۲۲:۰۰ (همه روزه)';
+  let workingHoursSummaryEn = '10:00 AM – 10:00 PM (Everyday)';
+
+  if (workingHours.length > 0) {
+    const sample = workingHours[0];
+    const allSame = workingHours.every(
+      (wh) => !wh.isClosed && wh.openTime === sample.openTime && wh.closeTime === sample.closeTime
+    );
+    if (allSame) {
+      workingHoursSummaryFa = `همه روزه: ${toPersianDigits(sample.openTime)} الی ${toPersianDigits(sample.closeTime)}`;
+      workingHoursSummaryEn = `Everyday: ${sample.openTime} – ${sample.closeTime}`;
+    }
+  }
+
+  return {
+    nameFa,
+    nameEn,
+    phone,
+    phoneDisplayFa: formatPhoneDisplay(phone, 'fa'),
+    phoneDisplayEn: formatPhoneDisplay(phone, 'en'),
+    telLink: getTelLink(phone),
+    whatsappNumber: waNumber,
+    whatsappLink: waLink,
+    email,
+    addressFa,
+    addressEn,
+    geo: { lat, lng },
+    workingHoursSummaryFa,
+    workingHoursSummaryEn,
+    workingHours,
+    instagramUrl,
+    telegramUrl,
+  };
+}
 
 /**
- * Retrieves the unified Clinic NAP and operational hours from the database.
- * Returns verified fallback defaults if database query fails or records are unpopulated.
+ * Returns cached Clinic NAP data with tag-based invalidation.
  */
-export async function getClinicNAP(): Promise<ClinicNAP> {
-  try {
-    const [siteSetting, workingHoursDb, socialLinksDb] = await Promise.all([
-      db.siteSetting.findFirst().catch(() => null),
-      db.workingHour.findMany({ orderBy: { dayOfWeek: 'asc' } }).catch(() => []),
-      db.socialLink.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } }).catch(() => []),
-    ]);
-
-    const result = { ...DEFAULT_CLINIC_NAP };
-
-    // 1. Process Working Hours from DB (Single Source of Truth)
-    if (workingHoursDb && workingHoursDb.length > 0) {
-      result.workingHours = workingHoursDb.map((wh) => ({
-        dayOfWeek: wh.dayOfWeek,
-        openTime: wh.openTime,
-        closeTime: wh.closeTime,
-        isClosed: wh.isClosed,
-        dayLabelFa: DAY_LABELS[wh.dayOfWeek]?.fa || `روز ${wh.dayOfWeek}`,
-        dayLabelEn: DAY_LABELS[wh.dayOfWeek]?.en || `Day ${wh.dayOfWeek}`,
-      }));
-
-      // Compute consistent summary
-      const sample = workingHoursDb[0];
-      const allSame = workingHoursDb.every(
-        (wh) => !wh.isClosed && wh.openTime === sample.openTime && wh.closeTime === sample.closeTime
-      );
-
-      if (allSame && sample) {
-        result.workingHoursSummaryFa = `همه روزه (شنبه تا جمعه): ${toPersianDigits(sample.openTime)} الی ${toPersianDigits(sample.closeTime)}`;
-        result.workingHoursSummaryEn = `Everyday: ${sample.openTime} – ${sample.closeTime}`;
-      }
-    }
-
-    // 2. Process Social Links from DB
-    if (socialLinksDb && socialLinksDb.length > 0) {
-      for (const link of socialLinksDb) {
-        if (link.platform === 'INSTAGRAM' && link.url) result.instagramUrl = link.url;
-        if (link.platform === 'TELEGRAM' && link.url) result.telegramUrl = link.url;
-        if (link.platform === 'WHATSAPP' && link.url) {
-          result.whatsappLink = link.url;
-          const match = link.url.match(/wa\.me\/(\d+)/);
-          if (match) {
-            result.whatsappNumber = `+${match[1]}`;
-          }
-        }
-      }
-    }
-
-    // 3. Process Site Settings from DB
-    if (siteSetting) {
-      if (siteSetting.nameFa) result.nameFa = siteSetting.nameFa;
-      if (siteSetting.nameEn) result.nameEn = siteSetting.nameEn;
-      
-      if (siteSetting.phones && typeof siteSetting.phones === 'object') {
-        // @ts-expect-error JSON phones field
-        const primaryPhone = siteSetting.phones.primary || siteSetting.phones.landline;
-        if (primaryPhone) {
-          result.phone = primaryPhone;
-          result.phoneDisplayFa = formatPhoneDisplay(primaryPhone, 'fa');
-          result.phoneDisplayEn = formatPhoneDisplay(primaryPhone, 'en');
-          result.telLink = getTelLink(primaryPhone);
-        }
-        // @ts-expect-error JSON phones field
-        const wa = siteSetting.phones.whatsapp || siteSetting.phones.mobile;
-        if (wa) {
-          result.whatsappNumber = wa;
-          result.whatsappLink = getWhatsAppLink(wa);
-        }
-      }
-
-      if (siteSetting.emails && typeof siteSetting.emails === 'object') {
-        // @ts-expect-error JSON emails field
-        const primaryEmail = siteSetting.emails.primary || siteSetting.emails.info;
-        if (primaryEmail) result.email = primaryEmail;
-      }
-
-      if (siteSetting.addresses && typeof siteSetting.addresses === 'object') {
-        // @ts-expect-error JSON addresses field
-        if (siteSetting.addresses.fa) result.addressFa = siteSetting.addresses.fa;
-        // @ts-expect-error JSON addresses field
-        if (siteSetting.addresses.en) result.addressEn = siteSetting.addresses.en;
-      }
-
-      if (siteSetting.geo && typeof siteSetting.geo === 'object') {
-        // @ts-expect-error JSON geo field
-        if (siteSetting.geo.lat && siteSetting.geo.lng) {
-          // @ts-expect-error JSON geo field
-          result.geo = { lat: siteSetting.geo.lat, lng: siteSetting.geo.lng };
-        }
-      }
-    }
-
-    return result;
-  } catch {
-    return DEFAULT_CLINIC_NAP;
+export const getClinicNAP = unstable_cache(
+  fetchClinicNAPFromDB,
+  ['clinic-nap-cache'],
+  {
+    revalidate: 3600,
+    tags: ['site-settings', 'working-hours', 'clinic-nap'],
   }
-}
+);

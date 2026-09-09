@@ -143,7 +143,7 @@ export const devices = [
 - **Path:** Visit `/services`
 - **Assertions:**
   - Service cards display golden pill badges (`خدمات تخصصی`, `VIP`).
-  - Clicking "رزرو نوبت تلفنی" opens `tel:+982122000000` prompt on mobile.
+  - Clicking "رزرو نوبت تلفنی" opens `tel:+982126429715` prompt on mobile.
   - Submitting quick lead form creates record in PostgreSQL database.
   - Lead immediately appears in `/admin/leads` table.
 

@@ -215,5 +215,5 @@ PetBossClinic/
 - **Address**: تهران، خیابان شریعتی، بالاتر از پل صدر، نرسیده به ایستگاه مترو قیطریه، پلاک ۱۷۳۳
 - **GPS Coordinates**: `35.790937, 51.4350853`
 - **Working Hours**: همه روزه ۱۰:۰۰ صبح الی ۲۲:۰۰ شب (بدون تعطیلی)
-- **Contact Phone**: `+982126429715` / `+989122642971`
+- **Contact Phone**: `+982126429715`
 - **Designed & Developed by**: [Appilico](https://www.appilico.com.au/)

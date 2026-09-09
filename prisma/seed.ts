@@ -219,8 +219,6 @@ async function main() {
       phones: {
         primary: '+982126429715',
         landline: '+982126429715',
-        whatsapp: '+989122642971',
-        mobile: '+989122642971',
       },
       emails: {
         primary: 'info@petbossclinic.com',
@@ -247,7 +245,6 @@ async function main() {
     data: [
       { platform: 'INSTAGRAM', url: 'https://instagram.com/petbossclinic', isActive: true, sortOrder: 1 },
       { platform: 'TELEGRAM', url: 'https://t.me/petbossclinic', isActive: true, sortOrder: 2 },
-      { platform: 'WHATSAPP', url: 'https://wa.me/989122642971', isActive: true, sortOrder: 3 },
     ]
   })
 
@@ -255,8 +252,7 @@ async function main() {
   await prisma.contactChannel.createMany({
     data: [
       { type: 'PHONE', value: '+982126429715', labelFa: 'تلفن ثابت', labelEn: 'Landline', isActive: true, sortOrder: 1 },
-      { type: 'MOBILE', value: '+989122642971', labelFa: 'واتساپ و همراه', labelEn: 'WhatsApp & Mobile', isActive: true, sortOrder: 2 },
-      { type: 'EMAIL', value: 'info@petbossclinic.com', labelFa: 'ایمیل', labelEn: 'Email', isActive: true, sortOrder: 3 },
+      { type: 'EMAIL', value: 'info@petbossclinic.com', labelFa: 'ایمیل', labelEn: 'Email', isActive: true, sortOrder: 2 },
     ]
   })
 

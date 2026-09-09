@@ -3,6 +3,9 @@ import { db } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth/guard'
 import { UsersManager } from '@/components/admin/users-manager'
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface Props {
   params: Promise<{ locale: string }>
 }

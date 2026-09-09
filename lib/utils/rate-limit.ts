@@ -1,6 +1,13 @@
 /**
  * @file rate-limit.ts
- * @description In-memory sliding window rate limiter for public forms and API actions.
+ * @description Best-effort in-memory sliding window rate limiter for public forms.
+ *
+ * ARCHITECTURAL NOTICE:
+ * This limiter maintains state in local process memory. On horizontally scaled serverless
+ * environments (e.g. Vercel Serverless Functions), memory is isolated per lambda instance.
+ * It serves as an immediate, zero-dependency stopgap against bot spam and local bursts.
+ * Production-wide distributed enforcement requires centralized storage (Upstash Redis / Vercel KV),
+ * tracked for WS-4/WS-5.
  */
 
 interface RateLimitRecord {
