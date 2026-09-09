@@ -1,74 +1,31 @@
-import { describe, it, expect } from 'vitest'
+import { test, expect } from '@playwright/test'
 
-describe('Pet Boss End-to-End Simulation Tests', () => {
-  it('simulates full public visitor navigation flow: homepage -> services -> about -> contact', () => {
-    const visitorSession = {
-      currentLocale: 'fa',
-      history: [] as string[],
-      viewedServices: [] as string[],
-      formSubmitted: false,
-    }
+test.describe('Pet Boss End-to-End Navigation & Simulation Tests', () => {
+  test('simulates visitor navigation flow: homepage -> services -> about -> contact', async ({ page }) => {
+    // Land on Homepage
+    await page.goto('/')
+    await expect(page).toHaveURL(/\/(fa)?$/)
 
-    // Step 1: Land on Persian Homepage
-    visitorSession.history.push('/')
-    expect(visitorSession.history[0]).toBe('/')
+    // Switch language or browse English
+    await page.goto('/en')
+    await expect(page).toHaveURL(/\/en$/)
 
-    // Step 2: Switch language to English
-    visitorSession.currentLocale = 'en'
-    visitorSession.history.push('/en')
-    expect(visitorSession.history[1]).toBe('/en')
+    // Browse Services
+    await page.goto('/services')
+    await expect(page).toHaveURL(/\/services$/)
 
-    // Step 3: Browse Clinical Services
-    visitorSession.history.push('/en/services')
-    visitorSession.viewedServices.push('Dog & Cat Vaccination', 'Specialized Surgery')
-    expect(visitorSession.viewedServices.length).toBe(2)
+    // Visit About Us
+    await page.goto('/about')
+    await expect(page).toHaveURL(/\/about$/)
 
-    // Step 4: Visit About Us
-    visitorSession.history.push('/en/about')
-
-    // Step 5: Contact clinic for inquiry
-    visitorSession.history.push('/en/contact')
-    visitorSession.formSubmitted = true
-
-    expect(visitorSession.formSubmitted).toBe(true)
-    expect(visitorSession.history.length).toBe(5)
+    // Visit Contact
+    await page.goto('/contact')
+    await expect(page).toHaveURL(/\/contact$/)
   })
 
-  it('simulates admin login, authentication token issuance, and user management', () => {
-    const adminSession = {
-      isAuthenticated: false,
-      userRole: null as string | null,
-      accessibleRoutes: [] as string[],
-    }
-
-    // Attempt unauthorized access to /admin
-    expect(adminSession.isAuthenticated).toBe(false)
-
-    // Super Admin signs in
-    const credentials = {
-      email: 'superadmin@petboss.com',
-      role: 'SUPER_ADMIN',
-    }
-
-    adminSession.isAuthenticated = true
-    adminSession.userRole = credentials.role
-
-    if (adminSession.userRole === 'SUPER_ADMIN') {
-      adminSession.accessibleRoutes = [
-        '/admin',
-        '/admin/divisions',
-        '/admin/services',
-        '/admin/staff',
-        '/admin/products',
-        '/admin/leads',
-        '/admin/messages',
-        '/admin/users',
-        '/admin/theme',
-        '/admin/settings',
-      ]
-    }
-
-    expect(adminSession.accessibleRoutes).toContain('/admin/users')
-    expect(adminSession.accessibleRoutes).toContain('/admin/services')
+  test('simulates admin unauthorized redirection to /admin/login', async ({ page }) => {
+    await page.goto('/admin')
+    await expect(page).toHaveURL(/\/admin\/login/)
   })
 })
+
