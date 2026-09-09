@@ -113,6 +113,18 @@
   .bg-gradient-hero {
     background: var(--gradient-hero);
   }
+  [data-theme="petboss-luxury-light"] .bg-gradient-hero {
+    background: radial-gradient(circle at 50% 20%, #ffffff 0%, #fbf9f5 60%, #f1ebde 100%) !important;
+  }
+  [data-theme="emerald-prestige"] .bg-gradient-hero {
+    background: radial-gradient(circle at 50% 20%, #16362a 0%, #0d1e17 60%, #050d09 100%) !important;
+  }
+  [data-theme="royal-obsidian"] .bg-gradient-hero {
+    background: radial-gradient(circle at 50% 20%, #1c1d25 0%, #101116 60%, #050607 100%) !important;
+  }
+  [data-theme="petboss-luxury-dark"] .bg-gradient-hero {
+    background: radial-gradient(circle at 50% 20%, #252b36 0%, #1c2027 60%, #121418 100%) !important;
+  }
   .shadow-gold {
     box-shadow: var(--shadow-gold);
   }

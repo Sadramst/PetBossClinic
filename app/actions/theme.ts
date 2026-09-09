@@ -3,6 +3,7 @@
 import { db } from '@/lib/db';
 import { getSession, hasRoleAccess } from '@/lib/auth';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { cookies } from 'next/headers';
 import { ThemePreset } from '@/lib/theme/types';
 
 const VALID_THEMES: readonly ThemePreset[] = [
@@ -52,10 +53,25 @@ export async function setGlobalThemeAction(themeId: ThemePreset): Promise<ThemeA
       });
     }
 
-    // Invalidate theme caches so all visitors receive the new theme instantly
+    // Also synchronize the server-side cookie so the admin browser immediately matches
+    try {
+      const cookieStore = await cookies();
+      cookieStore.set('petboss_theme', themeId, {
+        path: '/',
+        maxAge: 31536000,
+        sameSite: 'lax',
+      });
+    } catch {
+      // Best-effort cookie setting
+    }
+
+    // Invalidate theme caches and layout across all locales
     revalidateTag('clinic-theme');
     revalidateTag('site-settings');
     revalidatePath('/', 'layout');
+    revalidatePath('/[locale]', 'layout');
+    revalidatePath('/fa', 'layout');
+    revalidatePath('/en', 'layout');
 
     return { success: true, theme: themeId };
   } catch (err: unknown) {

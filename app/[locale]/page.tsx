@@ -138,7 +138,7 @@ export default async function HomePage({
 
           {/* Luxury Reception Showcase */}
           <div className="mt-14 w-full max-w-4xl mx-auto rounded-3xl overflow-hidden border-2 border-border-gold/60 shadow-gold-lg relative group">
-            <div className="aspect-[16/9] w-full overflow-hidden bg-charcoal-900 relative">
+            <div className="aspect-[16/9] w-full overflow-hidden bg-surface relative">
               <Image
                 src={sitePictures.hero_reception}
                 alt="Pet Boss Luxury Clinic Lounge"
@@ -147,12 +147,12 @@ export default async function HomePage({
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1024px"
                 className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/90 via-charcoal-950/20 to-transparent flex items-end p-6 sm:p-8">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent flex items-end p-6 sm:p-8">
                 <div className="text-start">
                   <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/40 text-primary text-xs font-semibold backdrop-blur-md mb-2">
                     ✨ {isEn ? 'Signature Luxury Atmosphere' : 'فضای اشرافی و مدرن کلینیک'}
                   </span>
-                  <p className="text-sm sm:text-base font-bold text-foreground">
+                  <p className="text-sm sm:text-base font-bold text-white">
                     {isEn ? 'Experience world-class veterinary medicine & pet hospitality in Tehran' : 'تجربه‌ای منحصربه‌فرد از طبابت و مراقبت باکیفیت حیوانات خانگی در محیطی مجلل'}
                   </p>
                 </div>
