@@ -1,9 +1,46 @@
+import type { Metadata } from 'next';
 import { getTranslations } from "next-intl/server";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { LeadForm } from "@/components/forms/lead-form";
 import { getClinicNAP } from "@/lib/clinic/nap";
+import { BreadcrumbJsonLd, VeterinaryCareJsonLd } from "@/lib/seo/json-ld";
 
 export const revalidate = 60;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const isEn = locale === 'en';
+
+  const title = isEn
+    ? 'Contact Pet Boss Clinic | Address & Phone Gheitariyeh Tehran'
+    : 'تماس با کلینیک دامپزشکی پت باس | آدرس و شماره تلفن قیطریه تهران';
+
+  const description = isEn
+    ? 'Contact Pet Boss Veterinary Clinic in Gheitariyeh, Shariati, Tehran. Call 021-26429715 or book online. Open daily 10AM–10PM.'
+    : 'تماس با کلینیک دامپزشکی پت باس در قیطریه، خیابان شریعتی تهران. شماره تلفن ۰۲۱-۲۶۴۲۹۷۱۵. رزرو آنلاین نوبت، مشاوره و آدرس روی نقشه. همه روزه ۱۰ الی ۲۲.';
+
+  return {
+    title,
+    description,
+    keywords: isEn
+      ? ['contact Pet Boss Clinic', 'veterinary phone Tehran', 'vet clinic address Gheitariyeh', 'Pet Boss appointment']
+      : ['تماس با دامپزشکی پت باس', 'شماره تلفن دامپزشکی قیطریه', 'آدرس کلینیک پت باس شریعتی', 'رزرو نوبت دامپزشکی تهران'],
+    alternates: {
+      canonical: isEn ? '/en/contact' : '/contact',
+      languages: { 'fa-IR': '/contact', en: '/en/contact' },
+    },
+    openGraph: {
+      title,
+      description,
+      url: isEn ? '/en/contact' : '/contact',
+      images: [{ url: '/images/petboss-sign.jpg', width: 1200, height: 630 }],
+    },
+  };
+}
 
 export default async function ContactPage({
   params,
@@ -18,7 +55,16 @@ export default async function ContactPage({
   ]);
 
   return (
-    <div className="bg-background">
+    <>
+      <VeterinaryCareJsonLd nap={nap} locale={locale} />
+      <BreadcrumbJsonLd
+        items={[
+          { name: isEn ? 'Home' : 'خانه', href: '/' },
+          { name: isEn ? 'Contact' : 'تماس با ما', href: '/contact' },
+        ]}
+        locale={locale}
+      />
+      <div className="bg-background">
       {/* Dynamic Theme Top Page Header */}
       <section className="relative bg-gradient-hero text-foreground overflow-hidden border-b border-border/60 py-16 md:py-20 mb-12">
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -85,5 +131,6 @@ export default async function ContactPage({
         </div>
       </div>
     </div>
+    </>
   );
 }

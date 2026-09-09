@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { db } from '@/lib/db'
 import { ShopCatalogClient } from '@/components/shop'
+import { BreadcrumbJsonLd } from '@/lib/seo/json-ld'
 
 export const revalidate = 60;
 
@@ -23,6 +24,16 @@ export async function generateMetadata({
   return {
     title,
     description,
+    keywords: isEn
+      ? ['pet shop Tehran', 'pet shop Gheitariyeh', 'cat food Royal Canin Tehran', 'dog dry food Tehran', 'pet accessories Shariati']
+      : ['پت شاپ تهران', 'پت شاپ قیطریه', 'پت شاپ شریعتی', 'خرید غذای خشک سگ تهران', 'غذای گربه رویال کنین', 'خاک گربه قیطریه', 'لوازم حیوانات خانگی'],
+    alternates: {
+      canonical: isEn ? 'https://www.petbossclinic.com/en/shop' : 'https://www.petbossclinic.com/shop',
+      languages: {
+        'fa-IR': 'https://www.petbossclinic.com/shop',
+        en: 'https://www.petbossclinic.com/en/shop',
+      },
+    },
     openGraph: {
       title,
       description,
@@ -136,6 +147,13 @@ export default async function ShopPage({
 
   return (
     <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: isEn ? 'Home' : 'خانه', href: '/' },
+          { name: isEn ? 'Pet Shop' : 'پت‌شاپ', href: '/shop' },
+        ]}
+        locale={locale}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

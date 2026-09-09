@@ -1,3 +1,4 @@
+import { Metadata } from 'next';
 import { db } from "@/lib/db";
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
@@ -5,8 +6,44 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { getSitePictures } from "@/lib/media";
+import { BreadcrumbJsonLd, ServiceJsonLd } from '@/lib/seo/json-ld';
 
 export const revalidate = 60;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const isEn = locale === 'en';
+
+  const title = isEn
+    ? 'Veterinary Services & Pricing'
+    : 'خدمات و تعرفه‌های دامپزشکی | واکسیناسیون، جراحی، گرومینگ قیطریه تهران';
+
+  const description = isEn
+    ? 'Complete veterinary services: vaccination, surgery, orthopedics, dental care, grooming & parasite therapy at Pet Boss Clinic, Gheitariyeh Tehran.'
+    : 'خدمات جامع دامپزشکی پت باس: واکسیناسیون سگ و گربه، جراحی بافت نرم، ارتوپدی، دندانپزشکی، گرومینگ حرفه‌ای و انگل‌درمانی در قیطریه تهران.';
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: isEn ? '/en/services' : '/services',
+      languages: {
+        'fa-IR': '/services',
+        en: '/en/services',
+      },
+    },
+    openGraph: {
+      title,
+      description,
+      url: isEn ? '/en/services' : '/services',
+      images: [{ url: '/images/veterinarian.jpg', width: 1200, height: 630 }],
+    },
+  };
+}
 
 export default async function ServicesPage({
   params,
@@ -30,8 +67,30 @@ export default async function ServicesPage({
     }),
     getSitePictures(),
   ]);
+  // Build service items for JSON-LD
+  const allServices = divisions.flatMap((div) =>
+    div.services.map((svc) => ({
+      name: isEn ? (svc.nameEn || svc.nameFa) : svc.nameFa,
+      description: isEn ? (svc.descriptionEn || svc.descriptionFa || '') : (svc.descriptionFa || ''),
+      priceFrom: svc.priceFrom,
+      priceTo: svc.priceTo,
+    }))
+  );
 
   return (
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: isEn ? 'Home' : 'خانه', href: '/' },
+          { name: isEn ? 'Services' : 'خدمات', href: '/services' },
+        ]}
+        locale={locale}
+      />
+      <ServiceJsonLd
+        services={allServices}
+        providerName={isEn ? 'Pet Boss Clinic' : 'کلینیک دامپزشکی پت باس'}
+        locale={locale}
+      />
     <div className="bg-background">
       {/* Dynamic Theme Top Page Header */}
       <section className="relative bg-gradient-hero text-foreground overflow-hidden border-b border-border/60 py-16 md:py-20 mb-12">
@@ -148,5 +207,6 @@ export default async function ServicesPage({
         </div>
       </div>
     </div>
+    </>
   );
 }

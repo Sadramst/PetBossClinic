@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { db } from "@/lib/db";
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
@@ -8,8 +9,51 @@ import { PetBossLogo } from "@/components/shared/pet-boss-logo";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { getSitePictures } from "@/lib/media";
 import { getClinicNAP } from "@/lib/clinic/nap";
+import {
+  VeterinaryCareJsonLd,
+  FAQPageJsonLd,
+  BreadcrumbJsonLd,
+} from '@/lib/seo/json-ld';
 
 export const revalidate = 60;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const isEn = locale === 'en';
+
+  const title = isEn
+    ? 'Pet Boss Clinic & Pet Shop | Veterinary Surgery, Dentistry & Grooming in Tehran'
+    : 'کلینیک دامپزشکی و پت شاپ پت باس تهران | جراحی، دندانپزشکی، واکسیناسیون و گرومینگ';
+
+  const description = isEn
+    ? 'Pet Boss Clinic in Gheitariyeh, Shariati, Tehran. Specialized veterinary surgery, dental care, professional grooming, vaccination, and luxury pet boutique.'
+    : 'کلینیک تخصصی دامپزشکی پت باس در قیطریه، خیابان شریعتی تهران. خدمات جراحی، دندانپزشکی حیوانات، واکسیناسیون سگ و گربه، گرومینگ تخصصی و پت شاپ لوکس.';
+
+  return {
+    title,
+    description,
+    keywords: isEn
+      ? ['veterinary clinic Tehran', 'pet shop Gheitariyeh', 'dog cat surgery Tehran', 'pet dental clinic Tehran', 'dog grooming Tehran', 'Pet Boss Clinic']
+      : ['کلینیک دامپزشکی تهران', 'دامپزشکی قیطریه', 'دامپزشکی شریعتی', 'پت شاپ قیطریه', 'واکسیناسیون سگ و گربه', 'جراحی حیوانات خانگی تهران', 'دندانپزشکی سگ و گربه', 'گرومینگ سگ تهران'],
+    alternates: {
+      canonical: isEn ? 'https://www.petbossclinic.com/en' : 'https://www.petbossclinic.com',
+      languages: {
+        'fa-IR': 'https://www.petbossclinic.com',
+        en: 'https://www.petbossclinic.com/en',
+      },
+    },
+    openGraph: {
+      title,
+      description,
+      url: isEn ? 'https://www.petbossclinic.com/en' : 'https://www.petbossclinic.com',
+      images: [{ url: '/images/petboss-sign.jpg', width: 1200, height: 630, alt: title }],
+    },
+  };
+}
 
 export default async function HomePage({
   params,
@@ -78,7 +122,19 @@ export default async function HomePage({
     <svg key="shop" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>,
   ];
 
+  // Build FAQ structured data for rich snippets
+  const faqJsonLdItems = faqs.map((faq) => ({
+    question: isEn ? (faq.questionEn || faq.questionFa) : faq.questionFa,
+    answer: isEn ? (faq.answerEn || faq.answerFa) : faq.answerFa,
+  }));
+
   return (
+    <>
+      {/* ═══ SEO STRUCTURED DATA (JSON-LD) ═══ */}
+      <VeterinaryCareJsonLd nap={nap} locale={locale} />
+      <BreadcrumbJsonLd items={[{ name: isEn ? 'Home' : 'خانه', href: '/' }]} locale={locale} />
+      {faqJsonLdItems.length > 0 && <FAQPageJsonLd faqs={faqJsonLdItems} />}
+
     <div className="flex flex-col">
 
       {/* ═══ SIGNATURE LUXURY HERO SECTION ═══ */}
@@ -95,9 +151,9 @@ export default async function HomePage({
             <PetBossLogo size="xl" showText={false} variant="gold" />
           </div>
 
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-widest text-gradient-gold mb-2 uppercase">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-widest text-gradient-gold mb-2 uppercase">
             PET BOSS
-          </h2>
+          </h1>
           <p className="text-lg sm:text-xl md:text-2xl font-semibold text-foreground/90 mb-8">
             {heroTitle}
           </p>
@@ -621,5 +677,6 @@ export default async function HomePage({
       </div>
 
     </div>
+    </>
   );
 }

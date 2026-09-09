@@ -1,10 +1,45 @@
+import { Metadata } from 'next';
 import { db } from "@/lib/db";
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { getSitePictures } from "@/lib/media";
+import { BreadcrumbJsonLd } from "@/lib/seo/json-ld";
 
 export const revalidate = 60;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const isEn = locale === 'en';
+
+  const title = isEn
+    ? 'About Pet Boss Clinic'
+    : 'درباره کلینیک پت باس | بهترین مرکز دامپزشکی شمال تهران قیطریه';
+
+  const description = isEn
+    ? 'Meet the Pet Boss Clinic team — expert veterinarians providing premium pet healthcare, grooming & products in Gheitariyeh, North Tehran since day one.'
+    : 'با تیم متخصص کلینیک دامپزشکی پت باس آشنا شوید. ارائه خدمات تخصصی دامپزشکی، گرومینگ و محصولات باکیفیت در قیطریه شمال تهران.';
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: isEn ? '/en/about' : '/about',
+      languages: { 'fa-IR': '/about', en: '/en/about' },
+    },
+    openGraph: {
+      title,
+      description,
+      url: isEn ? '/en/about' : '/about',
+      images: [{ url: '/images/reception.jpg', width: 1200, height: 630 }],
+    },
+  };
+}
+
 
 export default async function AboutPage({
   params,
@@ -24,7 +59,15 @@ export default async function AboutPage({
   ]);
 
   return (
-    <div className="bg-background">
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: isEn ? 'Home' : 'خانه', href: '/' },
+          { name: isEn ? 'About Us' : 'درباره ما', href: '/about' },
+        ]}
+        locale={locale}
+      />
+      <div className="bg-background">
       {/* Dynamic Theme Top Page Header */}
       <section className="relative bg-gradient-hero text-foreground overflow-hidden border-b border-border/60 py-16 md:py-20 mb-12">
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -131,5 +174,6 @@ export default async function AboutPage({
         )}
       </div>
     </div>
+    </>
   );
 }

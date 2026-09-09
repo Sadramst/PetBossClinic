@@ -1,10 +1,47 @@
+import type { Metadata } from 'next';
 import { db } from "@/lib/db";
 import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
+import { BreadcrumbJsonLd, FAQPageJsonLd } from "@/lib/seo/json-ld";
 
 export const revalidate = 60;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const isEn = locale === 'en';
+
+  const title = isEn
+    ? 'Frequently Asked Questions (FAQ)'
+    : 'سوالات متداول دامپزشکی و نگهداری حیوانات خانگی | کلینیک پت باس تهران';
+
+  const description = isEn
+    ? 'Answers to common questions about pet vaccination schedules, grooming, surgery recovery, diet, and clinic policies at Pet Boss Clinic Tehran.'
+    : 'پاسخ به سوالات متداول درباره زمان‌بندی واکسیناسیون سگ و گربه، مراقبت‌های پس از جراحی، گرومینگ، رژیم غذایی و خدمات کلینیک دامپزشکی پت باس.';
+
+  return {
+    title,
+    description,
+    keywords: isEn
+      ? ['veterinary FAQ Tehran', 'dog vaccination schedule', 'cat grooming FAQ', 'pet surgery care']
+      : ['سوالات متداول دامپزشکی', 'زمان واکسن سگ و گربه', 'هزینه واکسیناسیون سگ تهران', 'مراقبت بعد از عقیم سازی'],
+    alternates: {
+      canonical: isEn ? '/en/faq' : '/faq',
+      languages: { 'fa-IR': '/faq', en: '/en/faq' },
+    },
+    openGraph: {
+      title,
+      description,
+      url: isEn ? '/en/faq' : '/faq',
+      images: [{ url: '/images/petboss-sign.jpg', width: 1200, height: 630 }],
+    },
+  };
+}
 
 export default async function FaqPage({
   params,
@@ -26,8 +63,24 @@ export default async function FaqPage({
     },
   });
 
+  const allFaqs = categories.flatMap((cat) =>
+    cat.faqs.map((f) => ({
+      question: isEn ? (f.questionEn || f.questionFa) : f.questionFa,
+      answer: isEn ? (f.answerEn || f.answerFa) : f.answerFa,
+    }))
+  );
+
   return (
-    <div className="bg-background">
+    <>
+      <BreadcrumbJsonLd
+        items={[
+          { name: isEn ? 'Home' : 'خانه', href: '/' },
+          { name: isEn ? 'FAQ' : 'سوالات متداول', href: '/faq' },
+        ]}
+        locale={locale}
+      />
+      {allFaqs.length > 0 && <FAQPageJsonLd faqs={allFaqs} />}
+      <div className="bg-background">
       {/* Dynamic Theme Top Page Header */}
       <section className="relative bg-gradient-hero text-foreground overflow-hidden border-b border-border/60 py-16 md:py-20 mb-12">
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -96,5 +149,6 @@ export default async function FaqPage({
         </div>
       </div>
     </div>
+    </>
   );
 }
