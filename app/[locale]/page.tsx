@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
@@ -123,11 +124,13 @@ export default async function HomePage({
           {/* Luxury Reception Showcase */}
           <div className="mt-14 w-full max-w-4xl mx-auto rounded-3xl overflow-hidden border-2 border-border-gold/60 shadow-gold-lg relative group">
             <div className="aspect-[16/9] w-full overflow-hidden bg-charcoal-900 relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={sitePictures.hero_reception}
                 alt="Pet Boss Luxury Clinic Lounge"
-                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                fill
+                priority
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1024px"
+                className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/90 via-charcoal-950/20 to-transparent flex items-end p-6 sm:p-8">
                 <div className="text-start">
@@ -171,11 +174,12 @@ export default async function HomePage({
                   className="card-luxury overflow-hidden flex flex-col group relative"
                 >
                   <div className="relative aspect-[16/10] w-full overflow-hidden bg-charcoal-900 border-b border-border-gold/30">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={divImage}
                       alt={divName}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute top-3 start-3 w-12 h-12 rounded-xl bg-surface/90 backdrop-blur border border-border-gold flex items-center justify-center text-primary shadow-gold">
                       {divisionIcons[idx] || divisionIcons[0]}
@@ -604,7 +608,7 @@ export default async function HomePage({
           {isEn ? 'Emergency Call' : 'تماس فوری و اورژانس'}
         </a>
         <a
-          href="https://wa.me/989120000000"
+          href="https://wa.me/989122642971"
           target="_blank"
           rel="noopener noreferrer"
           className="w-12 h-12 rounded-full bg-surface-elevated border border-border-gold flex items-center justify-center text-primary shrink-0"

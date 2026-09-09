@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Image from 'next/image'
 import { useLocale } from 'next-intl'
 import { StockStatus } from '@prisma/client'
 
@@ -116,7 +117,7 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
       ? `Hello Pet Boss Clinic. I would like to inquire about/order:\nProduct: ${product.nameEn || product.nameFa}\nSKU: ${product.sku || 'N/A'}\nPrice: ${formatPrice(product.price)}`
       : `سلام و وقت بخیر، قصد خرید و استعلام محصول زیر از پت‌شاپ پت باس را دارم:\nنام محصول: ${product.nameFa}\nکد کالا: ${product.sku || '---'}\nقیمت: ${formatPrice(product.price)}`
 
-    return `https://wa.me/989120000000?text=${encodeURIComponent(text)}`
+    return `https://wa.me/989122642971?text=${encodeURIComponent(text)}`
   }
 
   return (
@@ -294,9 +295,11 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
                   }`}
                 >
                   {cat.imageId ? (
-                    <img
+                    <Image
                       src={cat.imageId}
                       alt={catName}
+                      width={16}
+                      height={16}
                       className="w-4 h-4 rounded-full object-cover shrink-0 border border-primary/30"
                     />
                   ) : null}
@@ -387,11 +390,12 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
                     {/* Product Photo or Placeholder Graphic */}
                     {productImage ? (
                       <div className="absolute inset-0 w-full h-full overflow-hidden bg-charcoal-900">
-                        <img
+                        <Image
                           src={productImage}
                           alt={pName}
-                          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
-                          loading="lazy"
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover transform group-hover:scale-105 transition-transform duration-700"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/70 via-transparent to-transparent pointer-events-none" />
                       </div>
@@ -514,7 +518,7 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
               </a>
 
               <a
-                href="https://wa.me/989120000000"
+                href="https://wa.me/989122642971"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-6 py-3.5 rounded-full bg-surface-card border border-border-gold text-foreground font-bold text-xs sm:text-sm text-center hover:border-primary transition-all flex items-center justify-center gap-2"
@@ -551,10 +555,12 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
             {/* Product Image Banner if available */}
             {(activeModalProduct.images?.[0]?.imageId || activeModalProduct.ogImageId) && (
               <div className="relative w-full h-56 sm:h-72 rounded-2xl overflow-hidden bg-charcoal-900 border border-border shadow-md mt-4">
-                <img
+                <Image
                   src={activeModalProduct.images?.[0]?.imageId || activeModalProduct.ogImageId || ''}
                   alt={isEn ? (activeModalProduct.nameEn || activeModalProduct.nameFa) : activeModalProduct.nameFa}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 640px) 100vw, 600px"
+                  className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/70 via-transparent to-transparent pointer-events-none" />
               </div>
@@ -563,9 +569,11 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
             {/* Modal Header */}
             <div className="flex items-center gap-3">
               {activeModalProduct.images?.[0]?.imageId || activeModalProduct.ogImageId ? (
-                <img
+                <Image
                   src={activeModalProduct.images?.[0]?.imageId || activeModalProduct.ogImageId || ''}
                   alt=""
+                  width={48}
+                  height={48}
                   className="w-12 h-12 rounded-2xl object-cover border border-border-gold shadow-gold shrink-0 bg-surface-elevated"
                 />
               ) : (

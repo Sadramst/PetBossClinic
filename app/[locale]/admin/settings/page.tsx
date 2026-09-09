@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { SettingsForm } from "@/components/admin/settings-form";
+import { requireAdmin } from "@/lib/auth/guard";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,7 @@ export default async function AdminSettingsPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  await requireAdmin('ADMIN', locale);
   const isEn = locale === 'en';
 
   const siteSetting = await db.siteSetting.findFirst();

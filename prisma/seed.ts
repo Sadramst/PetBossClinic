@@ -208,33 +208,67 @@ async function main() {
   })
 
 
+  // ─── Site Settings ────────────────────────────────────
+  await prisma.siteSetting.deleteMany()
+  await prisma.siteSetting.create({
+    data: {
+      nameFa: 'کلینیک تخصصی دامپزشکی و پت‌شاپ پت‌باس',
+      nameEn: 'Pet Boss Clinic & Luxury Pet Shop',
+      taglineFa: 'مراقبت با عشق در محیطی مجلل',
+      taglineEn: 'Care with Love in a Luxury Setting',
+      phones: {
+        primary: '+982126429715',
+        landline: '+982126429715',
+        whatsapp: '+989122642971',
+        mobile: '+989122642971',
+      },
+      emails: {
+        primary: 'info@petbossclinic.com',
+        info: 'info@petbossclinic.com',
+      },
+      addresses: {
+        fa: 'تهران، خیابان شریعتی، نرسیده به مترو قیطریه، پلاک ۱۷۳۳',
+        en: 'No. 1733, Shariati St., near Gheytariyeh Metro Station, Tehran, Iran',
+      },
+      geo: {
+        lat: 35.790937,
+        lng: 51.4350853,
+      },
+      workingHours: {
+        everyday: '10:00 - 22:00',
+        noteFa: 'بخش اورژانس و پذیرش بدون تعطیلی در ساعات کاری فعال است.',
+        noteEn: 'Emergency desk active throughout working hours.',
+      },
+    },
+  })
+
   // ─── Social Links ──────────────────────────────────────
   await prisma.socialLink.createMany({
     data: [
       { platform: 'INSTAGRAM', url: 'https://instagram.com/petbossclinic', isActive: true, sortOrder: 1 },
       { platform: 'TELEGRAM', url: 'https://t.me/petbossclinic', isActive: true, sortOrder: 2 },
-      { platform: 'WHATSAPP', url: 'https://wa.me/989120000000', isActive: true, sortOrder: 3 },
+      { platform: 'WHATSAPP', url: 'https://wa.me/989122642971', isActive: true, sortOrder: 3 },
     ]
   })
 
   // ─── Contact Channels ─────────────────────────────────
   await prisma.contactChannel.createMany({
     data: [
-      { type: 'PHONE', value: '+982122000000', labelFa: 'تلفن ثابت', labelEn: 'Landline', isActive: true, sortOrder: 1 },
-      { type: 'MOBILE', value: '+989120000000', labelFa: 'موبایل', labelEn: 'Mobile', isActive: true, sortOrder: 2 },
+      { type: 'PHONE', value: '+982126429715', labelFa: 'تلفن ثابت', labelEn: 'Landline', isActive: true, sortOrder: 1 },
+      { type: 'MOBILE', value: '+989122642971', labelFa: 'واتساپ و همراه', labelEn: 'WhatsApp & Mobile', isActive: true, sortOrder: 2 },
       { type: 'EMAIL', value: 'info@petbossclinic.com', labelFa: 'ایمیل', labelEn: 'Email', isActive: true, sortOrder: 3 },
     ]
   })
 
-  // ─── Working Hours ────────────────────────────────────
+  // ─── Working Hours (Single Source of Truth: 10:00 - 22:00 Everyday) ────
   const weekdays = [
-    { day: 0, open: '09:00', close: '21:00', label: 'شنبه' },     // Saturday
-    { day: 1, open: '09:00', close: '21:00', label: 'یکشنبه' },
-    { day: 2, open: '09:00', close: '21:00', label: 'دوشنبه' },
-    { day: 3, open: '09:00', close: '21:00', label: 'سه‌شنبه' },
-    { day: 4, open: '09:00', close: '21:00', label: 'چهارشنبه' },
-    { day: 5, open: '09:00', close: '21:00', label: 'پنج‌شنبه' },
-    { day: 6, open: '10:00', close: '14:00', label: 'جمعه' },     // Friday - shorter
+    { day: 0, open: '10:00', close: '22:00', label: 'شنبه' },     // Saturday
+    { day: 1, open: '10:00', close: '22:00', label: 'یکشنبه' },
+    { day: 2, open: '10:00', close: '22:00', label: 'دوشنبه' },
+    { day: 3, open: '10:00', close: '22:00', label: 'سه‌شنبه' },
+    { day: 4, open: '10:00', close: '22:00', label: 'چهارشنبه' },
+    { day: 5, open: '10:00', close: '22:00', label: 'پنج‌شنبه' },
+    { day: 6, open: '10:00', close: '22:00', label: 'جمعه' },     // Friday
   ]
   await prisma.workingHour.createMany({
     data: weekdays.map(w => ({
@@ -266,8 +300,8 @@ async function main() {
         categoryId: faqCatGeneral.id,
         questionFa: 'ساعات کاری کلینیک چگونه است؟',
         questionEn: 'What are the clinic\'s working hours?',
-        answerFa: 'کلینیک پت‌باس از شنبه تا پنج‌شنبه ساعت ۹ صبح تا ۹ شب و جمعه‌ها ساعت ۱۰ صبح تا ۲ بعدازظهر فعال است.',
-        answerEn: 'Pet Boss Clinic is open Saturday to Thursday from 9 AM to 9 PM, and Friday from 10 AM to 2 PM.',
+        answerFa: 'کلینیک و پت‌شاپ پت‌باس همه روزه از ساعت ۱۰:۰۰ الی ۲۲:۰۰ آماده خدمت‌رسانی است. بخش اورژانس و پذیرش در طول ساعات کاری بدون تعطیلی فعال می‌باشد.',
+        answerEn: 'Pet Boss Clinic & Pet Shop is open everyday from 10:00 AM to 10:00 PM. Emergency and admission services are continuously available throughout working hours.',
         isActive: true, sortOrder: 1,
       },
       {

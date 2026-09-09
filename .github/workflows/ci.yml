@@ -27,22 +27,30 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - 
-      with:
-        
+
     - name: Use Node.js 20
       uses: actions/setup-node@v4
       with:
         node-version: 20
-        
-    
-    - run: npm install
-    - run: npm run typecheck
-    - run: npm run lint
-    
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci || npm install
+
+    - name: TypeScript check
+      run: npm run typecheck
+
+    - name: ESLint check
+      run: npm run lint
+
     - name: Run Tests
       env:
         DATABASE_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
       run: |
         npx prisma db push
         npm run test
+
+    - name: Next.js Production Build
+      env:
+        DATABASE_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
+      run: npm run build

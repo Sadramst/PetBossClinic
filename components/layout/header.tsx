@@ -21,7 +21,6 @@ export function Header() {
     { href: '/about', label: t('about') },
     { href: '/faq', label: t('faq') },
     { href: '/contact', label: t('contact') },
-    { href: '/admin', label: t('admin') },
   ];
 
   return (

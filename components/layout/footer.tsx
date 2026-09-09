@@ -34,7 +34,7 @@ export function Footer() {
               </a>
               {/* WhatsApp */}
               <a
-                href="https://wa.me/989120000000"
+                href="https://wa.me/989122642971"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-9 h-9 rounded-full bg-surface-card border border-border flex items-center justify-center text-foreground hover:text-primary hover:border-primary transition-colors"
@@ -65,7 +65,6 @@ export function Footer() {
               <li><Link href="/about" className="hover:text-primary transition-colors">{nav('about')}</Link></li>
               <li><Link href="/faq" className="hover:text-primary transition-colors">{nav('faq')}</Link></li>
               <li><Link href="/contact" className="hover:text-primary transition-colors">{nav('contact')}</Link></li>
-              <li><Link href="/admin" className="hover:text-primary transition-colors text-xs opacity-75">{nav('admin')}</Link></li>
             </ul>
           </div>
 

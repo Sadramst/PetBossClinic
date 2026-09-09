@@ -1,6 +1,6 @@
 import React from 'react'
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { requireAdmin } from '@/lib/auth/guard'
 import { UsersManager } from '@/components/admin/users-manager'
 
 interface Props {
@@ -10,10 +10,8 @@ interface Props {
 export default async function AdminUsersPage({ params }: Props) {
   const { locale } = await params
   const isEn = locale === 'en'
-  const session = await getSession()
-
-  // RBAC Check: Only SUPER_ADMIN can view and manage users
-  const isSuperAdmin = session?.role === 'SUPER_ADMIN'
+  const session = await requireAdmin('SUPER_ADMIN', locale)
+  const isSuperAdmin = session.role === 'SUPER_ADMIN'
 
   if (!isSuperAdmin) {
     return (

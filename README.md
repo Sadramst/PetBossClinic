@@ -1,13 +1,13 @@
 # Pet Boss Clinic (پت‌باس) — Web Platform & Admin Panel
 
-[![Build & Test](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![Framework](https://img.shields.io/badge/Next.js-15-black?logo=next.js)]()
-[![React](https://img.shields.io/badge/React-19-blue?logo=react)]()
-[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?logo=typescript)]()
-[![TailwindCSS](https://img.shields.io/badge/Tailwind-v4-38bdf8?logo=tailwind-css)]()
-[![Prisma](https://img.shields.io/badge/Prisma-6-2d3748?logo=prisma)]()
-[![Database](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)]()
-[![Tests](https://img.shields.io/badge/Vitest-15%20passed-success)]()
+[![CI](https://github.com/Sadramst/PetBossClinic/actions/workflows/ci.yml/badge.svg)](https://github.com/Sadramst/PetBossClinic/actions/workflows/ci.yml)
+[![E2E Tests](https://github.com/Sadramst/PetBossClinic/actions/workflows/e2e.yml/badge.svg)](https://github.com/Sadramst/PetBossClinic/actions/workflows/e2e.yml)
+[![Lighthouse CI](https://github.com/Sadramst/PetBossClinic/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/Sadramst/PetBossClinic/actions/workflows/lighthouse.yml)
+[![Framework](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind-v4-38bdf8?logo=tailwind-css)](https://tailwindcss.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-6-2d3748?logo=prisma)](https://www.prisma.io/)
 
 > **Production-grade bilingual (Farsi-first / English-second) veterinary clinic and luxury pet shop website for Pet Boss Clinic (کلینیک و پت‌شاپ پت‌باس), located in Gheitariyeh, Tehran, Iran.**
 
@@ -215,5 +215,5 @@ PetBossClinic/
 - **Address**: تهران، خیابان شریعتی، بالاتر از پل صدر، نرسیده به ایستگاه مترو قیطریه، پلاک ۱۷۳۳
 - **GPS Coordinates**: `35.790937, 51.4350853`
 - **Working Hours**: همه روزه ۱۰:۰۰ صبح الی ۲۲:۰۰ شب (بدون تعطیلی)
-- **Contact Phone**: `+982122000000` / `+989120000000`
+- **Contact Phone**: `+982126429715` / `+989122642971`
 - **Designed & Developed by**: [Appilico](https://www.appilico.com.au/)

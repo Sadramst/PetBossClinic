@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { ServicesManager } from "@/components/admin/services-manager";
+import { requireAdmin } from "@/lib/auth/guard";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,7 @@ export default async function AdminServicesPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  await requireAdmin('VIEWER', locale);
   const isEn = locale === 'en';
 
   const [services, divisions] = await Promise.all([

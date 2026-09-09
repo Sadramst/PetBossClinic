@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,11 +65,13 @@ export default async function ServicesPage({
                       <p className="text-muted-foreground text-sm leading-relaxed">{divDesc}</p>
                     )}
                   </div>
-                  <div className="w-full md:w-56 h-32 rounded-xl overflow-hidden border border-border-gold/40 shadow-gold shrink-0">
-                    <img
+                  <div className="w-full md:w-56 h-32 rounded-xl overflow-hidden border border-border-gold/40 shadow-gold shrink-0 relative">
+                    <Image
                       src={divImage}
                       alt={divName}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 224px"
+                      className="object-cover"
                     />
                   </div>
                 </div>

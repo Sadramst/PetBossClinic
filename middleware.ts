@@ -1,10 +1,11 @@
 import createMiddleware from 'next-intl/middleware';
 import { routing } from '@/i18n/routing';
 import { NextRequest, NextResponse } from 'next/server';
+import { verifySessionTokenEdge } from '@/lib/auth/edge';
 
 const intlMiddleware = createMiddleware(routing);
 
-export default function middleware(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isAdminRoute =
@@ -20,24 +21,40 @@ export default function middleware(request: NextRequest) {
     pathname === '/fa/admin/login' ||
     pathname === '/en/admin/login';
 
-  const sessionToken = request.cookies.get('petboss_session')?.value;
   const isEn = pathname.startsWith('/en');
   const loginPath = isEn ? '/en/admin/login' : '/admin/login';
   const adminPath = isEn ? '/en/admin' : '/admin';
 
+  // Strict signature verification using Web Crypto (Edge runtime safe)
+  let session = null;
+  const sessionToken = request.cookies.get('petboss_session')?.value;
+  if (sessionToken) {
+    session = await verifySessionTokenEdge(sessionToken);
+  }
+
   if (isAdminRoute && !isLoginPage) {
-    if (!sessionToken) {
+    if (!session) {
       const redirectUrl = new URL(loginPath, request.url);
-      return NextResponse.redirect(redirectUrl);
+      const redirectResponse = NextResponse.redirect(redirectUrl);
+      redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow');
+      return redirectResponse;
     }
   }
 
-  if (isLoginPage && sessionToken) {
+  if (isLoginPage && session) {
     const redirectUrl = new URL(adminPath, request.url);
-    return NextResponse.redirect(redirectUrl);
+    const redirectResponse = NextResponse.redirect(redirectUrl);
+    redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return redirectResponse;
   }
 
-  return intlMiddleware(request);
+  const response = intlMiddleware(request);
+
+  if (isAdminRoute) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  }
+
+  return response;
 }
 
 export const config = {

@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
+import { requireAdmin } from "@/lib/auth/guard";
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,7 @@ export default async function AdminDashboard({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  await requireAdmin('VIEWER', locale);
   const isEn = locale === 'en';
   const t = await getTranslations('Admin');
 

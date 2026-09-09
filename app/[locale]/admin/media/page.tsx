@@ -1,6 +1,5 @@
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
-import { redirect } from 'next/navigation'
+import { requireAdmin } from '@/lib/auth/guard'
 import { getSitePictures } from '@/lib/media'
 import { MediaManager } from '@/components/admin/media-manager'
 
@@ -12,12 +11,8 @@ export default async function AdminMediaPage({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
+  await requireAdmin('VIEWER', locale)
   const isEn = locale === 'en'
-
-  const session = await getSession()
-  if (!session) {
-    redirect(`/${locale}/admin/login`)
-  }
 
   const currentPictures = await getSitePictures()
 

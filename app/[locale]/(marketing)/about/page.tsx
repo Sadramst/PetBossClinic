@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { getSitePictures } from "@/lib/media";
@@ -57,12 +58,13 @@ export default async function AboutPage({
         {/* Facility Gallery Highlights */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
           <div className="rounded-3xl overflow-hidden border border-border-gold/50 shadow-gold relative group">
-            <div className="aspect-[16/10] w-full bg-charcoal-900 overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+            <div className="aspect-[16/10] w-full bg-charcoal-900 overflow-hidden relative">
+              <Image
                 src={sitePictures.about_clinic}
                 alt="Pet Boss Lounge"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </div>
             <div className="p-4 bg-surface border-t border-border">
@@ -72,12 +74,13 @@ export default async function AboutPage({
             </div>
           </div>
           <div className="rounded-3xl overflow-hidden border border-border-gold/50 shadow-gold relative group">
-            <div className="aspect-[16/10] w-full bg-charcoal-900 overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+            <div className="aspect-[16/10] w-full bg-charcoal-900 overflow-hidden relative">
+              <Image
                 src={sitePictures.about_veterinarian}
                 alt="Pet Boss Care"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </div>
             <div className="p-4 bg-surface border-t border-border">

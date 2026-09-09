@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
-import { Button } from "@/components/ui/button";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
+import { LeadForm } from "@/components/forms/lead-form";
 
 export default async function ContactPage({
   params,
@@ -24,56 +24,9 @@ export default async function ContactPage({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Contact Form */}
-          <div className="card-luxury p-8">
-            <h2 className="text-xl font-bold text-foreground mb-6">{t('formTitle')}</h2>
-            <form className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-foreground/90 mb-1.5">{t('name')}</label>
-                <input
-                  type="text"
-                  placeholder={t('namePlaceholder')}
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition placeholder:text-muted-foreground"
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-foreground/90 mb-1.5">{t('phone')}</label>
-                  <input
-                    type="tel"
-                    placeholder={t('phonePlaceholder')}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition placeholder:text-muted-foreground"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground/90 mb-1.5">{t('email')}</label>
-                  <input
-                    type="email"
-                    placeholder={t('emailPlaceholder')}
-                    className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition placeholder:text-muted-foreground"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground/90 mb-1.5">{t('subject')}</label>
-                <input
-                  type="text"
-                  placeholder={t('subjectPlaceholder')}
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition placeholder:text-muted-foreground"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground/90 mb-1.5">{t('message')}</label>
-                <textarea
-                  rows={4}
-                  placeholder={t('messagePlaceholder')}
-                  className="w-full px-4 py-3 rounded-xl border border-border bg-surface text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition resize-none placeholder:text-muted-foreground"
-                />
-              </div>
-              <Button type="submit" className="w-full bg-gradient-gold hover:opacity-90 text-charcoal-950 font-bold rounded-full py-3.5 shadow-gold text-base">
-                {t('send')}
-              </Button>
-            </form>
+          {/* Real Zod-validated Lead Capture Form */}
+          <div>
+            <LeadForm variant="inline" title={t('formTitle')} />
           </div>
 
           {/* Contact Info + Map */}
