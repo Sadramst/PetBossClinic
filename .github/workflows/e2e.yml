@@ -44,6 +44,7 @@ jobs:
     - name: Run Playwright tests
       env:
         DATABASE_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
+        DIRECT_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
       run: |
         npx prisma db push
         npm run test:e2e

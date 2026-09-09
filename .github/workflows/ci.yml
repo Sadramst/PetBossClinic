@@ -46,6 +46,7 @@ jobs:
     - name: Run Tests
       env:
         DATABASE_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
+        DIRECT_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
       run: |
         npx prisma db push
         npm run test
@@ -53,4 +54,5 @@ jobs:
     - name: Next.js Production Build
       env:
         DATABASE_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
+        DIRECT_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
       run: npm run build

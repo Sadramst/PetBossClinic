@@ -41,6 +41,7 @@ jobs:
       - name: Database push & seed
         env:
           DATABASE_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
+          DIRECT_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
         run: |
           npx prisma db push
           npx prisma db seed
@@ -48,6 +49,7 @@ jobs:
       - name: Build Next.js
         env:
           DATABASE_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
+          DIRECT_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
         run: npm run build
 
       - name: Run Lighthouse CI
@@ -55,3 +57,4 @@ jobs:
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
           DATABASE_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
+          DIRECT_URL: "postgresql://user:password@localhost:5432/petboss?schema=public"
