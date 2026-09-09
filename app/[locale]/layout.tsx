@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { Outfit, Vazirmatn } from 'next/font/google';
 import { ThemeProvider, ThemePreset } from '@/lib/theme';
+import { getActiveClinicTheme } from '@/lib/theme/theme-server';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { getClinicNAP } from '@/lib/clinic/nap';
@@ -69,12 +70,15 @@ export default async function LocaleLayout({
     notFound();
   }
 
-  const cookieStore = await cookies();
+  const [clinicTheme, cookieStore] = await Promise.all([
+    getActiveClinicTheme(),
+    cookies(),
+  ]);
   const rawTheme = cookieStore.get('petboss_theme')?.value as ThemePreset | undefined;
   const initialTheme: ThemePreset =
     rawTheme && ['petboss-luxury-dark', 'petboss-luxury-light', 'emerald-prestige', 'royal-obsidian'].includes(rawTheme)
       ? rawTheme
-      : 'petboss-luxury-dark';
+      : clinicTheme;
 
   const fontClass = locale === 'fa' ? vazirmatn.className : outfit.className;
   const nap = await getClinicNAP();

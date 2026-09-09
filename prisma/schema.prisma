@@ -137,6 +137,11 @@ model SiteSetting {
   faviconId     String?
   taglineFa     String?
   taglineEn     String?
+  activeTheme   String?  @default("petboss-luxury-dark")
+  heroTitleFa   String?
+  heroTitleEn   String?
+  heroSubtitleFa String?
+  heroSubtitleEn String?
   addresses     Json?
   geo           Json?
   emails        Json?

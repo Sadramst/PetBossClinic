@@ -12,6 +12,10 @@ interface SiteSettingData {
   addresses: unknown
   geo: unknown
   workingHours: unknown
+  heroTitleFa?: string | null
+  heroTitleEn?: string | null
+  heroSubtitleFa?: string | null
+  heroSubtitleEn?: string | null
 }
 
 interface Props {
@@ -41,6 +45,10 @@ export function SettingsForm({ initialSettings, isEn }: Props) {
   const [geo, setGeo] = useState(geoObj?.coordinates || '35.790937, 51.4350853')
   const [workingHoursFa, setWorkingHoursFa] = useState(workingHoursObj?.fa || '۱۰:۰۰ صبح الی ۲۲:۰۰ شب (همه روزه)')
   const [workingHoursEn, setWorkingHoursEn] = useState(workingHoursObj?.en || '10:00 AM to 10:00 PM (Every day including holidays)')
+  const [heroTitleFa, setHeroTitleFa] = useState(initialSettings?.heroTitleFa || '')
+  const [heroTitleEn, setHeroTitleEn] = useState(initialSettings?.heroTitleEn || '')
+  const [heroSubtitleFa, setHeroSubtitleFa] = useState(initialSettings?.heroSubtitleFa || '')
+  const [heroSubtitleEn, setHeroSubtitleEn] = useState(initialSettings?.heroSubtitleEn || '')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,6 +65,10 @@ export function SettingsForm({ initialSettings, isEn }: Props) {
     formData.append('geo', geo)
     formData.append('workingHoursFa', workingHoursFa)
     formData.append('workingHoursEn', workingHoursEn)
+    formData.append('heroTitleFa', heroTitleFa)
+    formData.append('heroTitleEn', heroTitleEn)
+    formData.append('heroSubtitleFa', heroSubtitleFa)
+    formData.append('heroSubtitleEn', heroSubtitleEn)
 
     startTransition(async () => {
       const res = await updateSiteSettingsAction(formData)
@@ -144,6 +156,74 @@ export function SettingsForm({ initialSettings, isEn }: Props) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-elevated text-foreground text-xs outline-none focus:border-primary font-mono dir-ltr"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Homepage Hero Section Content Card */}
+      <div className="bg-surface border border-border rounded-2xl p-6 space-y-4 shadow-sm">
+        <div className="flex items-center justify-between pb-2 border-b border-border">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+            <span>✨</span>
+            <span>{isEn ? 'Homepage Hero Section Copy' : 'متن و تیترهای بخش اصلی صفحه نخست (Hero)'}</span>
+          </h2>
+          <span className="text-xs text-muted-foreground">
+            {isEn ? 'Editable Public Copy' : 'متن‌های قابل ویرایش عمومی'}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {isEn
+            ? 'Customize the main title and introduction shown at the top of the homepage. Leave empty to use default localized copy.'
+            : 'تیتر اصلی و توضیحات بالای صفحه نخست را در این بخش سفارشی‌سازی کنید. در صورت خالی ماندن، متن‌های پیش‌فرض نمایش داده می‌شوند.'}
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-foreground/80 mb-1.5">
+              {isEn ? 'Hero Title (Persian)' : 'تیتر اصلی هیرو (فارسی)'}
+            </label>
+            <input
+              type="text"
+              placeholder="مثال: کلینیک تخصصی دامپزشکی و پت شاپ پت باس"
+              value={heroTitleFa}
+              onChange={(e) => setHeroTitleFa(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-elevated text-foreground text-xs outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-foreground/80 mb-1.5">
+              {isEn ? 'Hero Title (English)' : 'تیتر اصلی هیرو (انگلیسی)'}
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. Premier Veterinary & Pet Boutique"
+              value={heroTitleEn}
+              onChange={(e) => setHeroTitleEn(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-elevated text-foreground text-xs outline-none focus:border-primary dir-ltr"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-foreground/80 mb-1.5">
+              {isEn ? 'Hero Subtitle (Persian)' : 'زیرتیتر و توضیحات هیرو (فارسی)'}
+            </label>
+            <textarea
+              rows={3}
+              placeholder="توضیحات معرفی کلینیک در بالای صفحه نخست..."
+              value={heroSubtitleFa}
+              onChange={(e) => setHeroSubtitleFa(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-elevated text-foreground text-xs outline-none focus:border-primary leading-relaxed"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-foreground/80 mb-1.5">
+              {isEn ? 'Hero Subtitle (English)' : 'زیرتیتر و توضیحات هیرو (انگلیسی)'}
+            </label>
+            <textarea
+              rows={3}
+              placeholder="Introduction copy for the homepage top section..."
+              value={heroSubtitleEn}
+              onChange={(e) => setHeroSubtitleEn(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-elevated text-foreground text-xs outline-none focus:border-primary leading-relaxed dir-ltr"
             />
           </div>
         </div>

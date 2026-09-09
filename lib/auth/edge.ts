@@ -59,11 +59,15 @@ export async function verifySessionTokenEdge(
     const signatureBytes = base64UrlToUint8Array(signature);
     const dataBytes = encoder.encode(encodedPayload);
 
+    // Pass TypedArrays directly; avoid .buffer property which can fail cross-realm instanceof in Edge runtime
+    const signatureBuffer = new Uint8Array(signatureBytes);
+    const dataBuffer = new Uint8Array(dataBytes);
+
     const isValid = await crypto.subtle.verify(
       'HMAC',
       cryptoKey,
-      signatureBytes.buffer as ArrayBuffer,
-      dataBytes.buffer as ArrayBuffer
+      signatureBuffer,
+      dataBuffer
     );
 
     if (!isValid) return null;

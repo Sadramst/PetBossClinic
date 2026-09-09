@@ -515,7 +515,23 @@ async function main() {
     },
   })
 
-  console.log('Seeded superadmin account securely.')
+  const adminPassword = hashPassword(process.env.INITIAL_STAFF_ADMIN_PASSWORD || 'Admin@PetBoss2026!')
+  await prisma.user.upsert({
+    where: { email: 'admin@petboss.com' },
+    update: {
+      password: adminPassword,
+      role: 'ADMIN',
+      name: 'مدیر کلینیک (Clinic Admin)',
+    },
+    create: {
+      email: 'admin@petboss.com',
+      password: adminPassword,
+      role: 'ADMIN',
+      name: 'مدیر کلینیک (Clinic Admin)',
+    },
+  })
+
+  console.log('Seeded superadmin and admin accounts securely.')
   console.log('Seeding finished successfully! ✅')
 }
 

@@ -111,7 +111,7 @@
     background: linear-gradient(135deg, #f4ecce 0%, #dec070 30%, #c5a059 70%, #936e2b 100%);
   }
   .bg-gradient-hero {
-    background: radial-gradient(circle at 50% 20%, #222731 0%, #181a20 70%, #121419 100%);
+    background: var(--gradient-hero);
   }
   .shadow-gold {
     box-shadow: var(--shadow-gold);

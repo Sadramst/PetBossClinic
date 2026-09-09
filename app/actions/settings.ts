@@ -24,6 +24,10 @@ export async function updateSiteSettingsAction(formData: FormData): Promise<Sett
   const geo = formData.get('geo')?.toString().trim() || '35.790937, 51.4350853'
   const workingHoursFa = formData.get('workingHoursFa')?.toString().trim() || '۱۰:۰۰ صبح الی ۲۲:۰۰ شب (همه روزه)'
   const workingHoursEn = formData.get('workingHoursEn')?.toString().trim() || '10:00 AM to 10:00 PM (Every day including holidays)'
+  const heroTitleFa = formData.get('heroTitleFa')?.toString().trim() || null
+  const heroTitleEn = formData.get('heroTitleEn')?.toString().trim() || null
+  const heroSubtitleFa = formData.get('heroSubtitleFa')?.toString().trim() || null
+  const heroSubtitleEn = formData.get('heroSubtitleEn')?.toString().trim() || null
 
   try {
     const existing = await db.siteSetting.findFirst()
@@ -40,6 +44,10 @@ export async function updateSiteSettingsAction(formData: FormData): Promise<Sett
           addresses: { fa: addressFa, en: addressEn },
           geo: { coordinates: geo },
           workingHours: { fa: workingHoursFa, en: workingHoursEn },
+          heroTitleFa,
+          heroTitleEn,
+          heroSubtitleFa,
+          heroSubtitleEn,
           updatedById: session.userId,
         },
       })
@@ -54,6 +62,10 @@ export async function updateSiteSettingsAction(formData: FormData): Promise<Sett
           addresses: { fa: addressFa, en: addressEn },
           geo: { coordinates: geo },
           workingHours: { fa: workingHoursFa, en: workingHoursEn },
+          heroTitleFa,
+          heroTitleEn,
+          heroSubtitleFa,
+          heroSubtitleEn,
           updatedById: session.userId,
         },
       })

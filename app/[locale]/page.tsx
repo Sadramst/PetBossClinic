@@ -21,7 +21,7 @@ export default async function HomePage({
   const t = await getTranslations('Home');
 
   // Fetch data from DB safely
-  const [divisions, services, staff, testimonials, faqs, sitePictures, featuredProducts, nap] = await Promise.all([
+  const [divisions, services, staff, testimonials, faqs, sitePictures, featuredProducts, nap, siteSetting] = await Promise.all([
     db.division.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
@@ -55,7 +55,18 @@ export default async function HomePage({
       include: { category: true },
     }),
     getClinicNAP(),
+    db.siteSetting.findFirst({
+      select: {
+        heroTitleFa: true,
+        heroTitleEn: true,
+        heroSubtitleFa: true,
+        heroSubtitleEn: true,
+      },
+    }),
   ]);
+
+  const heroTitle = (isEn ? siteSetting?.heroTitleEn : siteSetting?.heroTitleFa) || t('clinicTitle');
+  const heroSubtitle = (isEn ? siteSetting?.heroSubtitleEn : siteSetting?.heroSubtitleFa) || t('heroSubtitle');
 
   // Division icons
   const divisionIcons = [
@@ -88,7 +99,7 @@ export default async function HomePage({
             PET BOSS
           </h2>
           <p className="text-lg sm:text-xl md:text-2xl font-semibold text-foreground/90 mb-8">
-            {t('clinicTitle')}
+            {heroTitle}
           </p>
 
           {/* Physical Branding Golden Pills directly from petbossclinic.jpeg */}
@@ -101,7 +112,7 @@ export default async function HomePage({
           </div>
 
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-            {t('heroSubtitle')}
+            {heroSubtitle}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">

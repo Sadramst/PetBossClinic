@@ -27,16 +27,22 @@ export default async function FaqPage({
   });
 
   return (
-    <div className="section-padding bg-background">
-      <div className="container-site max-w-4xl">
-        {/* Page Header */}
-        <div className="text-center mb-16">
+    <div className="bg-background">
+      {/* Dynamic Theme Top Page Header */}
+      <section className="relative bg-gradient-hero text-foreground overflow-hidden border-b border-border/60 py-16 md:py-20 mb-12">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]" />
+        </div>
+        <div className="container-site relative z-10 text-center">
           <LuxuryPillBadge variant="outline" className="mb-3">
             {t('badge')}
           </LuxuryPillBadge>
           <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4">{t('title')}</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed">{t('subtitle')}</p>
         </div>
+      </section>
+
+      <div className="container-site max-w-4xl pb-20">
 
         {/* FAQ by Category */}
         <div className="space-y-12">

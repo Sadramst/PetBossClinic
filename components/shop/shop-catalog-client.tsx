@@ -117,7 +117,7 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
       {/* ═════════════════════════════════════════════════════════════ */}
       {/* 1. HERO & LUXURY BOUTIQUE HEADER */}
       {/* ═════════════════════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden border-b border-border-gold/40 bg-surface/60 backdrop-blur-md pt-12 pb-14 sm:pt-16 sm:pb-20">
+      <section className="relative overflow-hidden border-b border-border-gold/40 bg-gradient-hero pt-12 pb-14 sm:pt-16 sm:pb-20">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
         <div className="container-site relative z-10 text-center max-w-4xl mx-auto px-4">
           {/* Gold Badge */}

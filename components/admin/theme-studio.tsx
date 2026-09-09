@@ -1,25 +1,37 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useTransition } from 'react';
 import { useLocale } from 'next-intl';
 import { useTheme, THEME_PRESETS, ThemePreset } from '@/lib/theme';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LuxuryPillBadge } from '@/components/ui/luxury-pill-badge';
 import { PetBossLogo } from '@/components/shared/pet-boss-logo';
+import { setGlobalThemeAction } from '@/app/actions/theme';
 
 export function ThemeStudio() {
   const { theme, setTheme } = useTheme();
   const [selectedTheme, setSelectedTheme] = useState<ThemePreset>(theme);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
   const locale = useLocale();
   const isEn = locale === 'en';
 
   const handleApplyTheme = (presetId: ThemePreset) => {
     setSelectedTheme(presetId);
     setTheme(presetId);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 4000);
+    setErrorMessage(null);
+
+    startTransition(async () => {
+      const res = await setGlobalThemeAction(presetId);
+      if (res.error) {
+        setErrorMessage(res.error);
+      } else {
+        setSavedSuccess(true);
+        setTimeout(() => setSavedSuccess(false), 5000);
+      }
+    });
   };
 
   return (
@@ -38,16 +50,27 @@ export function ThemeStudio() {
         </p>
       </div>
 
+      {errorMessage && (
+        <div className="p-4 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-between animate-fade-in">
+          <div className="flex items-center gap-3">
+            <span className="text-base">⚠️</span>
+            <span className="text-sm font-bold">{errorMessage}</span>
+          </div>
+        </div>
+      )}
+
       {savedSuccess && (
         <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-between animate-fade-in">
           <div className="flex items-center gap-3">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             <span className="text-sm font-bold">
-              {isEn ? 'Theme applied and saved successfully!' : 'قالب با موفقیت تغییر کرد و ذخیره شد!'}
+              {isEn
+                ? 'Theme saved to database and activated site-wide for all visitors!'
+                : 'پوسته با موفقیت در پایگاه‌داده ذخیره شد و برای تمام بازدیدکنندگان سایت فعال گردید!'}
             </span>
           </div>
           <span className="text-xs text-muted-foreground">
-            {isEn ? 'Persistent 1-year cookie set' : 'کوکی ماندگار ۱ ساله تنظیم شد'}
+            {isEn ? 'Global DB Synced' : 'همگام‌سازی سراسری'}
           </span>
         </div>
       )}
@@ -125,15 +148,18 @@ export function ThemeStudio() {
                 <Button
                   size="sm"
                   variant={isCurrentActive ? "default" : "outline"}
+                  disabled={isPending}
                   className={`w-full rounded-lg text-xs font-semibold ${
                     isCurrentActive
                       ? 'bg-gradient-gold text-charcoal-950 shadow-gold'
                       : 'border-border text-foreground hover:bg-surface-elevated'
                   }`}
                 >
-                  {isCurrentActive
-                    ? (isEn ? 'Theme Currently Active' : 'قالب هم‌اکنون فعال است')
-                    : (isEn ? 'Activate This Theme' : 'فعال‌سازی این قالب')}
+                  {isPending && isSelected
+                    ? (isEn ? 'Saving Globally...' : 'در حال ذخیره‌سازی سراسری...')
+                    : isCurrentActive
+                    ? (isEn ? 'Theme Active Site-Wide' : 'قالب هم‌اکنون در کل سایت فعال است')
+                    : (isEn ? 'Activate Site-Wide' : 'فعال‌سازی در تمام سایت')}
                 </Button>
               </CardContent>
             </Card>

@@ -85,7 +85,7 @@ export default function AdminLoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@petbossclinic.com"
+                placeholder="admin@petboss.com"
                 className="w-full px-4 py-2.5 rounded-xl bg-[#121418] border border-border focus:border-primary focus:ring-1 focus:ring-primary text-sm text-foreground placeholder:text-muted-foreground/40 outline-none transition-all"
                 dir="ltr"
               />

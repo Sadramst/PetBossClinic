@@ -24,14 +24,8 @@ export function ThemeProvider({
   const [theme, setThemeState] = useState<ThemePreset>(initialTheme);
 
   useEffect(() => {
-    // Load from localStorage if present
-    const saved = localStorage.getItem(THEME_COOKIE_NAME) as ThemePreset | null;
-    if (saved && THEME_PRESETS.some((p) => p.id === saved)) {
-      setThemeState(saved);
-      document.documentElement.setAttribute('data-theme', saved);
-    } else {
-      document.documentElement.setAttribute('data-theme', initialTheme);
-    }
+    setThemeState(initialTheme);
+    document.documentElement.setAttribute('data-theme', initialTheme);
   }, [initialTheme]);
 
   const setTheme = (newTheme: ThemePreset) => {
