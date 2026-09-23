@@ -30,13 +30,16 @@ export async function generateMetadata({
       ? ['contact Pet Boss Clinic', 'veterinary phone Tehran', 'vet clinic address Gheitariyeh', 'Pet Boss appointment']
       : ['تماس با دامپزشکی پت باس', 'شماره تلفن دامپزشکی قیطریه', 'آدرس کلینیک پت باس شریعتی', 'رزرو نوبت دامپزشکی تهران'],
     alternates: {
-      canonical: isEn ? '/en/contact' : '/contact',
-      languages: { 'fa-IR': '/contact', en: '/en/contact' },
+      canonical: isEn ? 'https://www.petbossclinic.com/en/contact' : 'https://www.petbossclinic.com/contact',
+      languages: {
+        'fa-IR': 'https://www.petbossclinic.com/contact',
+        en: 'https://www.petbossclinic.com/en/contact',
+      },
     },
     openGraph: {
       title,
       description,
-      url: isEn ? '/en/contact' : '/contact',
+      url: isEn ? 'https://www.petbossclinic.com/en/contact' : 'https://www.petbossclinic.com/contact',
       images: [{ url: '/images/petboss-sign.jpg', width: 1200, height: 630 }],
     },
   };

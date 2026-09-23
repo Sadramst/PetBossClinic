@@ -31,13 +31,16 @@ export async function generateMetadata({
       ? ['veterinary FAQ Tehran', 'dog vaccination schedule', 'cat grooming FAQ', 'pet surgery care']
       : ['سوالات متداول دامپزشکی', 'زمان واکسن سگ و گربه', 'هزینه واکسیناسیون سگ تهران', 'مراقبت بعد از عقیم سازی'],
     alternates: {
-      canonical: isEn ? '/en/faq' : '/faq',
-      languages: { 'fa-IR': '/faq', en: '/en/faq' },
+      canonical: isEn ? 'https://www.petbossclinic.com/en/faq' : 'https://www.petbossclinic.com/faq',
+      languages: {
+        'fa-IR': 'https://www.petbossclinic.com/faq',
+        en: 'https://www.petbossclinic.com/en/faq',
+      },
     },
     openGraph: {
       title,
       description,
-      url: isEn ? '/en/faq' : '/faq',
+      url: isEn ? 'https://www.petbossclinic.com/en/faq' : 'https://www.petbossclinic.com/faq',
       images: [{ url: '/images/petboss-sign.jpg', width: 1200, height: 630 }],
     },
   };

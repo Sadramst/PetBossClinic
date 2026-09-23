@@ -28,13 +28,16 @@ export async function generateMetadata({
     title,
     description,
     alternates: {
-      canonical: isEn ? '/en/about' : '/about',
-      languages: { 'fa-IR': '/about', en: '/en/about' },
+      canonical: isEn ? 'https://www.petbossclinic.com/en/about' : 'https://www.petbossclinic.com/about',
+      languages: {
+        'fa-IR': 'https://www.petbossclinic.com/about',
+        en: 'https://www.petbossclinic.com/en/about',
+      },
     },
     openGraph: {
       title,
       description,
-      url: isEn ? '/en/about' : '/about',
+      url: isEn ? 'https://www.petbossclinic.com/en/about' : 'https://www.petbossclinic.com/about',
       images: [{ url: '/images/reception.jpg', width: 1200, height: 630 }],
     },
   };

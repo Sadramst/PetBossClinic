@@ -57,6 +57,7 @@ export function VeterinaryCareJsonLd({ nap, locale }: VeterinaryCareSchemaProps)
       latitude: nap.geo.lat,
       longitude: nap.geo.lng,
     },
+    hasMap: `https://maps.google.com/?q=${nap.geo.lat},${nap.geo.lng}`,
     openingHoursSpecification: [
       {
         '@type': 'OpeningHoursSpecification',

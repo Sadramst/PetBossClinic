@@ -30,16 +30,16 @@ export async function generateMetadata({
     title,
     description,
     alternates: {
-      canonical: isEn ? '/en/services' : '/services',
+      canonical: isEn ? 'https://www.petbossclinic.com/en/services' : 'https://www.petbossclinic.com/services',
       languages: {
-        'fa-IR': '/services',
-        en: '/en/services',
+        'fa-IR': 'https://www.petbossclinic.com/services',
+        en: 'https://www.petbossclinic.com/en/services',
       },
     },
     openGraph: {
       title,
       description,
-      url: isEn ? '/en/services' : '/services',
+      url: isEn ? 'https://www.petbossclinic.com/en/services' : 'https://www.petbossclinic.com/services',
       images: [{ url: '/images/veterinarian.jpg', width: 1200, height: 630 }],
     },
   };

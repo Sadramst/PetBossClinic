@@ -66,7 +66,7 @@ async function fetchClinicNAPFromDB(): Promise<ClinicNAP> {
   let phone = '+982126429715';
   let waNumber: string | null = null;
   let waLink: string | null = null;
-  let email = 'info@petbossclinic.com';
+  let email = 'petbossclinic@gmail.com';
   let addressFa = 'تهران، خیابان شریعتی، نرسیده به مترو قیطریه، پلاک ۱۷۳۳';
   let addressEn = 'No. 1733, Shariati St., near Gheytariyeh Metro Station, Tehran, Iran';
   let lat = 35.790937;
