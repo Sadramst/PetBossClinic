@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PetBossLogo } from '@/components/shared/pet-boss-logo';
 
-export function Header() {
+export function Header({ logoUrl }: { logoUrl?: string }) {
   const t = useTranslations('Navigation');
   const locale = useLocale();
   const pathname = usePathname();
@@ -28,7 +28,7 @@ export function Header() {
       <div className="container-site flex h-20 items-center justify-between">
         {/* Crowned Lion Brand Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          <PetBossLogo size="md" variant="gold" />
+          <PetBossLogo size="md" variant="gold" logoUrl={logoUrl} />
         </Link>
 
         {/* Desktop Navigation */}

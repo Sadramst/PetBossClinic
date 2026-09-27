@@ -7,7 +7,7 @@ import {
   uploadMediaAction,
   deleteMediaAction,
 } from '@/app/actions/media'
-import { SitePictures } from '@/lib/media'
+import { SitePictures, DEFAULT_SITE_PICTURES } from '@/lib/media'
 
 interface MediaItem {
   id: string
@@ -256,6 +256,12 @@ export function MediaManager({ currentPictures, mediaLibrary, isEn }: Props) {
                     <img
                       src={currentUrl}
                       alt={isEn ? slot.en : slot.fa}
+                      onError={(e) => {
+                        const fallback = DEFAULT_SITE_PICTURES[key]
+                        if (fallback && e.currentTarget.src !== fallback) {
+                          e.currentTarget.src = fallback
+                        }
+                      }}
                       className="max-h-full max-w-full object-contain rounded-lg drop-shadow-md transition-transform duration-300 group-hover:scale-105"
                     />
                     <div className="absolute bottom-2 start-2 end-2 bg-charcoal-950/80 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] text-muted-foreground font-mono truncate border border-border/40">

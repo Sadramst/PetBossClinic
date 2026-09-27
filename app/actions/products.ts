@@ -27,18 +27,25 @@ async function saveUploadedFile(file: File, subfolder: 'products' | 'categories'
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
 
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads', subfolder)
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true })
-  }
+  const base64Data = buffer.toString('base64')
+  const dataUri = `data:${file.type};base64,${base64Data}`
 
   const timestamp = Date.now()
   const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase()
   const fileName = `${timestamp}-${safeName}`
-  const filePath = path.join(uploadDir, fileName)
 
-  await fs.promises.writeFile(filePath, buffer)
-  return `/uploads/${subfolder}/${fileName}`
+  try {
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', subfolder)
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true })
+    }
+    const filePath = path.join(uploadDir, fileName)
+    await fs.promises.writeFile(filePath, buffer)
+  } catch {
+    // Ephemeral or read-only filesystem on serverless
+  }
+
+  return dataUri
 }
 
 export async function createProductAction(formData: FormData): Promise<ProductActionState> {

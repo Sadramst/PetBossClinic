@@ -10,6 +10,7 @@ interface PetBossLogoProps {
   textColor?: string;
   variant?: 'gold' | 'white' | 'dark';
   subtitle?: string;
+  logoUrl?: string;
 }
 
 export function PetBossLogo({
@@ -18,6 +19,7 @@ export function PetBossLogo({
   showText = true,
   variant = 'gold',
   subtitle,
+  logoUrl = '/images/logo.png',
 }: PetBossLogoProps) {
   let locale = 'fa';
   try {
@@ -67,9 +69,9 @@ export function PetBossLogo({
           </filter>
         </defs>
 
-        {/* Authentic Brand Emblem Image (white background removed) */}
+        {/* Authentic Brand Emblem Image */}
         <image
-          href="/images/logo.png"
+          href={logoUrl || '/images/logo.png'}
           x="0"
           y="0"
           width="120"

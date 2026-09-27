@@ -9,6 +9,7 @@ import { getActiveClinicTheme } from '@/lib/theme/theme-server';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { getClinicNAP } from '@/lib/clinic/nap';
+import { getSitePictures } from '@/lib/media';
 import { OrganizationJsonLd, WebSiteJsonLd } from '@/lib/seo/json-ld';
 
 const outfit = Outfit({
@@ -135,7 +136,10 @@ export default async function LocaleLayout({
   const initialTheme = await getActiveClinicTheme();
 
   const fontClass = locale === 'fa' ? vazirmatn.className : outfit.className;
-  const nap = await getClinicNAP();
+  const [nap, sitePictures] = await Promise.all([
+    getClinicNAP(),
+    getSitePictures(),
+  ]);
 
   return (
     <html lang={locale} dir={locale === 'fa' ? 'rtl' : 'ltr'} data-theme={initialTheme} suppressHydrationWarning>
@@ -152,9 +156,9 @@ export default async function LocaleLayout({
       >
         <ThemeProvider initialTheme={initialTheme}>
           <NextIntlClientProvider messages={messages}>
-            <Header />
+            <Header logoUrl={sitePictures.site_logo} />
             <main className="flex-grow">{children}</main>
-            <Footer nap={nap} />
+            <Footer nap={nap} logoUrl={sitePictures.site_logo} />
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

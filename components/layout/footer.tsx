@@ -3,7 +3,7 @@ import { Link } from '@/i18n/routing';
 import { PetBossLogo } from '@/components/shared/pet-boss-logo';
 import type { ClinicNAP } from '@/lib/clinic/nap';
 
-export function Footer({ nap }: { nap?: ClinicNAP }) {
+export function Footer({ nap, logoUrl }: { nap?: ClinicNAP; logoUrl?: string }) {
   const t = useTranslations('Footer');
   const nav = useTranslations('Navigation');
   const locale = useLocale();
@@ -29,7 +29,7 @@ export function Footer({ nap }: { nap?: ClinicNAP }) {
           {/* Brand Column */}
           <div className="lg:col-span-1">
             <Link href="/" className="inline-block mb-5">
-              <PetBossLogo size="md" variant="gold" />
+              <PetBossLogo size="md" variant="gold" logoUrl={logoUrl} />
             </Link>
             <p className="text-sm leading-relaxed max-w-xs text-foreground/80">
               {t('description')}

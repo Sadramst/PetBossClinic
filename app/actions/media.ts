@@ -37,7 +37,17 @@ export async function updateSitePictureAction(
     return { error: 'آدرس تصویر نامعتبر است.' }
   }
 
-  const cleanUrl = url.trim()
+  let cleanUrl = url.trim()
+
+  // Normalize relative paths: if user entered "logo.png" without leading slash, auto-prefix
+  if (!cleanUrl.startsWith('http') && !cleanUrl.startsWith('data:') && !cleanUrl.startsWith('/')) {
+    const candidateImagePath = path.join(process.cwd(), 'public', 'images', cleanUrl)
+    if (fs.existsSync(candidateImagePath)) {
+      cleanUrl = `/images/${cleanUrl}`
+    } else {
+      cleanUrl = `/${cleanUrl}`
+    }
+  }
 
   try {
     await db.media.upsert({
@@ -62,6 +72,7 @@ export async function updateSitePictureAction(
     revalidatePath('/[locale]/admin/media', 'page')
     revalidatePath('/[locale]/services', 'page')
     revalidatePath('/[locale]/about', 'page')
+    revalidatePath('/', 'layout')
 
     return { success: true, message: 'تصویر با موفقیت به‌روزرسانی شد.' }
   } catch (err: unknown) {
@@ -87,7 +98,8 @@ export async function resetSitePictureAction(key: string): Promise<MediaActionRe
 }
 
 /**
- * Uploads a physical media file to public/uploads/ and indexes it in db.media
+ * Uploads a media file, generates a Base64 data URI for 100% serverless durability,
+ * writes to public/uploads/ where possible, and indexes it in db.media.
  */
 export async function uploadMediaAction(formData: FormData): Promise<MediaActionResult> {
   const session = await getSession()
@@ -117,27 +129,36 @@ export async function uploadMediaAction(formData: FormData): Promise<MediaAction
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true })
-    }
+    // Base64 Data URI is completely self-contained and will NEVER return 404 on Vercel or any CDN
+    const base64Data = buffer.toString('base64')
+    const dataUri = `data:${file.type};base64,${base64Data}`
 
     const timestamp = Date.now()
     const safeName = file.name
       .replace(/[^a-zA-Z0-9.-]/g, '_')
       .toLowerCase()
     const fileName = `${timestamp}-${safeName}`
-    const filePath = path.join(uploadsDir, fileName)
-
-    await fs.promises.writeFile(filePath, buffer)
-
-    const publicUrl = `/uploads/${fileName}`
     const mediaKey = `upload_${timestamp}_${Math.random().toString(36).substring(2, 7)}`
+
+    // Attempt local disk save (succeeds on local/VPS, safely caught if running in read-only serverless)
+    try {
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true })
+      }
+      const filePath = path.join(uploadsDir, fileName)
+      await fs.promises.writeFile(filePath, buffer)
+    } catch {
+      // Ephemeral serverless container filesystem - safely ignored because we have dataUri in PostgreSQL
+    }
+
+    // Use dataUri as the primary URL so it is 100% self-contained and zero 404 risk
+    const effectiveUrl = dataUri
 
     const created = await db.media.create({
       data: {
         key: mediaKey,
-        url: publicUrl,
+        url: effectiveUrl,
         mime: file.type,
         size: file.size,
         altFa,
@@ -147,11 +168,12 @@ export async function uploadMediaAction(formData: FormData): Promise<MediaAction
 
     // If an assignment key was specified (e.g. site_logo or hero_reception), assign it immediately
     if (assignToKey && assignToKey in DEFAULT_SITE_PICTURES) {
-      await updateSitePictureAction(assignToKey, publicUrl, altFa, altEn)
+      await updateSitePictureAction(assignToKey, effectiveUrl, altFa, altEn)
     }
 
     revalidatePath('/[locale]/admin/media', 'page')
     revalidatePath('/[locale]', 'page')
+    revalidatePath('/', 'layout')
 
     return {
       success: true,

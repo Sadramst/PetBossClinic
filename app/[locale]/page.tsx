@@ -148,7 +148,7 @@ export default async function HomePage({
         <div className="container-site relative z-10 flex flex-col items-center text-center">
           {/* Main Crowned Lion Emblem */}
           <div className="mb-6 animate-fade-in">
-            <PetBossLogo size="xl" showText={false} variant="gold" />
+            <PetBossLogo size="xl" showText={false} variant="gold" logoUrl={sitePictures.site_logo} />
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-widest text-gradient-gold mb-2 uppercase">
