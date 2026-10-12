@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Admin Authentication & Protection Flow', () => {
   test('redirects unauthenticated visitor from /admin to /admin/login', async ({ page }) => {
     // Navigate directly to protected admin URL
-    await page.goto('/admin');
+    await page.goto('/admin', { waitUntil: 'domcontentloaded' });
 
     // Must be redirected to the real admin login URL, NOT 404 and NOT auth/login
     await expect(page).toHaveURL(/\/admin\/login/);
@@ -19,7 +19,7 @@ test.describe('Admin Authentication & Protection Flow', () => {
   });
 
   test('redirects unauthenticated visitor from /en/admin to /en/admin/login', async ({ page }) => {
-    await page.goto('/en/admin');
+    await page.goto('/en/admin', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/\/en\/admin\/login/);
   });
 
@@ -35,7 +35,7 @@ test.describe('Admin Authentication & Protection Flow', () => {
     ]);
 
     // Try accessing protected leads route
-    await page.goto('/admin/leads');
+    await page.goto('/admin/leads', { waitUntil: 'domcontentloaded' });
 
     // Must redirect to login, denying access to leads PII
     await expect(page).toHaveURL(/\/admin\/login/);

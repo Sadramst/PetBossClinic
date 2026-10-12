@@ -32,7 +32,7 @@ test.describe('Admin Control to Public Site Synchronization (Phase 1 Acceptance)
     await context.addCookies([cookie])
 
     // 2. Navigate to Admin Panel
-    await page.goto('/admin')
+    await page.goto('/admin', { waitUntil: 'domcontentloaded' })
     await expect(page).toHaveURL(/\/admin/)
 
     // 3. Verify Admin Modules are present (Phase 1 modules)
@@ -49,11 +49,11 @@ test.describe('Admin Control to Public Site Synchronization (Phase 1 Acceptance)
     }
 
     // 4. Navigate to Homepage Manager
-    await page.goto('/admin/homepage')
+    await page.goto('/admin/homepage', { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('heading', { name: /(مدیریت و کنترل بخش‌های صفحه اصلی|Homepage Sections Control)/ })).toBeVisible()
 
     // 5. Navigate to Public Homepage and verify zero prices do NOT exist
-    await page.goto('/fa')
+    await page.goto('/fa', { waitUntil: 'domcontentloaded' })
     const priceElements = await page.locator('span:has-text("تومان")').allInnerTexts()
     for (const text of priceElements) {
       expect(text).not.toMatch(/(^|[^\u06F0-\u06F90-9,٬])۰\s*تومان/)
@@ -69,7 +69,7 @@ test.describe('Admin Control to Public Site Synchronization (Phase 1 Acceptance)
     await expect(page.locator('body')).not.toContainText('دکتر علی حدیدی')
 
     // 9. Navigate to Staff Manager in admin and verify the active/inactive switch toggle is present
-    await page.goto('/admin/staff')
+    await page.goto('/admin/staff', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('button[role="switch"]').first()).toBeAttached()
   })
 })

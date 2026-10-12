@@ -52,4 +52,5 @@ jobs:
       run: |
         npx prisma db push
         npx prisma db seed
+        npm run build
         npm run test:e2e
