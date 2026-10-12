@@ -496,6 +496,23 @@ async function main() {
     ]
   })
 
+  // ─── Staff Members ────────────────────────────────────
+  await prisma.staffMember.createMany({
+    data: [
+      {
+        nameFa: 'دکتر علی حدیدی',
+        nameEn: 'Dr. Ali Hadidi',
+        titleFa: 'دامپزشک و جراح ارشد',
+        titleEn: 'Senior Veterinarian & Surgeon',
+        specialtyFa: 'جراحی بافت نرم و ارتوپدی حیوانات خانگی',
+        specialtyEn: 'Soft Tissue Surgery & Orthopedics',
+        licenseNo: '48921',
+        isActive: true,
+        sortOrder: 1,
+      },
+    ],
+  })
+
   // ─── Identity & Admin Users ─────────────────────────
   const adminSecret = process.env.INITIAL_ADMIN_PASSWORD || process.env.INITIAL_STAFF_ADMIN_PASSWORD
   if (!adminSecret) {

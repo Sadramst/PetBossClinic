@@ -50,10 +50,11 @@ test.describe('Admin Control to Public Site Synchronization (Phase 1 Acceptance)
 
     // 4. Navigate to Homepage Manager
     await page.goto('/admin/homepage')
-    await expect(page.locator('text=مدیریت سکشن‌های صفحه اصلی')).toBeVisible()
+    await expect(page.locator('h1')).toBeVisible()
+    await expect(page.locator('h1')).toContainText(/(مدیریت و کنترل بخش‌های صفحه اصلی|Homepage Sections Control)/)
 
     // 5. Navigate to Public Homepage and verify zero prices do NOT exist
-    await page.goto('/')
+    await page.goto('/fa')
     const priceElements = await page.locator('span:has-text("تومان")').allInnerTexts()
     for (const text of priceElements) {
       expect(text).not.toMatch(/(^|[^\u06F0-\u06F90-9,٬])۰\s*تومان/)
