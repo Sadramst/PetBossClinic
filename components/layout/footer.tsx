@@ -1,9 +1,19 @@
 import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { PetBossLogo } from '@/components/shared/pet-boss-logo';
+import { SocialIcon } from '@/components/shared/social-icon';
 import type { ClinicNAP } from '@/lib/clinic/nap';
+import type { NavItem } from '@/lib/navigation/menu';
 
-export function Footer({ nap, logoUrl }: { nap?: ClinicNAP; logoUrl?: string }) {
+export function Footer({
+  nap,
+  logoUrl,
+  navItems,
+}: {
+  nap?: ClinicNAP;
+  logoUrl?: string;
+  navItems?: NavItem[];
+}) {
   const t = useTranslations('Footer');
   const nav = useTranslations('Navigation');
   const locale = useLocale();
@@ -11,15 +21,15 @@ export function Footer({ nap, logoUrl }: { nap?: ClinicNAP; logoUrl?: string }) 
 
   const phoneDisplay = nap
     ? (isEnglish ? nap.phoneDisplayEn : nap.phoneDisplayFa)
-    : (isEnglish ? '+98 21 2642 9715' : '۰۲۱-۲۶۴۲۹۷۱۵');
-  const telLink = nap?.telLink || 'tel:+982126429715';
+    : '';
+  const telLink = nap?.telLink || '';
   const address = nap
     ? (isEnglish ? nap.addressEn : nap.addressFa)
-    : t('address');
-  const email = nap?.email || 'info@petbossclinic.com';
+    : '';
+  const email = nap?.email || '';
   const hoursDisplay = nap
     ? (isEnglish ? nap.workingHoursSummaryEn : nap.workingHoursSummaryFa)
-    : t('hoursValue');
+    : '';
 
   return (
     <footer className="bg-surface border-t border-border text-muted-foreground transition-colors duration-200">
@@ -34,40 +44,48 @@ export function Footer({ nap, logoUrl }: { nap?: ClinicNAP; logoUrl?: string }) 
             <p className="text-sm leading-relaxed max-w-xs text-foreground/80">
               {t('description')}
             </p>
-            <div className="flex items-center gap-3 mt-6">
-              {/* Instagram */}
-              <a
-                href="https://instagram.com/petbossclinic"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-surface-card border border-border flex items-center justify-center text-foreground hover:text-primary hover:border-primary transition-colors"
-                aria-label="Instagram"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-              </a>
-              {/* Telegram */}
-              <a
-                href="https://t.me/petbossclinic"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-full bg-surface-card border border-border flex items-center justify-center text-foreground hover:text-primary hover:border-primary transition-colors"
-                aria-label="Telegram"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-              </a>
-            </div>
+
+            {/* Dynamic Social Links from DB */}
+            {nap?.socialLinks && nap.socialLinks.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2.5 mt-6">
+                {nap.socialLinks.map((s) => (
+                  <a
+                    key={s.platform}
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-9 h-9 rounded-full bg-surface-card border border-border flex items-center justify-center text-foreground hover:text-primary hover:border-primary transition-colors"
+                    aria-label={s.platform}
+                  >
+                    <SocialIcon platform={s.platform} size={16} />
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Quick Links */}
           <div>
             <h4 className="text-primary font-bold mb-4 text-sm uppercase tracking-wider">{t('quickLinks')}</h4>
             <ul className="space-y-2.5 text-sm text-foreground/80">
-              <li><Link href="/" className="hover:text-primary transition-colors">{nav('home')}</Link></li>
-              <li><Link href="/services" className="hover:text-primary transition-colors">{nav('services')}</Link></li>
-              <li><Link href="/shop" className="hover:text-primary transition-colors">{nav('shop')}</Link></li>
-              <li><Link href="/about" className="hover:text-primary transition-colors">{nav('about')}</Link></li>
-              <li><Link href="/faq" className="hover:text-primary transition-colors">{nav('faq')}</Link></li>
-              <li><Link href="/contact" className="hover:text-primary transition-colors">{nav('contact')}</Link></li>
+              {navItems && navItems.length > 0 ? (
+                navItems.map((item) => (
+                  <li key={item.id}>
+                    <Link href={item.url} className="hover:text-primary transition-colors">
+                      {isEnglish ? (item.labelEn || item.labelFa) : item.labelFa}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <>
+                  <li><Link href="/" className="hover:text-primary transition-colors">{nav('home')}</Link></li>
+                  <li><Link href="/services" className="hover:text-primary transition-colors">{nav('services')}</Link></li>
+                  <li><Link href="/shop" className="hover:text-primary transition-colors">{nav('shop')}</Link></li>
+                  <li><Link href="/about" className="hover:text-primary transition-colors">{nav('about')}</Link></li>
+                  <li><Link href="/faq" className="hover:text-primary transition-colors">{nav('faq')}</Link></li>
+                  <li><Link href="/contact" className="hover:text-primary transition-colors">{nav('contact')}</Link></li>
+                </>
+              )}
             </ul>
           </div>
 
@@ -120,7 +138,7 @@ export function Footer({ nap, logoUrl }: { nap?: ClinicNAP; logoUrl?: string }) 
               href="https://www.appilico.com.au/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:text-primary-hover transition-colors font-semibold"
+              className="text-foreground hover:text-primary font-medium transition-colors"
             >
               Appilico
             </a>

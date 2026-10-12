@@ -11,6 +11,7 @@ import { Footer } from '@/components/layout/footer';
 import { FloatingShopButton } from '@/components/shared/floating-shop-button';
 import { getClinicNAP } from '@/lib/clinic/nap';
 import { getSitePictures } from '@/lib/media';
+import { getNavigationMenu } from '@/lib/navigation/menu';
 import { OrganizationJsonLd, WebSiteJsonLd } from '@/lib/seo/json-ld';
 
 const outfit = Outfit({
@@ -25,8 +26,6 @@ const vazirmatn = Vazirmatn({
   variable: '--font-vazirmatn',
 });
 
-export const dynamic = 'force-dynamic';
-
 export function generateStaticParams() {
   return [{ locale: 'fa' }, { locale: 'en' }];
 }
@@ -38,14 +37,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const isEn = locale === 'en';
+  const nap = await getClinicNAP();
 
   const title = isEn
     ? 'Pet Boss Clinic & Pet Shop | Premier Veterinary & Pet Boutique in Tehran'
     : 'کلینیک دامپزشکی پت باس | جراحی، واکسیناسیون، گرومینگ و پت شاپ قیطریه تهران';
 
   const description = isEn
-    ? 'Premier veterinary surgery, dental clinic, grooming salon & luxury pet boutique in Gheitariyeh, Tehran. Vaccination, orthopedics, parasite therapy & premium pet food. Open daily 10AM–10PM.'
-    : 'کلینیک تخصصی جراحی دامپزشکی، دندانپزشکی، واکسیناسیون، ارتوپدی، گرومینگ حرفه‌ای و پت شاپ لوکس در قیطریه تهران. خیابان شریعتی، پلاک ۱۷۳۳. همه روزه ۱۰ صبح الی ۲۲ شب.';
+    ? `Premier veterinary surgery, dental clinic, grooming salon & luxury pet boutique in Gheytariyeh, Tehran. ${nap.addressEn}. ${nap.workingHoursSummaryEn}.`
+    : `کلینیک تخصصی جراحی دامپزشکی، دندانپزشکی، واکسیناسیون، ارتوپدی، گرومینگ حرفه‌ای و پت شاپ لوکس در قیطریه تهران. ${nap.addressFa}. ${nap.workingHoursSummaryFa}.`;
 
   return {
     metadataBase: new URL('https://www.petbossclinic.com'),
@@ -137,9 +137,10 @@ export default async function LocaleLayout({
   const initialTheme = await getActiveClinicTheme();
 
   const fontClass = locale === 'fa' ? vazirmatn.className : outfit.className;
-  const [nap, sitePictures] = await Promise.all([
+  const [nap, sitePictures, navItems] = await Promise.all([
     getClinicNAP(),
     getSitePictures(),
+    getNavigationMenu('main-header'),
   ]);
 
   return (
@@ -157,10 +158,10 @@ export default async function LocaleLayout({
       >
         <ThemeProvider initialTheme={initialTheme}>
           <NextIntlClientProvider messages={messages}>
-            <Header logoUrl={sitePictures.site_logo} />
+            <Header logoUrl={sitePictures.site_logo} navItems={navItems} phone={nap.phone} />
             <main className="flex-grow">{children}</main>
             <FloatingShopButton />
-            <Footer nap={nap} logoUrl={sitePictures.site_logo} />
+            <Footer nap={nap} logoUrl={sitePictures.site_logo} navItems={navItems} />
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

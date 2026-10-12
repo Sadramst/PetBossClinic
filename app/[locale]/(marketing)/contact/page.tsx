@@ -7,6 +7,7 @@ import { BreadcrumbJsonLd, VeterinaryCareJsonLd } from "@/lib/seo/json-ld";
 
 export const revalidate = 60;
 
+
 export async function generateMetadata({
   params,
 }: {
@@ -14,14 +15,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const isEn = locale === 'en';
+  const nap = await getClinicNAP();
 
   const title = isEn
     ? 'Contact Pet Boss Clinic | Address & Phone Gheitariyeh Tehran'
     : 'تماس با کلینیک دامپزشکی پت باس | آدرس و شماره تلفن قیطریه تهران';
 
   const description = isEn
-    ? 'Contact Pet Boss Veterinary Clinic in Gheitariyeh, Shariati, Tehran. Call 021-26429715 or book online. Open daily 10AM–10PM.'
-    : 'تماس با کلینیک دامپزشکی پت باس در قیطریه، خیابان شریعتی تهران. شماره تلفن ۰۲۱-۲۶۴۲۹۷۱۵. رزرو آنلاین نوبت، مشاوره و آدرس روی نقشه. همه روزه ۱۰ الی ۲۲.';
+    ? `Contact Pet Boss Veterinary Clinic in ${nap.addressEn}. Call ${nap.phoneDisplayEn} or book online. Open daily ${nap.workingHoursSummaryEn}.`
+    : `تماس با کلینیک دامپزشکی پت باس در ${nap.addressFa}. شماره تلفن ${nap.phoneDisplayFa}. رزرو آنلاین نوبت، مشاوره و آدرس روی نقشه. ${nap.workingHoursSummaryFa}.`;
 
   return {
     title,
@@ -126,7 +128,7 @@ export default async function ContactPage({
                 scrolling="no"
                 marginHeight={0}
                 marginWidth={0}
-                src={`https://maps.google.com/maps?q=35.790937,51.4350853&hl=${isEn ? 'en' : 'fa'}&z=16&output=embed`}
+                src={`https://maps.google.com/maps?q=${nap.geo.lat},${nap.geo.lng}&hl=${isEn ? 'en' : 'fa'}&z=16&output=embed`}
                 className="w-full h-full grayscale contrast-125 opacity-90 hover:grayscale-0 transition-all duration-300"
               />
             </div>

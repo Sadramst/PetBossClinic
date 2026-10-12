@@ -4,11 +4,37 @@ import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { logAdminChange } from '@/lib/audit'
+import fs from 'fs'
+import path from 'path'
 
 export interface StaffActionState {
   error?: string
   success?: boolean
   message?: string
+}
+
+async function saveStaffPhoto(file: File): Promise<string> {
+  const bytes = await file.arrayBuffer()
+  const buffer = Buffer.from(bytes)
+
+  const base64Data = buffer.toString('base64')
+  const dataUri = `data:${file.type};base64,${base64Data}`
+
+  const timestamp = Date.now()
+  const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase()
+  const fileName = `${timestamp}-${safeName}`
+
+  try {
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'staff')
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true })
+    }
+    const filePath = path.join(uploadDir, fileName)
+    await fs.promises.writeFile(filePath, buffer)
+    return `/uploads/staff/${fileName}`
+  } catch {
+    return dataUri
+  }
 }
 
 export async function createStaffAction(formData: FormData): Promise<StaffActionState> {
@@ -24,11 +50,25 @@ export async function createStaffAction(formData: FormData): Promise<StaffAction
   const licenseNo = formData.get('licenseNo')?.toString().trim() || null
   const bioFa = formData.get('bioFa')?.toString().trim() || null
   const bioEn = formData.get('bioEn')?.toString().trim() || null
+  const sortOrderStr = formData.get('sortOrder')?.toString().trim()
   const isActive = formData.get('isActive') === 'true' || formData.get('isActive') === 'on'
+
+  let photoId = formData.get('photoId')?.toString().trim() || null
+  const photoFile = formData.get('photoFile') as File | null
+
+  if (photoFile && photoFile instanceof File && photoFile.size > 0) {
+    try {
+      photoId = await saveStaffPhoto(photoFile)
+    } catch (e) {
+      console.error('Error saving staff photo:', e)
+    }
+  }
 
   if (!nameFa) {
     return { error: 'نام و نام‌خانوادگی پزشک الزامی است.' }
   }
+
+  const sortOrder = sortOrderStr ? parseInt(sortOrderStr, 10) : 0
 
   try {
     const created = await db.staffMember.create({
@@ -42,6 +82,8 @@ export async function createStaffAction(formData: FormData): Promise<StaffAction
         licenseNo,
         bioFa,
         bioEn,
+        photoId,
+        sortOrder: isNaN(sortOrder) ? 0 : sortOrder,
         isActive,
       },
     })
@@ -50,7 +92,7 @@ export async function createStaffAction(formData: FormData): Promise<StaffAction
       action: 'CREATE',
       entity: 'STAFF',
       entityId: created.id,
-      after: { id: created.id, nameFa, nameEn, titleFa, specialtyFa, licenseNo, isActive },
+      after: { id: created.id, nameFa, nameEn, titleFa, specialtyFa, licenseNo, photoId, isActive },
     })
 
     revalidatePath('/[locale]/admin/staff', 'page')
@@ -76,9 +118,23 @@ export async function updateStaffAction(staffId: string, formData: FormData): Pr
   const licenseNo = formData.get('licenseNo')?.toString().trim() || null
   const bioFa = formData.get('bioFa')?.toString().trim() || null
   const bioEn = formData.get('bioEn')?.toString().trim() || null
+  const sortOrderStr = formData.get('sortOrder')?.toString().trim()
   const isActive = formData.get('isActive') === 'true' || formData.get('isActive') === 'on'
 
+  let photoId = formData.get('photoId')?.toString().trim() || null
+  const photoFile = formData.get('photoFile') as File | null
+
+  if (photoFile && photoFile instanceof File && photoFile.size > 0) {
+    try {
+      photoId = await saveStaffPhoto(photoFile)
+    } catch (e) {
+      console.error('Error saving staff photo:', e)
+    }
+  }
+
   if (!nameFa) return { error: 'نام الزامی است.' }
+
+  const sortOrder = sortOrderStr ? parseInt(sortOrderStr, 10) : 0
 
   try {
     const previous = await db.staffMember.findUnique({
@@ -97,6 +153,8 @@ export async function updateStaffAction(staffId: string, formData: FormData): Pr
         licenseNo,
         bioFa,
         bioEn,
+        ...(photoId !== null ? { photoId } : {}),
+        sortOrder: isNaN(sortOrder) ? 0 : sortOrder,
         isActive,
       },
     })
@@ -106,7 +164,7 @@ export async function updateStaffAction(staffId: string, formData: FormData): Pr
       entity: 'STAFF',
       entityId: staffId,
       before: previous ? { nameFa: previous.nameFa, titleFa: previous.titleFa, isActive: previous.isActive } : undefined,
-      after: { nameFa: updated.nameFa, titleFa: updated.titleFa, isActive: updated.isActive },
+      after: { nameFa: updated.nameFa, titleFa: updated.titleFa, photoId: updated.photoId, isActive: updated.isActive },
     })
 
     revalidatePath('/[locale]/admin/staff', 'page')
@@ -140,17 +198,16 @@ export async function toggleStaffActiveAction(staffId: string): Promise<StaffAct
       action: 'UPDATE',
       entity: 'STAFF',
       entityId: staffId,
-      before: { isActive: existing.isActive },
-      after: { isActive: updated.isActive, nameFa: existing.nameFa },
+      after: { isActive: updated.isActive },
     })
 
     revalidatePath('/[locale]/admin/staff', 'page')
     revalidatePath('/[locale]/about', 'page')
     revalidatePath('/[locale]', 'page')
-    return { success: true }
+    return { success: true, message: `وضعیت ${existing.nameFa} با موفقیت تغییر کرد.` }
   } catch (err: unknown) {
     console.error('Error toggling staff status:', err)
-    return { error: 'خطا در تغییر وضعیت فعالیت پزشک.' }
+    return { error: 'خطا در تغییر وضعیت عضو کادر درمانی.' }
   }
 }
 
@@ -159,12 +216,7 @@ export async function deleteStaffAction(staffId: string): Promise<StaffActionSta
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
-    const existing = await db.staffMember.findUnique({
-      where: { id: staffId },
-      select: { id: true, nameFa: true },
-    })
-
-    await db.staffMember.delete({
+    const deleted = await db.staffMember.delete({
       where: { id: staffId },
     })
 
@@ -172,15 +224,15 @@ export async function deleteStaffAction(staffId: string): Promise<StaffActionSta
       action: 'DELETE',
       entity: 'STAFF',
       entityId: staffId,
-      before: existing || { id: staffId },
+      before: { nameFa: deleted.nameFa, titleFa: deleted.titleFa },
     })
 
     revalidatePath('/[locale]/admin/staff', 'page')
     revalidatePath('/[locale]/about', 'page')
     revalidatePath('/[locale]', 'page')
-    return { success: true, message: 'عضو کادر با موفقیت حذف گردید.' }
+    return { success: true, message: 'عضو کادر درمانی با موفقیت حذف شد.' }
   } catch (err: unknown) {
     console.error('Error deleting staff member:', err)
-    return { error: 'خطا در حذف عضو کادر پزشکی.' }
+    return { error: 'خطا در حذف عضو کادر درمانی.' }
   }
 }

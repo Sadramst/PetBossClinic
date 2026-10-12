@@ -7,6 +7,8 @@ import {
   toggleServiceActiveAction,
   deleteServiceAction,
 } from '@/app/actions/services'
+import { formatServicePrice } from '@/lib/format/price'
+import { PriceDisplayMode } from '@prisma/client'
 
 interface DivisionItem {
   id: string
@@ -23,6 +25,7 @@ interface ServiceItem {
   slugEn: string | null
   durationFa: string | null
   durationEn: string | null
+  priceDisplayMode: PriceDisplayMode
   priceFrom: number | null
   priceTo: number | null
   descriptionFa: string | null
@@ -49,7 +52,9 @@ export function ServicesManager({ services, divisions, isEn }: Props) {
   const [nameEn, setNameEn] = useState('')
   const [durationFa, setDurationFa] = useState('')
   const [durationEn, setDurationEn] = useState('')
+  const [priceDisplayMode, setPriceDisplayMode] = useState<PriceDisplayMode>('ON_REQUEST')
   const [priceFrom, setPriceFrom] = useState('')
+  const [priceTo, setPriceTo] = useState('')
   const [descriptionFa, setDescriptionFa] = useState('')
   const [descriptionEn, setDescriptionEn] = useState('')
   const [isActive, setIsActive] = useState(true)
@@ -61,7 +66,9 @@ export function ServicesManager({ services, divisions, isEn }: Props) {
     setNameEn('')
     setDurationFa('')
     setDurationEn('')
+    setPriceDisplayMode('ON_REQUEST')
     setPriceFrom('')
+    setPriceTo('')
     setDescriptionFa('')
     setDescriptionEn('')
     setIsActive(true)
@@ -76,7 +83,9 @@ export function ServicesManager({ services, divisions, isEn }: Props) {
     setNameEn(s.nameEn || '')
     setDurationFa(s.durationFa || '')
     setDurationEn(s.durationEn || '')
+    setPriceDisplayMode(s.priceDisplayMode || 'ON_REQUEST')
     setPriceFrom(s.priceFrom ? s.priceFrom.toString() : '')
+    setPriceTo(s.priceTo ? s.priceTo.toString() : '')
     setDescriptionFa(s.descriptionFa || '')
     setDescriptionEn(s.descriptionEn || '')
     setIsActive(s.isActive)
@@ -94,7 +103,9 @@ export function ServicesManager({ services, divisions, isEn }: Props) {
     formData.append('nameEn', nameEn)
     formData.append('durationFa', durationFa)
     formData.append('durationEn', durationEn)
+    formData.append('priceDisplayMode', priceDisplayMode)
     formData.append('priceFrom', priceFrom)
+    formData.append('priceTo', priceTo)
     formData.append('descriptionFa', descriptionFa)
     formData.append('descriptionEn', descriptionEn)
     formData.append('isActive', isActive ? 'true' : 'false')
@@ -206,10 +217,8 @@ export function ServicesManager({ services, divisions, isEn }: Props) {
                       <td className="px-5 py-4 text-muted-foreground">
                         {sDuration || '—'}
                       </td>
-                      <td className="px-5 py-4 font-bold text-primary font-mono">
-                        {service.priceFrom
-                          ? (isEn ? service.priceFrom.toLocaleString('en-US') : service.priceFrom.toLocaleString('fa-IR'))
-                          : (isEn ? 'Inquiry' : 'استعلامی')}
+                      <td className="px-5 py-4 font-bold text-primary font-mono text-xs">
+                        {formatServicePrice(service.priceDisplayMode || 'ON_REQUEST', service.priceFrom, service.priceTo, isEn ? 'en' : 'fa')}
                       </td>
                       <td className="px-5 py-4 text-center">
                         <button
@@ -358,17 +367,52 @@ export function ServicesManager({ services, divisions, isEn }: Props) {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-foreground/80 mb-1">
-                  {isEn ? 'Base Price in Tomans (optional)' : 'قیمت پایه به تومان (اختیاری)'}
-                </label>
-                <input
-                  type="number"
-                  value={priceFrom}
-                  onChange={(e) => setPriceFrom(e.target.value)}
-                  placeholder="350000"
-                  className="w-full px-3.5 py-2 rounded-xl bg-surface-elevated border border-border text-xs text-foreground focus:border-primary outline-none font-mono dir-ltr"
-                />
+              <div className="p-4 rounded-xl bg-surface-elevated border border-border space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-foreground/80 mb-1">
+                    {isEn ? 'Price Display Mode' : 'نحوه نمایش قیمت خدمت'}
+                  </label>
+                  <select
+                    value={priceDisplayMode}
+                    onChange={(e) => setPriceDisplayMode(e.target.value as PriceDisplayMode)}
+                    className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-xs text-foreground focus:border-primary outline-none"
+                  >
+                    <option value="ON_REQUEST">{isEn ? 'Call for price / On Request («تماس بگیرید»)' : 'استعلامی / تماس بگیرید (ON_REQUEST)'}</option>
+                    <option value="FROM">{isEn ? 'Starting from («از ... تومان»)' : 'شروع قیمت از ... تومان (FROM)'}</option>
+                    <option value="RANGE">{isEn ? 'Price Range («از ... تا ... تومان»)' : 'بازه قیمتی از ... تا ... تومان (RANGE)'}</option>
+                  </select>
+                </div>
+
+                {priceDisplayMode !== 'ON_REQUEST' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground/80 mb-1">
+                        {isEn ? 'Price From (Tomans)' : 'قیمت شروع / پایه (تومان)'}
+                      </label>
+                      <input
+                        type="number"
+                        value={priceFrom}
+                        onChange={(e) => setPriceFrom(e.target.value)}
+                        placeholder="350000"
+                        className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-xs text-foreground focus:border-primary outline-none font-mono dir-ltr"
+                      />
+                    </div>
+                    {priceDisplayMode === 'RANGE' && (
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground/80 mb-1">
+                          {isEn ? 'Price To (Tomans)' : 'سقف قیمت تا (تومان)'}
+                        </label>
+                        <input
+                          type="number"
+                          value={priceTo}
+                          onChange={(e) => setPriceTo(e.target.value)}
+                          placeholder="600000"
+                          className="w-full px-3.5 py-2 rounded-xl bg-surface border border-border text-xs text-foreground focus:border-primary outline-none font-mono dir-ltr"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>

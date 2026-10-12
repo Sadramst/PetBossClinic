@@ -3,6 +3,7 @@
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { PriceDisplayMode } from '@prisma/client'
 import { logAdminChange } from '@/lib/audit'
 
 export interface ServiceActionState {
@@ -33,6 +34,7 @@ export async function createServiceAction(formData: FormData): Promise<ServiceAc
   const slugEnInput = formData.get('slugEn')?.toString().trim()
   const durationFa = formData.get('durationFa')?.toString().trim() || null
   const durationEn = formData.get('durationEn')?.toString().trim() || null
+  const priceDisplayMode = (formData.get('priceDisplayMode')?.toString().trim() as PriceDisplayMode) || 'ON_REQUEST'
   const priceFromStr = formData.get('priceFrom')?.toString().trim()
   const priceToStr = formData.get('priceTo')?.toString().trim()
   const descriptionFa = formData.get('descriptionFa')?.toString().trim() || null
@@ -74,6 +76,7 @@ export async function createServiceAction(formData: FormData): Promise<ServiceAc
         slugEn: finalSlugEn,
         durationFa,
         durationEn,
+        priceDisplayMode,
         priceFrom: isNaN(priceFrom as number) ? null : priceFrom,
         priceTo: isNaN(priceTo as number) ? null : priceTo,
         descriptionFa,
@@ -111,6 +114,7 @@ export async function updateServiceAction(serviceId: string, formData: FormData)
   const slugEn = formData.get('slugEn')?.toString().trim() || null
   const durationFa = formData.get('durationFa')?.toString().trim() || null
   const durationEn = formData.get('durationEn')?.toString().trim() || null
+  const priceDisplayMode = (formData.get('priceDisplayMode')?.toString().trim() as PriceDisplayMode) || 'ON_REQUEST'
   const priceFromStr = formData.get('priceFrom')?.toString().trim()
   const priceToStr = formData.get('priceTo')?.toString().trim()
   const descriptionFa = formData.get('descriptionFa')?.toString().trim() || null
@@ -139,6 +143,7 @@ export async function updateServiceAction(serviceId: string, formData: FormData)
         slugEn,
         durationFa,
         durationEn,
+        priceDisplayMode,
         priceFrom: isNaN(priceFrom as number) ? null : priceFrom,
         priceTo: isNaN(priceTo as number) ? null : priceTo,
         descriptionFa,

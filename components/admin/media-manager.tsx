@@ -54,8 +54,8 @@ export function MediaManager({ currentPictures, mediaLibrary, isEn }: Props) {
     site_signboard: {
       fa: 'تابلوی رسمی و سردرب کلینیک (عکس تابلوی مشکی و طلایی)',
       en: 'Official Clinic Signboard Photo (3D Black & Gold)',
-      descFa: 'تصویر تابلوی حقیقی سردر کلینیک با شماره تلفن ۰۲۱۲۶۴۲۹۷۱۵.',
-      descEn: 'Authentic 3D luxury facade signboard with phone number 02126429715.',
+      descFa: 'تصویر تابلوی حقیقی سردر کلینیک.',
+      descEn: 'Authentic 3D luxury facade signboard.',
     },
     hero_reception: {
       fa: 'تصویر اصلی هیرو و سالن پذیرش لوکس',

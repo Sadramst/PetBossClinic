@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { BreadcrumbJsonLd, FAQPageJsonLd } from "@/lib/seo/json-ld";
+import { getClinicNAP } from "@/lib/clinic/nap";
 
 export const revalidate = 60;
 
@@ -55,16 +56,19 @@ export default async function FaqPage({
   const isEn = locale === 'en';
   const t = await getTranslations('FAQ');
 
-  const categories = await db.faqCategory.findMany({
-    where: { isActive: true },
-    orderBy: { sortOrder: 'asc' },
-    include: {
-      faqs: {
-        where: { isActive: true },
-        orderBy: { sortOrder: 'asc' },
+  const [categories, nap] = await Promise.all([
+    db.faqCategory.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        faqs: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+        },
       },
-    },
-  });
+    }),
+    getClinicNAP(),
+  ]);
 
   const allFaqs = categories.flatMap((cat) =>
     cat.faqs.map((f) => ({
@@ -143,7 +147,7 @@ export default async function FaqPage({
           <p className="text-muted-foreground mb-8 max-w-md mx-auto text-sm leading-relaxed">{t('contactPrompt')}</p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Button asChild className="bg-gradient-gold hover:opacity-90 text-charcoal-950 font-bold rounded-full shadow-gold px-8 py-6">
-              <a href="tel:+982126429715">{t('callDirect')}</a>
+              <a href={nap.telLink}>{t('callDirect')}</a>
             </Button>
             <Button asChild variant="outline" className="rounded-full border-border-gold text-foreground hover:bg-surface-elevated px-8 py-6">
               <Link href="/contact">{t('sendMessage')}</Link>

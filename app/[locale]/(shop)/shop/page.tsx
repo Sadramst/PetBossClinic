@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { db } from '@/lib/db'
 import { ShopCatalogClient } from '@/components/shop'
 import { BreadcrumbJsonLd } from '@/lib/seo/json-ld'
+import { getClinicNAP } from '@/lib/clinic/nap'
 
 export const revalidate = 60;
 
@@ -25,7 +26,7 @@ export async function generateMetadata({
     title,
     description,
     keywords: isEn
-      ? ['pet shop Tehran', 'pet shop Gheitariyeh', 'cat food Royal Canin Tehran', 'dog dry food Tehran', 'pet accessories Shariati']
+      ? ['pet shop Tehran', 'veterinary boutique Gheytariyeh', 'Royal Canin Tehran', 'Josera cat food', 'cat litter Tehran']
       : ['پت شاپ تهران', 'پت شاپ قیطریه', 'پت شاپ شریعتی', 'خرید غذای خشک سگ تهران', 'غذای گربه رویال کنین', 'خاک گربه قیطریه', 'لوازم حیوانات خانگی'],
     alternates: {
       canonical: isEn ? 'https://www.petbossclinic.com/en/shop' : 'https://www.petbossclinic.com/shop',
@@ -37,14 +38,13 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: `https://www.petbossclinic.com/${locale}/shop`,
-      siteName: isEn ? 'Pet Boss Clinic & Pet Shop' : 'کلینیک و پت‌شاپ پت باس',
+      url: isEn ? 'https://www.petbossclinic.com/en/shop' : 'https://www.petbossclinic.com/shop',
       images: [
         {
-          url: 'https://www.petbossclinic.com/images/petshop.jpg',
+          url: '/images/categories/cat-dry-food.jpg',
           width: 1200,
           height: 630,
-          alt: isEn ? 'Pet Boss Luxury Pet Shop' : 'پت‌شاپ لوکس پت باس',
+          alt: title,
         },
       ],
       locale: isEn ? 'en_US' : 'fa_IR',
@@ -61,7 +61,7 @@ export default async function ShopPage({
   const { locale } = await params
   const isEn = locale === 'en'
 
-  const [categories, products] = await Promise.all([
+  const [categories, products, nap] = await Promise.all([
     db.productCategory.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
@@ -94,17 +94,10 @@ export default async function ShopPage({
         shortDescFa: true,
         shortDescEn: true,
         price: true,
+        comparePrice: true,
         stockStatus: true,
         isActive: true,
         createdAt: true,
-        ogImageId: true,
-        images: {
-          orderBy: { sortOrder: 'asc' },
-          select: {
-            imageId: true,
-            isPrimary: true,
-          },
-        },
         category: {
           select: {
             id: true,
@@ -114,25 +107,37 @@ export default async function ShopPage({
             imageId: true,
           },
         },
+        images: {
+          orderBy: { sortOrder: 'asc' },
+          select: {
+            imageId: true,
+          },
+        },
       },
     }),
+    getClinicNAP(),
   ])
 
   // JSON-LD structured data for E-commerce & Search Engines
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Store',
-    name: isEn ? 'Pet Boss Luxury Boutique & Shop' : 'بوتیک و پت‌شاپ لوکس پت باس',
+    name: isEn ? (nap.nameEn || 'Pet Boss Luxury Boutique & Shop') : (nap.nameFa || 'بوتیک و پت‌شاپ لوکس پت باس'),
     description: isEn
       ? 'Premier super-premium pet food, prescription veterinary diets, and luxury pet accessories.'
       : 'عرضه تخصصی غذاهای سوپرپرمیوم، مکمل‌های درمانی و ملزومات لوکس سگ و گربه.',
     url: `https://www.petbossclinic.com/${locale}/shop`,
-    telephone: '+982126429715',
+    telephone: nap.phone,
     address: {
       '@type': 'PostalAddress',
-      streetAddress: 'Gheytarieh, Saba Blvd',
+      streetAddress: isEn ? nap.addressEn : nap.addressFa,
       addressLocality: 'Tehran',
       addressCountry: 'IR',
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: nap.geo.lat,
+      longitude: nap.geo.lng,
     },
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
@@ -158,7 +163,12 @@ export default async function ShopPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ShopCatalogClient categories={categories} products={products} />
+      <ShopCatalogClient
+        categories={categories}
+        products={products}
+        whatsappNumber={nap.whatsappNumber}
+        phone={nap.phone}
+      />
     </>
   )
 }

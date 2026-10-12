@@ -20,7 +20,7 @@ export async function updateSiteSettingsAction(formData: FormData): Promise<Sett
   const taglineFa = formData.get('taglineFa')?.toString().trim() || 'مراقبت با عشق'
   const taglineEn = formData.get('taglineEn')?.toString().trim() || 'Care with love'
   const phone = formData.get('phone')?.toString().trim() || '۰۲۱-۲۶۴۲۹۷۱۵'
-  const addressFa = formData.get('addressFa')?.toString().trim() || 'تهران، خیابان شریعتی، بالاتر از پل صدر، نرسیده به ایستگاه مترو قیطریه، پلاک ۱۷۳۳'
+  const addressFa = formData.get('addressFa')?.toString().trim() || 'تهران، خیابان شریعتی، نرسیده به مترو قیطریه، پلاک ۱۷۳۳'
   const addressEn = formData.get('addressEn')?.toString().trim() || 'Shariati St., north of Sadr Bridge, near Gheytarieh Metro Station, No. 1733, Tehran, Iran'
   const geo = formData.get('geo')?.toString().trim() || '35.790937, 51.4350853'
   const workingHoursFa = formData.get('workingHoursFa')?.toString().trim() || '۱۰:۰۰ صبح الی ۲۲:۰۰ شب (همه روزه)'

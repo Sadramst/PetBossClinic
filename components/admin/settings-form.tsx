@@ -40,7 +40,7 @@ export function SettingsForm({ initialSettings, isEn }: Props) {
   const [taglineFa, setTaglineFa] = useState(initialSettings?.taglineFa || 'مراقبت با عشق')
   const [taglineEn, setTaglineEn] = useState(initialSettings?.taglineEn || 'Care with love')
   const [phone, setPhone] = useState(defaultPhone || '۰۲۱-۲۶۴۲۹۷۱۵')
-  const [addressFa, setAddressFa] = useState(addresses?.fa || 'تهران، خیابان شریعتی، بالاتر از پل صدر، نرسیده به ایستگاه مترو قیطریه، پلاک ۱۷۳۳')
+  const [addressFa, setAddressFa] = useState(addresses?.fa || 'تهران، خیابان شریعتی، نرسیده به مترو قیطریه، پلاک ۱۷۳۳')
   const [addressEn, setAddressEn] = useState(addresses?.en || 'Shariati St., north of Sadr Bridge, near Gheytarieh Metro Station, No. 1733, Tehran, Iran')
   const [geo, setGeo] = useState(geoObj?.coordinates || '35.790937, 51.4350853')
   const [workingHoursFa, setWorkingHoursFa] = useState(workingHoursObj?.fa || '۱۰:۰۰ صبح الی ۲۲:۰۰ شب (همه روزه)')

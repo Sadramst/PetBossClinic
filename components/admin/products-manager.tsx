@@ -6,6 +6,7 @@ import {
   createProductAction,
   updateProductAction,
   deleteProductAction,
+  toggleProductFeaturedAction,
   createCategoryAction,
   updateCategoryAction,
   deleteCategoryAction,
@@ -40,6 +41,7 @@ export interface ProductItem {
   shortDescFa: string | null
   shortDescEn: string | null
   isActive: boolean
+  isFeatured?: boolean
   ogImageId?: string | null
   images?: Array<{
     id: string
@@ -88,6 +90,7 @@ export function ProductsManager({ products, categories, isEn }: Props) {
   const [pShortDescFa, setPShortDescFa] = useState('')
   const [pShortDescEn, setPShortDescEn] = useState('')
   const [pIsActive, setPIsActive] = useState(true)
+  const [pIsFeatured, setPIsFeatured] = useState(false)
   const [pImageFile, setPImageFile] = useState<File | null>(null)
   const [pImageUrl, setPImageUrl] = useState('')
   const [pRemoveImage, setPRemoveImage] = useState(false)
@@ -116,6 +119,7 @@ export function ProductsManager({ products, categories, isEn }: Props) {
     setPShortDescFa('')
     setPShortDescEn('')
     setPIsActive(true)
+    setPIsFeatured(false)
     setPImageFile(null)
     setPImageUrl('')
     setPRemoveImage(false)
@@ -133,6 +137,7 @@ export function ProductsManager({ products, categories, isEn }: Props) {
     setPShortDescFa(p.shortDescFa || '')
     setPShortDescEn(p.shortDescEn || '')
     setPIsActive(p.isActive)
+    setPIsFeatured(Boolean(p.isFeatured))
     setPImageFile(null)
     setPImageUrl(p.images?.[0]?.imageId || p.ogImageId || '')
     setPRemoveImage(false)
@@ -151,6 +156,7 @@ export function ProductsManager({ products, categories, isEn }: Props) {
     formData.append('shortDescFa', pShortDescFa)
     formData.append('shortDescEn', pShortDescEn)
     formData.append('isActive', pIsActive ? 'true' : 'false')
+    formData.append('isFeatured', pIsFeatured ? 'true' : 'false')
 
     if (pRemoveImage) {
       formData.append('removeImage', 'true')
@@ -430,13 +436,14 @@ export function ProductsManager({ products, categories, isEn }: Props) {
                     <th className="p-3.5 text-start">{isEn ? 'Category' : 'دسته‌بندی'}</th>
                     <th className="p-3.5 text-start">{isEn ? 'Price' : 'قیمت'}</th>
                     <th className="p-3.5 text-center">{isEn ? 'Status' : 'وضعیت انبار'}</th>
+                    <th className="p-3.5 text-center">{isEn ? 'Featured' : 'ویژه'}</th>
                     <th className="p-3.5 text-center">{isEn ? 'Actions' : 'عملیات'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {filteredProducts.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                      <td colSpan={6} className="p-8 text-center text-muted-foreground">
                         {isEn ? 'No products found matching criteria.' : 'هیچ محصولی با این مشخصات یافت نشد.'}
                       </td>
                     </tr>
@@ -509,6 +516,27 @@ export function ProductsManager({ products, categories, isEn }: Props) {
                               ? isEn ? 'Low Stock' : 'محدود'
                               : isEn ? 'Out of Stock' : 'ناموجود'}
                           </span>
+                        </td>
+                        <td className="p-3.5 text-center whitespace-nowrap">
+                          <button
+                            type="button"
+                            disabled={isPending}
+                            onClick={() => {
+                              startTransition(async () => {
+                                const res = await toggleProductFeaturedAction(p.id, !p.isFeatured)
+                                if (res.error) showMessage('error', res.error)
+                                else showMessage('success', res.message || 'به‌روز شد')
+                              })
+                            }}
+                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer ${
+                              p.isFeatured
+                                ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
+                                : 'bg-surface-elevated text-muted-foreground border-border hover:text-foreground'
+                            }`}
+                            title={p.isFeatured ? (isEn ? 'Remove from featured' : 'حذف از محصولات ویژه صفحه اصلی') : (isEn ? 'Set as featured' : 'انتخاب به عنوان محصول ویژه صفحه اصلی')}
+                          >
+                            {p.isFeatured ? '⭐ ' + (isEn ? 'Featured' : 'ویژه') : '☆ ' + (isEn ? 'Standard' : 'عادی')}
+                          </button>
                         </td>
                         <td className="p-3.5 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-2">
@@ -879,18 +907,32 @@ export function ProductsManager({ products, categories, isEn }: Props) {
                 </div>
               </div>
 
-              {/* Active Toggle */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="pActive"
-                  checked={pIsActive}
-                  onChange={(e) => setPIsActive(e.target.checked)}
-                  className="rounded text-primary focus:ring-primary h-4 w-4 bg-surface-elevated border-border cursor-pointer"
-                />
-                <label htmlFor="pActive" className="text-xs text-foreground font-semibold cursor-pointer">
-                  {isEn ? 'Active & Visible in Shop Catalog' : 'محصول فعال و قابل مشاهده در ویترین پت‌شاپ'}
-                </label>
+              {/* Active & Featured Toggles */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="pActive"
+                    checked={pIsActive}
+                    onChange={(e) => setPIsActive(e.target.checked)}
+                    className="rounded text-primary focus:ring-primary h-4 w-4 bg-surface-elevated border-border cursor-pointer"
+                  />
+                  <label htmlFor="pActive" className="text-xs text-foreground font-semibold cursor-pointer">
+                    {isEn ? 'Active & Visible in Shop Catalog' : 'محصول فعال در پت‌شاپ'}
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="pFeatured"
+                    checked={pIsFeatured}
+                    onChange={(e) => setPIsFeatured(e.target.checked)}
+                    className="rounded text-primary focus:ring-primary h-4 w-4 bg-surface-elevated border-border cursor-pointer"
+                  />
+                  <label htmlFor="pFeatured" className="text-xs text-amber-400 font-semibold cursor-pointer">
+                    ⭐ {isEn ? 'Featured on Homepage' : 'نمایش در ویترین ویژه صفحه اصلی'}
+                  </label>
+                </div>
               </div>
 
               {/* Modal Buttons */}

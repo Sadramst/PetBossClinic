@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { getSitePictures } from "@/lib/media";
 import { BreadcrumbJsonLd, ServiceJsonLd } from '@/lib/seo/json-ld';
+import { formatServicePrice } from "@/lib/format/price";
+import { getClinicNAP } from "@/lib/clinic/nap";
 
 export const revalidate = 60;
 
@@ -54,7 +56,7 @@ export default async function ServicesPage({
   const isEn = locale === 'en';
   const t = await getTranslations('Services');
 
-  const [divisions, sitePictures] = await Promise.all([
+  const [divisions, sitePictures, nap] = await Promise.all([
     db.division.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
@@ -66,6 +68,7 @@ export default async function ServicesPage({
       },
     }),
     getSitePictures(),
+    getClinicNAP(),
   ]);
   // Build service items for JSON-LD
   const allServices = divisions.flatMap((div) =>
@@ -166,31 +169,20 @@ export default async function ServicesPage({
                           <p className="text-sm text-muted-foreground line-clamp-3 mb-4 leading-relaxed">{sDesc}</p>
                           <div className="pt-3 border-t border-border flex items-center justify-between">
                             <div>
-                              {service.priceFrom ? (
-                                <div className="flex items-baseline gap-1">
-                                  <span className="text-sm font-bold text-primary">
-                                    {isEn
-                                      ? service.priceFrom.toLocaleString('en-US')
-                                      : service.priceFrom.toLocaleString('fa-IR')}
-                                  </span>
-                                  {service.priceTo && (
-                                    <span className="text-sm font-bold text-primary">
-                                      — {isEn
-                                        ? service.priceTo.toLocaleString('en-US')
-                                        : service.priceTo.toLocaleString('fa-IR')}
-                                    </span>
-                                  )}
-                                  <span className="text-xs text-muted-foreground">{t('toman')}</span>
-                                </div>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">{t('callForPrice')}</span>
-                              )}
+                              <div className="text-sm font-bold text-primary">
+                                {formatServicePrice(
+                                  service.priceDisplayMode,
+                                  service.priceFrom,
+                                  service.priceTo,
+                                  isEn ? 'en' : 'fa'
+                                )}
+                              </div>
                               {sPriceNote && (
                                 <p className="text-[11px] text-muted-foreground mt-0.5">{sPriceNote}</p>
                               )}
                             </div>
                             <Button asChild size="sm" className="bg-primary/15 text-primary hover:bg-primary hover:text-charcoal-950 font-semibold text-xs rounded-full px-3.5 py-1.5 transition-all shadow-sm">
-                              <a href="tel:+982126429715" className="flex items-center gap-1.5">
+                              <a href={nap.telLink || "#"} className="flex items-center gap-1.5">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                                 <span>{t('bookNow')}</span>
                               </a>

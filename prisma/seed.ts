@@ -497,7 +497,10 @@ async function main() {
   })
 
   // ─── Identity & Admin Users ─────────────────────────
-  const adminSecret = process.env.INITIAL_ADMIN_PASSWORD || 'PetBoss#Clinic2026!Admin'
+  const adminSecret = process.env.INITIAL_ADMIN_PASSWORD || process.env.INITIAL_STAFF_ADMIN_PASSWORD
+  if (!adminSecret) {
+    throw new Error('INITIAL_ADMIN_PASSWORD or INITIAL_STAFF_ADMIN_PASSWORD environment variable must be set to seed admin users.')
+  }
   const superAdminPassword = hashPassword(adminSecret)
 
   await prisma.user.upsert({
@@ -515,7 +518,11 @@ async function main() {
     },
   })
 
-  const adminPassword = hashPassword(process.env.INITIAL_STAFF_ADMIN_PASSWORD || 'Admin@PetBoss2026!')
+  if (!process.env.INITIAL_STAFF_ADMIN_PASSWORD && !process.env.INITIAL_ADMIN_PASSWORD) {
+    throw new Error('INITIAL_STAFF_ADMIN_PASSWORD environment variable must be set to seed staff admin users.')
+  }
+  const staffAdminSecret = process.env.INITIAL_STAFF_ADMIN_PASSWORD || adminSecret
+  const adminPassword = hashPassword(staffAdminSecret)
   await prisma.user.upsert({
     where: { email: 'admin@petboss.com' },
     update: {

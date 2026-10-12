@@ -15,6 +15,10 @@ const sidebarSections = [
   {
     labelKey: 'contentSection',
     items: [
+      { key: 'homepageSections', href: '/admin/homepage', icon: '🏠' },
+      { key: 'menus', href: '/admin/menus', icon: '📑' },
+      { key: 'socialLinks', href: '/admin/social', icon: '🌐' },
+      { key: 'testimonials', href: '/admin/testimonials', icon: '⭐' },
       { key: 'media', href: '/admin/media', icon: '🖼️' },
       { key: 'divisions', href: '/admin/divisions', icon: '🏥' },
       { key: 'services', href: '/admin/services', icon: '💊' },

@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
 import React, { useState, useTransition } from 'react'
 import {
@@ -8,7 +9,7 @@ import {
   deleteStaffAction,
 } from '@/app/actions/staff'
 
-interface StaffItem {
+export interface StaffItem {
   id: string
   nameFa: string
   nameEn: string | null
@@ -19,6 +20,8 @@ interface StaffItem {
   bioFa: string | null
   bioEn: string | null
   licenseNo: string | null
+  photoId: string | null
+  sortOrder: number
   isActive: boolean
 }
 
@@ -43,6 +46,9 @@ export function StaffManager({ staff, isEn }: Props) {
   const [licenseNo, setLicenseNo] = useState('')
   const [bioFa, setBioFa] = useState('')
   const [bioEn, setBioEn] = useState('')
+  const [photoId, setPhotoId] = useState('')
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [sortOrder, setSortOrder] = useState('0')
   const [isActive, setIsActive] = useState(true)
 
   const openAddModal = () => {
@@ -56,6 +62,9 @@ export function StaffManager({ staff, isEn }: Props) {
     setLicenseNo('')
     setBioFa('')
     setBioEn('')
+    setPhotoId('')
+    setPhotoFile(null)
+    setSortOrder((staff.length * 10).toString())
     setIsActive(true)
     setMessage(null)
     setModalOpen(true)
@@ -72,6 +81,9 @@ export function StaffManager({ staff, isEn }: Props) {
     setLicenseNo(s.licenseNo || '')
     setBioFa(s.bioFa || '')
     setBioEn(s.bioEn || '')
+    setPhotoId(s.photoId || '')
+    setPhotoFile(null)
+    setSortOrder((s.sortOrder || 0).toString())
     setIsActive(s.isActive)
     setMessage(null)
     setModalOpen(true)
@@ -91,7 +103,12 @@ export function StaffManager({ staff, isEn }: Props) {
     formData.append('licenseNo', licenseNo)
     formData.append('bioFa', bioFa)
     formData.append('bioEn', bioEn)
+    formData.append('photoId', photoId)
+    formData.append('sortOrder', sortOrder)
     formData.append('isActive', isActive ? 'true' : 'false')
+    if (photoFile) {
+      formData.append('photoFile', photoFile)
+    }
 
     startTransition(async () => {
       let res
@@ -149,19 +166,28 @@ export function StaffManager({ staff, isEn }: Props) {
           className="bg-gradient-to-r from-primary to-[#DFC07A] text-charcoal-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow-gold hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
         >
           <span>➕</span>
-          <span>{isEn ? 'Add New Veterinarian' : 'افزودن پزشک جدید'}</span>
+          <span>{isEn ? 'Add Veterinarian' : 'افزودن عضو جدید'}</span>
         </button>
       </div>
 
-      {/* Grid of Doctors */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {message && (
+        <div
+          className={`p-4 rounded-xl text-xs font-semibold flex items-center gap-2 ${
+            message.type === 'success'
+              ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
+              : 'bg-red-500/10 border border-red-500/30 text-red-400'
+          }`}
+        >
+          <span>{message.type === 'success' ? '✓' : '⚠️'}</span>
+          <span>{message.text}</span>
+        </div>
+      )}
+
+      {/* Grid of Staff */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {staff.length === 0 ? (
-          <div className="col-span-full py-12 text-center bg-surface border border-border rounded-2xl">
-            <p className="text-muted-foreground text-sm">
-              {isEn
-                ? 'No veterinarians registered yet. Click "+ Add New Veterinarian" to add the real clinic team.'
-                : 'هنوز دامپزشکی ثبت نشده است. برای ثبت تیم پزشکی واقعی کلینیک، بر روی "+ افزودن پزشک جدید" کلیک کنید.'}
-            </p>
+          <div className="col-span-full bg-surface border border-dashed border-border rounded-2xl p-12 text-center text-muted-foreground text-sm">
+            {isEn ? 'No staff profiles created yet.' : 'هنوز هیچ عضو کادر درمانی ثبت نشده است.'}
           </div>
         ) : (
           staff.map((member) => {
@@ -173,9 +199,17 @@ export function StaffManager({ staff, isEn }: Props) {
               <div key={member.id} className="bg-surface border border-border rounded-2xl p-6 flex flex-col justify-between shadow-sm space-y-4">
                 <div>
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-full bg-surface-elevated border-2 border-border-gold flex items-center justify-center text-primary font-bold text-xl shadow-gold shrink-0">
-                      {mName.charAt(0)}
-                    </div>
+                    {member.photoId ? (
+                      <img
+                        src={member.photoId}
+                        alt={mName}
+                        className="w-14 h-14 rounded-full object-cover border-2 border-border-gold shadow-gold shrink-0 bg-surface-elevated"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-surface-elevated border-2 border-border-gold flex items-center justify-center text-primary font-bold text-xl shadow-gold shrink-0">
+                        {mName.charAt(0)}
+                      </div>
+                    )}
                     <div>
                       <h3 className="font-bold text-foreground text-base">{mName}</h3>
                       <p className="text-xs text-primary font-semibold">{mTitle || (isEn ? 'Veterinarian' : 'دامپزشک')}</p>
@@ -186,7 +220,7 @@ export function StaffManager({ staff, isEn }: Props) {
                       )}
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
                     {mBio || (isEn ? 'No biography provided' : 'بدون بیوگرافی ثبت شده')}
                   </p>
                 </div>
@@ -215,7 +249,7 @@ export function StaffManager({ staff, isEn }: Props) {
                     <span className="text-border">|</span>
                     <button
                       onClick={() => handleDelete(member)}
-                      className="text-red-400 hover:text-red-300 p-1"
+                      className="text-red-400 hover:text-red-300 p-1 cursor-pointer"
                       title={isEn ? 'Delete doctor' : 'حذف'}
                     >
                       🗑️
@@ -231,7 +265,7 @@ export function StaffManager({ staff, isEn }: Props) {
       {/* Modal Dialog */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#181A20] border border-primary/30 rounded-2xl w-full max-w-xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-surface border border-primary/30 rounded-2xl w-full max-w-xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <h2 className="text-base font-bold text-foreground">
                 {editingStaff
@@ -240,48 +274,36 @@ export function StaffManager({ staff, isEn }: Props) {
               </h2>
               <button
                 onClick={() => setModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground text-sm p-1"
+                className="text-muted-foreground hover:text-foreground text-sm cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            {message && (
-              <div
-                className={`p-3 rounded-xl text-xs font-medium ${
-                  message.type === 'success'
-                    ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
-                    : 'bg-red-500/10 border border-red-500/30 text-red-400'
-                }`}
-              >
-                {message.text}
-              </div>
-            )}
-
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-foreground/80 mb-1">
-                    {isEn ? 'Full Name (Persian) *' : 'نام و نام خانوادگی (فارسی) *'}
+                    {isEn ? 'Full Name (Persian) *' : 'نام و نام‌خانوادگی (فارسی) *'}
                   </label>
                   <input
                     type="text"
                     required
                     value={nameFa}
                     onChange={(e) => setNameFa(e.target.value)}
-                    placeholder="مثال: دکتر مهدی صابری"
+                    placeholder="مثال: دکتر علی حدیدی"
                     className="w-full px-3.5 py-2 rounded-xl bg-surface-elevated border border-border text-xs text-foreground focus:border-primary outline-none"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-foreground/80 mb-1">
-                    {isEn ? 'Full Name (English)' : 'نام و نام خانوادگی (انگلیسی)'}
+                    {isEn ? 'Full Name (English)' : 'نام و نام‌خانوادگی (انگلیسی)'}
                   </label>
                   <input
                     type="text"
                     value={nameEn}
                     onChange={(e) => setNameEn(e.target.value)}
-                    placeholder="e.g. Dr. Mehdi Saberi"
+                    placeholder="e.g. Dr. Ali Hadidi"
                     className="w-full px-3.5 py-2 rounded-xl bg-surface-elevated border border-border text-xs text-foreground focus:border-primary outline-none dir-ltr"
                   />
                 </div>
@@ -296,7 +318,7 @@ export function StaffManager({ staff, isEn }: Props) {
                     type="text"
                     value={titleFa}
                     onChange={(e) => setTitleFa(e.target.value)}
-                    placeholder="مثال: جراح ارشد دامپزشکی"
+                    placeholder="مثال: جراح ارشد دامپزشک و مدیر مجموعه"
                     className="w-full px-3.5 py-2 rounded-xl bg-surface-elevated border border-border text-xs text-foreground focus:border-primary outline-none"
                   />
                 </div>
@@ -308,7 +330,7 @@ export function StaffManager({ staff, isEn }: Props) {
                     type="text"
                     value={titleEn}
                     onChange={(e) => setTitleEn(e.target.value)}
-                    placeholder="e.g. Senior Veterinary Surgeon"
+                    placeholder="e.g. Chief Veterinary Surgeon"
                     className="w-full px-3.5 py-2 rounded-xl bg-surface-elevated border border-border text-xs text-foreground focus:border-primary outline-none dir-ltr"
                   />
                 </div>
@@ -323,7 +345,7 @@ export function StaffManager({ staff, isEn }: Props) {
                     type="text"
                     value={licenseNo}
                     onChange={(e) => setLicenseNo(e.target.value)}
-                    placeholder="مثال: ۱۲۳۴۵"
+                    placeholder="مثال: ۹۰۴۵۲"
                     className="w-full px-3.5 py-2 rounded-xl bg-surface-elevated border border-border text-xs text-foreground focus:border-primary outline-none font-mono dir-ltr"
                   />
                 </div>
@@ -341,17 +363,65 @@ export function StaffManager({ staff, isEn }: Props) {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-foreground/80 mb-1">
-                  {isEn ? 'Biography & Background (Persian)' : 'رزومه و بیوگرافی (فارسی)'}
+              {/* Photo Upload & URL */}
+              <div className="p-4 rounded-xl bg-surface-elevated border border-border space-y-3">
+                <label className="block text-xs font-semibold text-foreground/80">
+                  {isEn ? 'Doctor Photograph' : 'عکس پزشک (آپلود یا آدرس فایل)'}
                 </label>
-                <textarea
-                  rows={3}
-                  value={bioFa}
-                  onChange={(e) => setBioFa(e.target.value)}
-                  placeholder="سوابق دانشگاهی، تخصص‌ها و دستاوردهای بالینی..."
-                  className="w-full px-3.5 py-2 rounded-xl bg-surface-elevated border border-border text-xs text-foreground focus:border-primary outline-none"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] text-muted-foreground mb-1">
+                      {isEn ? 'Upload File:' : 'آپلود تصویر جدید:'}
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) setPhotoFile(file)
+                      }}
+                      className="w-full text-xs text-muted-foreground file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 cursor-pointer"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-muted-foreground mb-1">
+                      {isEn ? 'Or Photo URL / Path:' : 'یا آدرس تصویر:'}
+                    </label>
+                    <input
+                      type="text"
+                      value={photoId}
+                      onChange={(e) => setPhotoId(e.target.value)}
+                      placeholder="/images/staff/dr-ali-hadidi.svg"
+                      className="w-full px-3 py-1.5 rounded-lg bg-surface border border-border text-xs text-foreground outline-none focus:border-primary font-mono dir-ltr"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-foreground/80 mb-1">
+                    {isEn ? 'Biography & Background (Persian)' : 'رزومه و بیوگرافی (فارسی)'}
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={bioFa}
+                    onChange={(e) => setBioFa(e.target.value)}
+                    placeholder="سوابق دانشگاهی، تخصص‌ها و دستاوردهای بالینی..."
+                    className="w-full px-3.5 py-2 rounded-xl bg-surface-elevated border border-border text-xs text-foreground focus:border-primary outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-foreground/80 mb-1">
+                    {isEn ? 'Sort Order' : 'ترتیب نمایش'}
+                  </label>
+                  <input
+                    type="number"
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl bg-surface-elevated border border-border text-xs text-foreground focus:border-primary outline-none"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center gap-2 pt-2">
@@ -363,7 +433,7 @@ export function StaffManager({ staff, isEn }: Props) {
                   className="rounded border-border text-primary focus:ring-primary w-4 h-4 cursor-pointer"
                 />
                 <label htmlFor="staffActiveCheck" className="text-xs text-foreground cursor-pointer select-none">
-                  {isEn ? 'Active & displayed on clinic team page' : 'فعال و نمایش در صفحه معرفی کادر درمانی'}
+                  {isEn ? 'Active & displayed on homepage and clinic team page' : 'فعال و قابل نمایش در صفحه اصلی و کادر درمانی'}
                 </label>
               </div>
 
@@ -371,7 +441,7 @@ export function StaffManager({ staff, isEn }: Props) {
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-border text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  className="px-4 py-2 rounded-xl border border-border text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 >
                   {isEn ? 'Cancel' : 'انصراف'}
                 </button>

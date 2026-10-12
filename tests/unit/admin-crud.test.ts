@@ -8,6 +8,10 @@ import { createFaqAction } from '@/app/actions/faqs'
 import { updateLeadStatusAction } from '@/app/actions/leads'
 import { toggleMessageReadAction } from '@/app/actions/messages'
 import { updateSiteSettingsAction } from '@/app/actions/settings'
+import { upsertSocialLinkAction } from '@/app/actions/social'
+import { upsertMenuItemAction } from '@/app/actions/menus'
+import { updateHomepageSectionAction } from '@/app/actions/homepage'
+import { upsertTestimonialAction } from '@/app/actions/testimonials'
 
 describe('Admin Authentication & CRUD Server Actions Unit Tests', () => {
   describe('Authentication Action', () => {
@@ -91,6 +95,41 @@ describe('Admin Authentication & CRUD Server Actions Unit Tests', () => {
       formData.append('nameFa', 'کلینیک پت‌باس')
 
       const result = await updateSiteSettingsAction(formData)
+      expect(result.error).toContain('دسترسی غیرمجاز')
+    })
+
+    it('blocks unauthenticated upsertSocialLinkAction', async () => {
+      const formData = new FormData()
+      formData.append('platform', 'INSTAGRAM')
+      formData.append('url', 'https://instagram.com/petboss')
+
+      const result = await upsertSocialLinkAction(formData)
+      expect(result.error).toContain('دسترسی غیرمجاز')
+    })
+
+    it('blocks unauthenticated upsertMenuItemAction', async () => {
+      const formData = new FormData()
+      formData.append('labelFa', 'منو تست')
+      formData.append('url', '/test')
+
+      const result = await upsertMenuItemAction(formData)
+      expect(result.error).toContain('دسترسی غیرمجاز')
+    })
+
+    it('blocks unauthenticated updateHomepageSectionAction', async () => {
+      const formData = new FormData()
+      formData.append('sectionKey', 'HERO')
+
+      const result = await updateHomepageSectionAction('HERO', formData)
+      expect(result.error).toContain('دسترسی غیرمجاز')
+    })
+
+    it('blocks unauthenticated upsertTestimonialAction', async () => {
+      const formData = new FormData()
+      formData.append('nameFa', 'تست')
+      formData.append('contentFa', 'متن تست')
+
+      const result = await upsertTestimonialAction(formData)
       expect(result.error).toContain('دسترسی غیرمجاز')
     })
   })

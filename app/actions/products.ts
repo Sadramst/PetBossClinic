@@ -63,6 +63,7 @@ export async function createProductAction(formData: FormData): Promise<ProductAc
   const shortDescFa = formData.get('shortDescFa')?.toString().trim() || null
   const shortDescEn = formData.get('shortDescEn')?.toString().trim() || null
   const isActive = formData.get('isActive') === 'true' || formData.get('isActive') === 'on'
+  const isFeatured = formData.get('isFeatured') === 'true' || formData.get('isFeatured') === 'on'
 
   const imageFile = formData.get('imageFile') as File | null
   const imageUrlInput = formData.get('imageUrl')?.toString().trim() || null
@@ -121,6 +122,7 @@ export async function createProductAction(formData: FormData): Promise<ProductAc
         shortDescFa,
         shortDescEn,
         isActive,
+        isFeatured,
         ogImageId: finalImageUrl,
       },
     })
@@ -149,6 +151,7 @@ export async function createProductAction(formData: FormData): Promise<ProductAc
         categoryId,
         stockStatus,
         isActive,
+        isFeatured,
       },
     })
 
@@ -175,6 +178,9 @@ export async function updateProductAction(productId: string, formData: FormData)
   const shortDescFa = formData.get('shortDescFa')?.toString().trim() || null
   const shortDescEn = formData.get('shortDescEn')?.toString().trim() || null
   const isActive = formData.get('isActive') === 'true' || formData.get('isActive') === 'on'
+  const isFeatured = formData.has('isFeatured')
+    ? (formData.get('isFeatured') === 'true' || formData.get('isFeatured') === 'on')
+    : undefined
 
   const removeImage = formData.get('removeImage') === 'true' || formData.get('removeImage') === '1'
   const imageFile = formData.get('imageFile') as File | null
@@ -245,6 +251,7 @@ export async function updateProductAction(productId: string, formData: FormData)
         shortDescFa,
         shortDescEn,
         isActive,
+        ...(typeof isFeatured === 'boolean' ? { isFeatured } : {}),
         ...(shouldUpdateImage ? { ogImageId: finalImageUrl } : {}),
       },
     })
@@ -253,8 +260,8 @@ export async function updateProductAction(productId: string, formData: FormData)
       action: 'UPDATE',
       entity: 'PRODUCT',
       entityId: productId,
-      before: previous ? { nameFa: previous.nameFa, price: previous.price, stockStatus: previous.stockStatus, isActive: previous.isActive } : undefined,
-      after: { nameFa: updated.nameFa, price: updated.price, stockStatus: updated.stockStatus, isActive: updated.isActive },
+      before: previous ? { nameFa: previous.nameFa, price: previous.price, stockStatus: previous.stockStatus, isActive: previous.isActive, isFeatured: previous.isFeatured } : undefined,
+      after: { nameFa: updated.nameFa, price: updated.price, stockStatus: updated.stockStatus, isActive: updated.isActive, isFeatured: updated.isFeatured },
     })
 
     revalidatePath('/[locale]/admin/products', 'page')
@@ -263,7 +270,27 @@ export async function updateProductAction(productId: string, formData: FormData)
     return { success: true, message: 'محصول با موفقیت به‌روزرسانی شد.' }
   } catch (err: unknown) {
     console.error('Error updating product:', err)
-    return { error: 'خطا در ویرایش اطلاعات محصول.' }
+    return { error: 'خطا در به‌روزرسانی محصول.' }
+  }
+}
+
+export async function toggleProductFeaturedAction(productId: string, isFeatured: boolean): Promise<ProductActionState> {
+  const session = await getSession()
+  if (!session) return { error: 'دسترسی غیرمجاز.' }
+
+  try {
+    await db.product.update({
+      where: { id: productId },
+      data: { isFeatured },
+    })
+
+    revalidatePath('/[locale]/admin/products', 'page')
+    revalidatePath('/[locale]/shop', 'page')
+    revalidatePath('/[locale]', 'page')
+    return { success: true, message: `محصول ${isFeatured ? 'به عنوان ویژه' : 'از حالت ویژه خارج'} شد.` }
+  } catch (err: unknown) {
+    console.error('Error toggling featured product:', err)
+    return { error: 'خطا در تغییر وضعیت ویژگی محصول.' }
   }
 }
 

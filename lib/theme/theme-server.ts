@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import { db } from '@/lib/db';
 import { ThemePreset } from './types';
 
@@ -8,12 +9,7 @@ const VALID_THEMES: readonly ThemePreset[] = [
   'royal-obsidian',
 ] as const;
 
-/**
- * Returns the authoritative active clinic theme from SiteSetting.
- * Reads directly from PostgreSQL to guarantee instant real-time synchronization
- * across all visitors, devices, and incognito sessions.
- */
-export async function getActiveClinicTheme(): Promise<ThemePreset> {
+async function fetchActiveClinicThemeFromDb(): Promise<ThemePreset> {
   try {
     const setting = await db.siteSetting.findFirst({
       select: { activeTheme: true },
@@ -27,3 +23,17 @@ export async function getActiveClinicTheme(): Promise<ThemePreset> {
   }
   return 'petboss-luxury-dark';
 }
+
+/**
+ * Returns the authoritative active clinic theme from SiteSetting.
+ * Cached with tags ['clinic-theme', 'site-settings'] and invalidated
+ * instantaneously on admin change without requiring force-dynamic.
+ */
+export const getActiveClinicTheme = unstable_cache(
+  fetchActiveClinicThemeFromDb,
+  ['clinic-active-theme-cache'],
+  {
+    revalidate: 3600,
+    tags: ['clinic-theme', 'site-settings'],
+  }
+);

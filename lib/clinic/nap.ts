@@ -38,6 +38,7 @@ export interface ClinicNAP {
   workingHoursSummaryFa: string;
   workingHoursSummaryEn: string;
   workingHours: WorkingHourItem[];
+  socialLinks: Array<{ platform: string; url: string; icon?: string | null }>;
   instagramUrl: string | null;
   telegramUrl: string | null;
 }
@@ -165,6 +166,11 @@ async function fetchClinicNAPFromDB(): Promise<ClinicNAP> {
     workingHoursSummaryFa,
     workingHoursSummaryEn,
     workingHours,
+    socialLinks: socialLinksDb.map((s) => ({
+      platform: s.platform,
+      url: s.url,
+      icon: s.icon,
+    })),
     instagramUrl,
     telegramUrl,
   };

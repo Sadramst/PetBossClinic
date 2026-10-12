@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { createLeadSchema } from '@/lib/validation/lead'
 import { checkRateLimit } from '@/lib/utils/rate-limit'
+import { getClinicNAP } from '@/lib/clinic/nap'
 
 export interface LeadActionState {
   error?: string
@@ -48,12 +49,13 @@ export async function createLeadAction(
   const rateLimitKey = `lead:${ip}`
   const rateLimit = checkRateLimit(rateLimitKey, 5, 3600 * 1000)
   if (!rateLimit.allowed) {
+    const nap = await getClinicNAP()
     return {
       error: isEn
         ? `Too many requests. Please try again in ${rateLimit.resetSeconds} seconds or call the clinic directly.`
         : 'تعداد درخواست‌های ارسالی از سمت شما بیش از حد مجاز است. لطفاً بعداً تلاش کنید یا مستقیماً تماس بگیرید.',
-      fallbackPhone: '+982126429715',
-      fallbackPhoneDisplay: isEn ? '+98 21 2642 9715' : '۰۲۱-۲۶۴۲۹۷۱۵',
+      fallbackPhone: nap.phone,
+      fallbackPhoneDisplay: isEn ? nap.phoneDisplayEn : nap.phoneDisplayFa,
     }
   }
 
@@ -131,12 +133,13 @@ export async function createLeadAction(
       timestamp: new Date().toISOString(),
     })
 
+    const nap = await getClinicNAP()
     return {
       error: isEn
         ? 'A temporary system error occurred. Please call the clinic directly.'
         : 'متأسفانه در ثبت اطلاعات خطایی رخ داد. لطفاً مستقیماً با شماره کلینیک تماس بگیرید.',
-      fallbackPhone: '+982126429715',
-      fallbackPhoneDisplay: isEn ? '+98 21 2642 9715' : '۰۲۱-۲۶۴۲۹۷۱۵',
+      fallbackPhone: nap.phone,
+      fallbackPhoneDisplay: isEn ? nap.phoneDisplayEn : nap.phoneDisplayFa,
     }
   }
 }

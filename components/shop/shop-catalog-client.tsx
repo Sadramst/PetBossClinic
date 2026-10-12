@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useLocale } from 'next-intl'
 import { Link } from '@/i18n/routing'
 import { StockStatus } from '@prisma/client'
+import { formatPrice } from '@/lib/format/price'
 
 export interface ShopCategory {
   id: string
@@ -50,11 +51,18 @@ export interface ShopProduct {
 interface ShopCatalogClientProps {
   categories: ShopCategory[]
   products: ShopProduct[]
+  whatsappNumber?: string | null
+  phone?: string
 }
 
 type SpeciesFilter = 'all' | 'cat' | 'dog' | 'health' | 'play'
 
-export function ShopCatalogClient({ categories, products }: ShopCatalogClientProps) {
+export function ShopCatalogClient({
+  categories,
+  products,
+  whatsappNumber,
+  phone = '',
+}: ShopCatalogClientProps) {
   const locale = useLocale()
   const isEn = locale === 'en'
 
@@ -158,14 +166,6 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       })
   }, [products, selectedCategory, speciesFilter, onlyInStock, searchQuery, sortBy])
-
-  // Formatted price helper
-  const formatPrice = (price: number) => {
-    if (isEn) {
-      return `${price.toLocaleString('en-US')} Tomans`
-    }
-    return `${price.toLocaleString('fa-IR')} تومان`
-  }
 
   // Copy SKU handler
   const handleCopySku = (sku: string) => {
@@ -524,11 +524,14 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
               const productImage = product.images?.[0]?.imageId || product.category.imageId || '/images/categories/other.jpg'
               const isBase64 = productImage.startsWith('data:')
 
-              // Pre-filled WhatsApp inquiry link
+              // WhatsApp link (only if whatsappNumber is configured in settings)
               const whatsappText = encodeURIComponent(
                 `سلام وقت بخیر، درخواست استعلام موجودی و خرید محصول "${product.nameFa}" ${product.sku ? `با کد ${product.sku}` : ''} در پت‌شاپ کلینیک پت‌باس را دارم.`
               )
-              const whatsappUrl = `https://wa.me/989128888888?text=${whatsappText}`
+              const whatsappUrl = whatsappNumber
+                ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${whatsappText}`
+                : null
+              const telUrl = `tel:${phone.replace(/\s+/g, '')}`
 
               return (
                 <div
@@ -612,25 +615,14 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
 
                     {/* Price & Actions Footer */}
                     <div className="pt-3 border-t border-border/60 mt-auto flex flex-col gap-3">
-                      {product.price > 0 ? (
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-muted-foreground">
-                            {isEn ? 'Price' : 'قیمت:'}
-                          </span>
-                          <span className="text-sm font-extrabold text-foreground tracking-tight text-gradient-gold">
-                            {formatPrice(product.price)}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between py-0.5">
-                          <span className="text-[11px] text-muted-foreground">
-                            {isEn ? 'Status:' : 'وضعیت:'}
-                          </span>
-                          <span className="text-xs font-bold text-primary">
-                            {isEn ? 'Available by Inquiry' : 'سفارشی / استعلام موجودی'}
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-muted-foreground">
+                          {isEn ? 'Price:' : 'قیمت:'}
+                        </span>
+                        <span className="text-sm font-extrabold text-foreground tracking-tight text-gradient-gold">
+                          {formatPrice(product.price, isEn ? 'en' : 'fa')}
+                        </span>
+                      </div>
 
                       {/* Dual Action Buttons */}
                       <div className="grid grid-cols-2 gap-2">
@@ -642,15 +634,25 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
                           {isEn ? 'Details' : 'جزئیات'}
                         </button>
 
-                        <a
-                          href={whatsappUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full py-2 px-2 rounded-xl bg-gradient-gold hover:opacity-95 text-charcoal-950 text-xs font-bold text-center shadow-gold transition-all flex items-center justify-center gap-1.5"
-                        >
-                          <span>💬</span>
-                          <span>{isEn ? 'Order / Inquire' : 'سفارش و استعلام'}</span>
-                        </a>
+                        {whatsappUrl ? (
+                          <a
+                            href={whatsappUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full py-2 px-2 rounded-xl bg-gradient-gold hover:opacity-95 text-charcoal-950 text-xs font-bold text-center shadow-gold transition-all flex items-center justify-center gap-1.5"
+                          >
+                            <span>💬</span>
+                            <span>{isEn ? 'Order' : 'سفارش'}</span>
+                          </a>
+                        ) : (
+                          <a
+                            href={telUrl}
+                            className="w-full py-2 px-2 rounded-xl bg-gradient-gold hover:opacity-95 text-charcoal-950 text-xs font-bold text-center shadow-gold transition-all flex items-center justify-center gap-1.5"
+                          >
+                            <span>📞</span>
+                            <span>{isEn ? 'Call' : 'تماس'}</span>
+                          </a>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -682,13 +684,15 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
             </div>
 
             <div className="flex flex-col sm:flex-row lg:flex-col gap-3 justify-center">
-              <a
-                href="tel:+982126429715"
-                className="px-6 py-3.5 rounded-full bg-gradient-gold text-charcoal-950 font-bold text-xs sm:text-sm text-center shadow-gold hover:opacity-90 transition-all flex items-center justify-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                <span>{isEn ? 'Call Clinic Reception (021-26429715)' : 'تماس با پذیرش کلینیک (۰۲۱-۲۶۴۲۹۷۱۵)'}</span>
-              </a>
+              {phone && (
+                <a
+                  href={`tel:${phone.replace(/[^0-9+]/g, '')}`}
+                  className="px-6 py-3.5 rounded-full bg-gradient-gold text-charcoal-950 font-bold text-xs sm:text-sm text-center shadow-gold hover:opacity-90 transition-all flex items-center justify-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  <span>{isEn ? `Call Clinic Reception (${phone})` : `تماس با پذیرش کلینیک (${phone})`}</span>
+                </a>
+              )}
 
               <Link
                 href="/contact"
@@ -775,17 +779,15 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
                 )}
               </div>
 
-              {/* Price Row (Only when price > 0) */}
-              {activeModalProduct.price > 0 && (
-                <div className="p-4 rounded-2xl bg-surface-elevated border border-border-gold/30 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-muted-foreground">
-                    {isEn ? 'Boutique Price' : 'قیمت در پت‌شاپ پت باس:'}
-                  </span>
-                  <span className="text-xl font-extrabold text-gradient-gold">
-                    {formatPrice(activeModalProduct.price)}
-                  </span>
-                </div>
-              )}
+              {/* Price Row */}
+              <div className="p-4 rounded-2xl bg-surface-elevated border border-border-gold/30 flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {isEn ? 'Boutique Price:' : 'قیمت در پت‌شاپ پت باس:'}
+                </span>
+                <span className="text-xl font-extrabold text-gradient-gold">
+                  {formatPrice(activeModalProduct.price, isEn ? 'en' : 'fa')}
+                </span>
+              </div>
 
               {/* Specs Grid */}
               <div className="grid grid-cols-2 gap-3 text-xs">
@@ -853,24 +855,26 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
                 {isEn ? 'Close' : 'بستن'}
               </button>
 
-              <a
-                href={`https://wa.me/989128888888?text=${encodeURIComponent(
-                  `سلام وقت بخیر، درخواست استعلام موجودی و خرید محصول "${activeModalProduct.nameFa}" ${activeModalProduct.sku ? `با کد ${activeModalProduct.sku}` : ''} در پت‌شاپ کلینیک پت‌باس را دارم.`
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-gold text-charcoal-950 text-xs font-bold shadow-gold hover:opacity-95 text-center flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>💬</span>
-                <span>{isEn ? 'Order via WhatsApp' : 'سفارش آنلاین در واتس‌اپ'}</span>
-              </a>
+              {whatsappNumber && (
+                <a
+                  href={`https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(
+                    `سلام وقت بخیر، درخواست استعلام موجودی و خرید محصول "${activeModalProduct.nameFa}" ${activeModalProduct.sku ? `با کد ${activeModalProduct.sku}` : ''} در پت‌شاپ کلینیک پت‌باس را دارم.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-gold text-charcoal-950 text-xs font-bold shadow-gold hover:opacity-95 text-center flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>💬</span>
+                  <span>{isEn ? 'Order via WhatsApp' : 'سفارش آنلاین در واتس‌اپ'}</span>
+                </a>
+              )}
 
               <a
-                href="tel:+982126429715"
+                href={`tel:${phone.replace(/\s+/g, '')}`}
                 className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-surface-card border border-border-gold text-primary text-xs font-bold hover:border-primary text-center flex items-center justify-center gap-2"
               >
                 <span>📞</span>
-                <span>{isEn ? 'Call Reception' : 'تماس با پذیرش (۰۲۱-۲۶۴۲۹۷۱۵)'}</span>
+                <span>{isEn ? 'Call Reception' : `تماس با کلینیک (${phone})`}</span>
               </a>
             </div>
           </div>

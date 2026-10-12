@@ -13,6 +13,8 @@ export interface LeadFormProps {
   subtitle?: string
   buttonText?: string
   className?: string
+  phone?: string
+  telLink?: string
   onSuccess?: () => void
 }
 
@@ -24,6 +26,8 @@ export function LeadForm({
   subtitle,
   buttonText,
   className = '',
+  phone,
+  telLink,
   onSuccess,
 }: LeadFormProps) {
   const locale = useLocale()
@@ -102,13 +106,19 @@ export function LeadForm({
           </div>
           <div className="pt-2">
             <p className="text-xs text-muted-foreground">
-              {isEn ? 'Need urgent consultation?' : 'نیاز به مشاوره فوری دارید؟'}{' '}
-              <a
-                href="tel:+982126429715"
-                className="text-primary font-bold hover:underline dir-ltr inline-block ms-1"
-              >
-                {isEn ? '+98 21 2642 9715' : '۰۲۱-۲۶۴۲۹۷۱۵'}
-              </a>
+              {phone && telLink ? (
+                <>
+                  {isEn ? 'Need urgent consultation?' : 'نیاز به مشاوره فوری دارید؟'}{' '}
+                  <a
+                    href={telLink}
+                    className="text-primary font-bold hover:underline dir-ltr inline-block ms-1"
+                  >
+                    {phone}
+                  </a>
+                </>
+              ) : (
+                isEn ? 'Our team will contact you shortly.' : 'کارشناسان ما به زودی با شما تماس خواهند گرفت.'
+              )}
             </p>
           </div>
         </div>

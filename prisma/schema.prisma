@@ -362,11 +362,17 @@ model ServiceCategory {
   @@index([isActive, sortOrder])
 }
 
+enum PriceDisplayMode {
+  RANGE
+  FROM
+  ON_REQUEST
+}
+
 model Service {
-  id                 String    @id @default(cuid())
+  id                 String           @id @default(cuid())
   divisionId         String
-  slugFa             String    @unique
-  slugEn             String?   @unique
+  slugFa             String           @unique
+  slugEn             String?          @unique
   nameFa             String
   nameEn             String?
   descriptionFa      String?
@@ -375,6 +381,7 @@ model Service {
   benefitsEn         String?
   durationFa         String?
   durationEn         String?
+  priceDisplayMode   PriceDisplayMode @default(ON_REQUEST)
   priceFrom          Int?
   priceTo            Int?
   priceNoteFa        String?
@@ -664,6 +671,7 @@ model Product {
   focusKeyword       String?
   jsonLdOverride     Json?
   isActive           Boolean   @default(true)
+  isFeatured         Boolean   @default(false)
   sortOrder          Int       @default(0)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -685,6 +693,7 @@ model Product {
   @@index([categoryId])
   @@index([brandId])
   @@index([slugFa])
+  @@index([isFeatured])
   @@index([isActive, sortOrder])
 }
 
@@ -1008,6 +1017,29 @@ model Banner {
   updatedAt   DateTime @updatedAt
 
   @@index([isActive, sortOrder])
+}
+
+model HomepageSection {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  titleFa    String?
+  titleEn    String?
+  subtitleFa String?
+  subtitleEn String?
+  eyebrowFa  String?
+  eyebrowEn  String?
+  badgeFa    String?
+  badgeEn    String?
+  ctaLabelFa String?
+  ctaLabelEn String?
+  ctaHref    String?
+  imageId    String?
+  isVisible  Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([isVisible, sortOrder])
 }
 
 model LandingPage {
