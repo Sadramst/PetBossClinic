@@ -104,7 +104,7 @@ export default async function ServicesPage({
       {/* Dynamic Theme Top Page Header */}
       <section className="relative bg-gradient-hero text-foreground overflow-hidden border-b border-border/60 py-16 md:py-20 mb-12">
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]" />
+          <div className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.12)_0%,transparent_70%)] rounded-full pointer-events-none" />
         </div>
         <div className="container-site relative z-10 text-center">
           <LuxuryPillBadge variant="outline" className="mb-3">
@@ -118,7 +118,7 @@ export default async function ServicesPage({
       <div className="container-site pb-20">
         {/* Services by Division */}
         <div className="space-y-16">
-          {divisions.map((division) => {
+          {divisions.map((division, idx) => {
             const divName = isEn ? (division.nameEn || division.nameFa) : division.nameFa;
             const divDesc = isEn ? (division.descriptionEn || division.descriptionFa) : division.descriptionFa;
 
@@ -145,6 +145,7 @@ export default async function ServicesPage({
                       src={divImage}
                       alt={divName}
                       fill
+                      priority={idx === 0}
                       sizes="(max-width: 768px) 100vw, 224px"
                       className="object-cover"
                     />

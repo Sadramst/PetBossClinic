@@ -43,7 +43,7 @@ export function PetBossLogo({
 
   const effectiveLogoUrl = logoUrl && logoUrl !== '/images/logo.png'
     ? logoUrl
-    : (showText ? '/images/logo-emblem.png' : '/images/logo.png');
+    : (showText ? (size === 'sm' || size === 'md' ? '/images/logo-64.png' : '/images/logo-emblem.png') : '/images/logo.png');
 
   return (
     <div className={`inline-flex items-center gap-3 ${className}`}>
@@ -54,7 +54,7 @@ export function PetBossLogo({
         viewBox="0 0 120 120"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="shrink-0 transition-transform duration-300 hover:scale-105 drop-shadow-[0_4px_12px_rgba(197,160,89,0.35)]"
+        className="shrink-0 transition-transform duration-300 hover:scale-105"
         aria-label="Pet Boss Clinic Logo"
       >
         <defs>
@@ -65,10 +65,6 @@ export function PetBossLogo({
             <stop offset="85%" stopColor="#9C7730" />
             <stop offset="100%" stopColor="#755217" />
           </linearGradient>
-
-          <filter id="goldGlow" x="-10%" y="-10%" width="120%" height="120%">
-            <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#C5A059" floodOpacity="0.4" />
-          </filter>
         </defs>
 
         {/* Authentic Brand Emblem Image */}

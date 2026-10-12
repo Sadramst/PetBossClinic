@@ -198,8 +198,8 @@ export default async function HomePage({
         <section className="relative overflow-hidden bg-gradient-hero text-foreground py-20 lg:py-28 border-b border-border">
           {/* Subtle ambient light */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="absolute -top-32 start-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[100px]" />
-            <div className="absolute -bottom-32 end-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px]" />
+            <div className="absolute -top-32 start-1/4 w-96 h-96 bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.12)_0%,transparent_70%)] rounded-full pointer-events-none" />
+            <div className="absolute -bottom-32 end-1/4 w-96 h-96 bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.08)_0%,transparent_70%)] rounded-full pointer-events-none" />
           </div>
 
           <div className="container-site relative z-10">
@@ -321,6 +321,7 @@ export default async function HomePage({
                           src={pictureSrc}
                           alt={name}
                           fill
+                          priority={idx === 0}
                           sizes="(max-width: 768px) 100vw, 33vw"
                           className="object-cover group-hover:scale-105 transition-transform duration-500"
                         />
@@ -361,7 +362,7 @@ export default async function HomePage({
       {/* ═══ SIGNATURE LUXURY PET SHOP & BOUTIQUE SHOWCASE ═══ */}
       {secShop?.isVisible !== false && featuredProducts.length > 0 && (
         <section className="section-padding bg-gradient-to-b from-surface via-surface-card to-background border-t border-b border-border-gold/40 relative overflow-hidden">
-          <div className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-primary/5 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-[radial-gradient(ellipse_at_center,rgba(197,160,89,0.08)_0%,transparent_70%)] rounded-full pointer-events-none" />
 
           <div className="container-site relative z-10">
             {/* Header */}

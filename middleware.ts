@@ -25,27 +25,26 @@ export default async function middleware(request: NextRequest) {
   const loginPath = isEn ? '/en/admin/login' : '/admin/login';
   const adminPath = isEn ? '/en/admin' : '/admin';
 
-  // Strict signature verification using Web Crypto (Edge runtime safe)
-  let session = null;
-  const sessionToken = request.cookies.get('petboss_session')?.value;
-  if (sessionToken) {
-    session = await verifySessionTokenEdge(sessionToken);
-  }
+  if (isAdminRoute) {
+    let session = null;
+    const sessionToken = request.cookies.get('petboss_session')?.value;
+    if (sessionToken) {
+      session = await verifySessionTokenEdge(sessionToken);
+    }
 
-  if (isAdminRoute && !isLoginPage) {
-    if (!session) {
+    if (!isLoginPage && !session) {
       const redirectUrl = new URL(loginPath, request.url);
       const redirectResponse = NextResponse.redirect(redirectUrl);
       redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow');
       return redirectResponse;
     }
-  }
 
-  if (isLoginPage && session) {
-    const redirectUrl = new URL(adminPath, request.url);
-    const redirectResponse = NextResponse.redirect(redirectUrl);
-    redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow');
-    return redirectResponse;
+    if (isLoginPage && session) {
+      const redirectUrl = new URL(adminPath, request.url);
+      const redirectResponse = NextResponse.redirect(redirectUrl);
+      redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow');
+      return redirectResponse;
+    }
   }
 
   const response = intlMiddleware(request);
