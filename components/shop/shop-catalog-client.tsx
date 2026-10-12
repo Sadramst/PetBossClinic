@@ -426,13 +426,6 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
                       {pName}
                     </h3>
 
-                    {/* Secondary Name if available */}
-                    {product.nameEn && !isEn && (
-                      <p className="text-[11px] text-muted-foreground font-mono truncate mb-2" dir="ltr">
-                        {product.nameEn}
-                      </p>
-                    )}
-
                     {/* Short Description */}
                     {pDesc && (
                       <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-4 flex-grow">
@@ -442,14 +435,16 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
 
                     {/* Price & Actions Footer */}
                     <div className="pt-3 border-t border-border/60 mt-auto flex flex-col gap-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-muted-foreground">
-                          {isEn ? 'Price' : 'قیمت:'}
-                        </span>
-                        <span className="text-sm font-extrabold text-foreground tracking-tight text-gradient-gold">
-                          {formatPrice(product.price)}
-                        </span>
-                      </div>
+                      {product.price > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-muted-foreground">
+                            {isEn ? 'Price' : 'قیمت:'}
+                          </span>
+                          <span className="text-sm font-extrabold text-foreground tracking-tight text-gradient-gold">
+                            {formatPrice(product.price)}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Dual Action Buttons */}
                       <div className="grid grid-cols-2 gap-2">
@@ -578,16 +573,11 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
                 <h3 className="text-lg sm:text-xl font-extrabold text-foreground">
                   {isEn ? (activeModalProduct.nameEn || activeModalProduct.nameFa) : activeModalProduct.nameFa}
                 </h3>
-                {activeModalProduct.nameEn && !isEn && (
-                  <p className="text-xs text-muted-foreground font-mono" dir="ltr">
-                    {activeModalProduct.nameEn}
-                  </p>
-                )}
               </div>
             </div>
 
             {/* Specification Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-surface-card border border-border text-xs">
+            <div className={`grid ${activeModalProduct.price > 0 ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2'} gap-3 p-4 rounded-2xl bg-surface-card border border-border text-xs`}>
               <div>
                 <span className="text-muted-foreground block mb-1">{isEn ? 'SKU Code' : 'شناسه انبار (کد)'}</span>
                 <span className="font-mono font-bold text-foreground">
@@ -602,12 +592,14 @@ export function ShopCatalogClient({ categories, products }: ShopCatalogClientPro
                     : (isEn ? 'Order on Request' : 'سفارشی / استعلام')}
                 </span>
               </div>
-              <div>
-                <span className="text-muted-foreground block mb-1">{isEn ? 'Price' : 'قیمت رسمی'}</span>
-                <span className="font-extrabold text-primary">
-                  {formatPrice(activeModalProduct.price)}
-                </span>
-              </div>
+              {activeModalProduct.price > 0 && (
+                <div>
+                  <span className="text-muted-foreground block mb-1">{isEn ? 'Price' : 'قیمت رسمی'}</span>
+                  <span className="font-extrabold text-primary">
+                    {formatPrice(activeModalProduct.price)}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Description */}

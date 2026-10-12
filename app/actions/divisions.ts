@@ -3,6 +3,7 @@
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { logAdminChange } from '@/lib/audit'
 
 export interface DivisionActionState {
   error?: string
@@ -35,11 +36,21 @@ export async function createDivisionAction(formData: FormData): Promise<Division
     return { error: 'نام بخش الزامی است.' }
   }
 
-  const slugFa = slugFaInput || generateSlug(nameFa)
-  const slugEn = slugEnInput || (nameEn ? generateSlug(nameEn) : null)
+  let slugFa = slugFaInput || generateSlug(nameFa)
+  let slugEn = slugEnInput || (nameEn ? generateSlug(nameEn) : null)
 
   try {
-    await db.division.create({
+    const existing = await db.division.findFirst({
+      where: {
+        OR: [{ slugFa }, ...(slugEn ? [{ slugEn }] : [])],
+      },
+    })
+    if (existing) {
+      slugFa = `${slugFa}-${Date.now().toString(36)}`
+      if (slugEn) slugEn = `${slugEn}-${Date.now().toString(36)}`
+    }
+
+    const created = await db.division.create({
       data: {
         nameFa,
         nameEn,
@@ -51,12 +62,19 @@ export async function createDivisionAction(formData: FormData): Promise<Division
       },
     })
 
+    await logAdminChange({
+      action: 'CREATE',
+      entity: 'DIVISION',
+      entityId: created.id,
+      after: { id: created.id, nameFa, nameEn, slugFa, isActive },
+    })
+
     revalidatePath('/[locale]/admin/divisions', 'page')
     revalidatePath('/[locale]', 'page')
     return { success: true, message: 'بخش جدید با موفقیت ایجاد شد.' }
   } catch (err: unknown) {
     console.error('Error creating division:', err)
-    return { error: 'خطا در ثبت بخش. ممکن است نامک (slug) تکراری باشد.' }
+    return { error: 'خطا در ثبت بخش.' }
   }
 }
 
@@ -75,7 +93,11 @@ export async function updateDivisionAction(divisionId: string, formData: FormDat
   if (!nameFa) return { error: 'نام بخش الزامی است.' }
 
   try {
-    await db.division.update({
+    const previous = await db.division.findUnique({
+      where: { id: divisionId },
+    })
+
+    const updated = await db.division.update({
       where: { id: divisionId },
       data: {
         nameFa,
@@ -86,6 +108,14 @@ export async function updateDivisionAction(divisionId: string, formData: FormDat
         descriptionEn,
         isActive,
       },
+    })
+
+    await logAdminChange({
+      action: 'UPDATE',
+      entity: 'DIVISION',
+      entityId: divisionId,
+      before: previous ? { nameFa: previous.nameFa, nameEn: previous.nameEn } : undefined,
+      after: { nameFa: updated.nameFa, nameEn: updated.nameEn, isActive: updated.isActive },
     })
 
     revalidatePath('/[locale]/admin/divisions', 'page')
@@ -104,14 +134,22 @@ export async function toggleDivisionActiveAction(divisionId: string): Promise<Di
   try {
     const existing = await db.division.findUnique({
       where: { id: divisionId },
-      select: { isActive: true },
+      select: { isActive: true, nameFa: true },
     })
 
     if (!existing) return { error: 'بخش یافت نشد.' }
 
-    await db.division.update({
+    const updated = await db.division.update({
       where: { id: divisionId },
       data: { isActive: !existing.isActive },
+    })
+
+    await logAdminChange({
+      action: 'UPDATE',
+      entity: 'DIVISION',
+      entityId: divisionId,
+      before: { isActive: existing.isActive },
+      after: { isActive: updated.isActive, nameFa: existing.nameFa },
     })
 
     revalidatePath('/[locale]/admin/divisions', 'page')
@@ -128,6 +166,11 @@ export async function deleteDivisionAction(divisionId: string): Promise<Division
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
+    const existing = await db.division.findUnique({
+      where: { id: divisionId },
+      select: { id: true, nameFa: true },
+    })
+
     // Check if services are attached
     const servicesCount = await db.service.count({
       where: { divisionId },
@@ -139,6 +182,13 @@ export async function deleteDivisionAction(divisionId: string): Promise<Division
 
     await db.division.delete({
       where: { id: divisionId },
+    })
+
+    await logAdminChange({
+      action: 'DELETE',
+      entity: 'DIVISION',
+      entityId: divisionId,
+      before: existing || { id: divisionId },
     })
 
     revalidatePath('/[locale]/admin/divisions', 'page')

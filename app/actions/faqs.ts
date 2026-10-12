@@ -3,6 +3,7 @@
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { logAdminChange } from '@/lib/audit'
 
 export interface FaqActionState {
   error?: string
@@ -26,7 +27,7 @@ export async function createFaqAction(formData: FormData): Promise<FaqActionStat
   }
 
   try {
-    await db.faq.create({
+    const created = await db.faq.create({
       data: {
         questionFa,
         questionEn,
@@ -35,6 +36,13 @@ export async function createFaqAction(formData: FormData): Promise<FaqActionStat
         categoryId: categoryId || undefined,
         isActive,
       },
+    })
+
+    await logAdminChange({
+      action: 'CREATE',
+      entity: 'FAQ',
+      entityId: created.id,
+      after: { id: created.id, questionFa, questionEn, answerFa, isActive },
     })
 
     revalidatePath('/[locale]/admin/faqs', 'page')
@@ -62,7 +70,11 @@ export async function updateFaqAction(faqId: string, formData: FormData): Promis
   }
 
   try {
-    await db.faq.update({
+    const previous = await db.faq.findUnique({
+      where: { id: faqId },
+    })
+
+    const updated = await db.faq.update({
       where: { id: faqId },
       data: {
         questionFa,
@@ -71,6 +83,14 @@ export async function updateFaqAction(faqId: string, formData: FormData): Promis
         answerEn,
         isActive,
       },
+    })
+
+    await logAdminChange({
+      action: 'UPDATE',
+      entity: 'FAQ',
+      entityId: faqId,
+      before: previous ? { questionFa: previous.questionFa, isActive: previous.isActive } : undefined,
+      after: { questionFa: updated.questionFa, isActive: updated.isActive },
     })
 
     revalidatePath('/[locale]/admin/faqs', 'page')
@@ -88,8 +108,20 @@ export async function deleteFaqAction(faqId: string): Promise<FaqActionState> {
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
+    const existing = await db.faq.findUnique({
+      where: { id: faqId },
+      select: { id: true, questionFa: true },
+    })
+
     await db.faq.delete({
       where: { id: faqId },
+    })
+
+    await logAdminChange({
+      action: 'DELETE',
+      entity: 'FAQ',
+      entityId: faqId,
+      before: existing || { id: faqId },
     })
 
     revalidatePath('/[locale]/admin/faqs', 'page')

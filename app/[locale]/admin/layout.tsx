@@ -40,6 +40,7 @@ const sidebarSections = [
     items: [
       { key: 'users', href: '/admin/users', icon: '👑' },
       { key: 'siteSettings', href: '/admin/settings', icon: '⚙️' },
+      { key: 'auditLog', href: '/admin/audit', icon: '📜' },
     ],
   },
 ];

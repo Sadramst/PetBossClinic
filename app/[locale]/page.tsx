@@ -95,8 +95,13 @@ export default async function HomePage({
     db.product.findMany({
       where: { isActive: true },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-      take: 4,
-      include: { category: true },
+      take: 6,
+      include: {
+        category: true,
+        images: {
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
     }),
     getClinicNAP(),
     db.siteSetting.findFirst({
@@ -277,6 +282,146 @@ export default async function HomePage({
           </div>
         </div>
       </section>
+
+      {/* ═══ SIGNATURE LUXURY PET SHOP & BOUTIQUE SHOWCASE ═══ */}
+      {featuredProducts.length > 0 && (
+        <section className="section-padding bg-gradient-to-b from-surface via-surface-card to-background border-t border-b border-border-gold/40 relative overflow-hidden">
+          <div className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-primary/5 rounded-full blur-[140px] pointer-events-none" />
+
+          <div className="container-site relative z-10">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-semibold mb-3 shadow-gold">
+                  <span>🛍️</span>
+                  <span>{isEn ? 'Signature Luxury Boutique & Veterinary Shop' : 'بوتیک و پت‌شاپ اختصاصی کلینیک پت باس'}</span>
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
+                  {isEn ? (
+                    <>Curated Veterinary Nutrition & <span className="text-gradient-gold">Luxury Essentials</span></>
+                  ) : (
+                    <>ویترین منتخب تغذیه و <span className="text-gradient-gold">ملزومات لوکس پت باس</span></>
+                  )}
+                </h2>
+                <p className="text-muted-foreground text-sm sm:text-base mt-2 max-w-2xl leading-relaxed">
+                  {isEn
+                    ? 'Super-premium nutrition, medical prescription diets, and bespoke accessories with direct guidance from clinic veterinary surgeons.'
+                    : 'عرضه رسمی برترین برندهای غذای خشک سوپرپرمیوم، رژیم‌های درمانی، خمیرهای مالت و ملزومات رفاهی با تایید مستقیم کادر دامپزشکی پت باس.'}
+                </p>
+              </div>
+
+              <div className="shrink-0">
+                <Button
+                  asChild
+                  className="bg-gradient-gold text-charcoal-950 font-bold rounded-full px-7 py-3 text-xs sm:text-sm shadow-gold hover:opacity-95 flex items-center gap-2"
+                >
+                  <Link href="/shop">
+                    <span>🛍️</span>
+                    <span>{isEn ? 'Explore Full Pet Shop Catalog' : 'ورود به پت‌شاپ و مشاهده تمام محصولات'}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="rtl:rotate-180"><path d="m9 18 6-6-6-6"/></svg>
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            {/* Products Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredProducts.map((p) => {
+                const pName = isEn ? (p.nameEn || p.nameFa) : p.nameFa
+                const pImage = p.images?.[0]?.imageId || p.ogImageId
+                const catName = isEn ? (p.category.nameEn || p.category.nameFa) : p.category.nameFa
+
+                return (
+                  <div
+                    key={p.id}
+                    className="card-luxury rounded-2xl overflow-hidden flex flex-col group border border-border hover:border-primary/60 transition-all duration-300 hover:shadow-gold"
+                  >
+                    {/* Visual Photo Area */}
+                    <div className="relative aspect-[4/3] w-full bg-gradient-to-br from-charcoal-900 to-charcoal-950 overflow-hidden border-b border-border/50 flex items-center justify-center">
+                      {pImage ? (
+                        <Image
+                          src={pImage}
+                          alt={pName}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-6 text-center">
+                          <span className="text-3xl mb-2">🐾</span>
+                          <span className="text-xs font-semibold text-primary">{catName}</span>
+                        </div>
+                      )}
+                      <div className="absolute top-3 start-3">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 backdrop-blur-sm">
+                          {isEn ? 'In Stock / Inquire' : 'موجود در کلینیک'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Card Content */}
+                    <div className="p-5 flex flex-col flex-grow justify-between">
+                      <div>
+                        <span className="text-[11px] font-semibold text-primary/90 mb-1.5 block">
+                          {catName}
+                        </span>
+                        <h3 className="text-sm font-bold text-foreground leading-snug mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                          {pName}
+                        </h3>
+                        {p.shortDescFa && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
+                            {isEn ? (p.shortDescEn || p.shortDescFa) : p.shortDescFa}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="pt-3 border-t border-border/60 mt-auto flex flex-col gap-3">
+                        {p.price > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-muted-foreground">
+                              {isEn ? 'Price:' : 'قیمت:'}
+                            </span>
+                            <span className="text-sm font-extrabold text-foreground tracking-tight text-gradient-gold">
+                              {isEn ? `${p.price.toLocaleString('en-US')} Tomans` : `${p.price.toLocaleString('fa-IR')} تومان`}
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button asChild size="sm" variant="outline" className="text-xs rounded-xl border-border hover:border-primary">
+                            <Link href="/shop">{isEn ? 'View in Shop' : 'مشاهده جزئیات'}</Link>
+                          </Button>
+                          <Button asChild size="sm" className="bg-gradient-gold text-charcoal-950 font-bold text-xs rounded-xl shadow-gold hover:opacity-95">
+                            <a href="tel:+982126429715">{isEn ? 'Call Clinic' : 'تماس و سفارش'}</a>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Bottom Luxury Assurance Strip */}
+            <div className="mt-12 p-6 rounded-2xl bg-surface-card border border-border-gold/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">✨</span>
+                <div>
+                  <h4 className="font-bold text-foreground">
+                    {isEn ? 'Direct Pickup in Gheytariyeh or Express Dispatch' : 'خرید حضوری در بلوار صبا قیطریه یا ارسال فوری'}
+                  </h4>
+                  <p className="text-muted-foreground">
+                    {isEn ? 'Phone consultation and orders: 021-26429715' : 'مشاوره تلفنی و ثبت سفارش: ۰۲۱-۲۶۴۲۹۷۱۵ (همه روزه ۱۰ تا ۲۲)'}
+                  </p>
+                </div>
+              </div>
+              <Button asChild variant="outline" className="border-border-gold text-foreground hover:bg-surface rounded-full px-6">
+                <Link href="/shop">{isEn ? 'Open Boutique Catalog' : 'کاتالوگ آنلاین پت‌شاپ'}</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ═══ SERVICES CATALOG PREVIEW ═══ */}
       <section className="section-padding bg-background">

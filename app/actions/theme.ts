@@ -5,6 +5,7 @@ import { getSession, hasRoleAccess } from '@/lib/auth';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { cookies } from 'next/headers';
 import { ThemePreset } from '@/lib/theme/types';
+import { logAdminChange } from '@/lib/audit';
 
 const VALID_THEMES: readonly ThemePreset[] = [
   'petboss-luxury-dark',
@@ -52,6 +53,14 @@ export async function setGlobalThemeAction(themeId: ThemePreset): Promise<ThemeA
         },
       });
     }
+
+    await logAdminChange({
+      action: 'UPDATE',
+      entity: 'THEME',
+      entityId: themeId,
+      before: existing ? { activeTheme: existing.activeTheme } : undefined,
+      after: { activeTheme: themeId },
+    });
 
     // Also synchronize the server-side cookie so the admin browser immediately matches
     try {

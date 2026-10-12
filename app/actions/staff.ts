@@ -3,6 +3,7 @@
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { logAdminChange } from '@/lib/audit'
 
 export interface StaffActionState {
   error?: string
@@ -30,7 +31,7 @@ export async function createStaffAction(formData: FormData): Promise<StaffAction
   }
 
   try {
-    await db.staffMember.create({
+    const created = await db.staffMember.create({
       data: {
         nameFa,
         nameEn,
@@ -43,6 +44,13 @@ export async function createStaffAction(formData: FormData): Promise<StaffAction
         bioEn,
         isActive,
       },
+    })
+
+    await logAdminChange({
+      action: 'CREATE',
+      entity: 'STAFF',
+      entityId: created.id,
+      after: { id: created.id, nameFa, nameEn, titleFa, specialtyFa, licenseNo, isActive },
     })
 
     revalidatePath('/[locale]/admin/staff', 'page')
@@ -73,7 +81,11 @@ export async function updateStaffAction(staffId: string, formData: FormData): Pr
   if (!nameFa) return { error: 'نام الزامی است.' }
 
   try {
-    await db.staffMember.update({
+    const previous = await db.staffMember.findUnique({
+      where: { id: staffId },
+    })
+
+    const updated = await db.staffMember.update({
       where: { id: staffId },
       data: {
         nameFa,
@@ -87,6 +99,14 @@ export async function updateStaffAction(staffId: string, formData: FormData): Pr
         bioEn,
         isActive,
       },
+    })
+
+    await logAdminChange({
+      action: 'UPDATE',
+      entity: 'STAFF',
+      entityId: staffId,
+      before: previous ? { nameFa: previous.nameFa, titleFa: previous.titleFa, isActive: previous.isActive } : undefined,
+      after: { nameFa: updated.nameFa, titleFa: updated.titleFa, isActive: updated.isActive },
     })
 
     revalidatePath('/[locale]/admin/staff', 'page')
@@ -106,14 +126,22 @@ export async function toggleStaffActiveAction(staffId: string): Promise<StaffAct
   try {
     const existing = await db.staffMember.findUnique({
       where: { id: staffId },
-      select: { isActive: true },
+      select: { isActive: true, nameFa: true },
     })
 
     if (!existing) return { error: 'عضو مورد نظر یافت نشد.' }
 
-    await db.staffMember.update({
+    const updated = await db.staffMember.update({
       where: { id: staffId },
       data: { isActive: !existing.isActive },
+    })
+
+    await logAdminChange({
+      action: 'UPDATE',
+      entity: 'STAFF',
+      entityId: staffId,
+      before: { isActive: existing.isActive },
+      after: { isActive: updated.isActive, nameFa: existing.nameFa },
     })
 
     revalidatePath('/[locale]/admin/staff', 'page')
@@ -131,8 +159,20 @@ export async function deleteStaffAction(staffId: string): Promise<StaffActionSta
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
+    const existing = await db.staffMember.findUnique({
+      where: { id: staffId },
+      select: { id: true, nameFa: true },
+    })
+
     await db.staffMember.delete({
       where: { id: staffId },
+    })
+
+    await logAdminChange({
+      action: 'DELETE',
+      entity: 'STAFF',
+      entityId: staffId,
+      before: existing || { id: staffId },
     })
 
     revalidatePath('/[locale]/admin/staff', 'page')

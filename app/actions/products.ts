@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { StockStatus } from '@prisma/client'
+import { logAdminChange } from '@/lib/audit'
 
 import fs from 'fs'
 import path from 'path'
@@ -135,6 +136,22 @@ export async function createProductAction(formData: FormData): Promise<ProductAc
       })
     }
 
+    await logAdminChange({
+      action: 'CREATE',
+      entity: 'PRODUCT',
+      entityId: createdProduct.id,
+      after: {
+        id: createdProduct.id,
+        nameFa,
+        nameEn,
+        sku,
+        price,
+        categoryId,
+        stockStatus,
+        isActive,
+      },
+    })
+
     revalidatePath('/[locale]/admin/products', 'page')
     revalidatePath('/[locale]/shop', 'page')
     revalidatePath('/[locale]', 'page')
@@ -212,7 +229,11 @@ export async function updateProductAction(productId: string, formData: FormData)
       })
     }
 
-    await db.product.update({
+    const previous = await db.product.findUnique({
+      where: { id: productId },
+    })
+
+    const updated = await db.product.update({
       where: { id: productId },
       data: {
         ...(categoryId ? { categoryId } : {}),
@@ -226,6 +247,14 @@ export async function updateProductAction(productId: string, formData: FormData)
         isActive,
         ...(shouldUpdateImage ? { ogImageId: finalImageUrl } : {}),
       },
+    })
+
+    await logAdminChange({
+      action: 'UPDATE',
+      entity: 'PRODUCT',
+      entityId: productId,
+      before: previous ? { nameFa: previous.nameFa, price: previous.price, stockStatus: previous.stockStatus, isActive: previous.isActive } : undefined,
+      after: { nameFa: updated.nameFa, price: updated.price, stockStatus: updated.stockStatus, isActive: updated.isActive },
     })
 
     revalidatePath('/[locale]/admin/products', 'page')
@@ -243,8 +272,20 @@ export async function deleteProductAction(productId: string): Promise<ProductAct
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
+    const existing = await db.product.findUnique({
+      where: { id: productId },
+      select: { id: true, nameFa: true, price: true, sku: true },
+    })
+
     await db.product.delete({
       where: { id: productId },
+    })
+
+    await logAdminChange({
+      action: 'DELETE',
+      entity: 'PRODUCT',
+      entityId: productId,
+      before: existing || { id: productId },
     })
 
     revalidatePath('/[locale]/admin/products', 'page')
@@ -299,32 +340,52 @@ export async function createCategoryAction(formData: FormData): Promise<Category
     }
   }
 
+  let finalSlugFa = slugFa
+  let finalSlugEn = slugEn
+
   try {
-    // Check slug collision
+    // Check slug collision and ensure unique system-generated slug
     const existing = await db.productCategory.findFirst({
       where: {
         OR: [
-          { slugFa },
-          ...(slugEn ? [{ slugEn }] : []),
+          { slugFa: finalSlugFa },
+          ...(finalSlugEn ? [{ slugEn: finalSlugEn }] : []),
         ],
       },
     })
 
     if (existing) {
-      return { error: 'دسته‌بندی با این نام یا شناسه قبلاً ثبت شده است.' }
+      const suffix = Date.now().toString(36)
+      finalSlugFa = `${slugFa}-${suffix}`
+      if (finalSlugEn) {
+        finalSlugEn = `${finalSlugEn}-${suffix}`
+      }
     }
 
-    await db.productCategory.create({
+    const createdCat = await db.productCategory.create({
       data: {
         nameFa,
         nameEn,
-        slugFa,
-        slugEn,
+        slugFa: finalSlugFa,
+        slugEn: finalSlugEn,
         descriptionFa,
         descriptionEn,
         sortOrder: isNaN(sortOrder) ? 0 : sortOrder,
         isActive,
         imageId,
+      },
+    })
+
+    await logAdminChange({
+      action: 'CREATE',
+      entity: 'PRODUCT_CATEGORY',
+      entityId: createdCat.id,
+      after: {
+        id: createdCat.id,
+        nameFa,
+        nameEn,
+        slugFa: finalSlugFa,
+        isActive,
       },
     })
 
@@ -378,7 +439,11 @@ export async function updateCategoryAction(categoryId: string, formData: FormDat
   }
 
   try {
-    await db.productCategory.update({
+    const previous = await db.productCategory.findUnique({
+      where: { id: categoryId },
+    })
+
+    const updated = await db.productCategory.update({
       where: { id: categoryId },
       data: {
         nameFa,
@@ -389,6 +454,14 @@ export async function updateCategoryAction(categoryId: string, formData: FormDat
         isActive,
         ...(shouldUpdateImage ? { imageId } : {}),
       },
+    })
+
+    await logAdminChange({
+      action: 'UPDATE',
+      entity: 'PRODUCT_CATEGORY',
+      entityId: categoryId,
+      before: previous ? { nameFa: previous.nameFa, nameEn: previous.nameEn } : undefined,
+      after: { nameFa: updated.nameFa, nameEn: updated.nameEn, sortOrder: updated.sortOrder },
     })
 
     revalidatePath('/[locale]/admin/products', 'page')
@@ -406,24 +479,61 @@ export async function deleteCategoryAction(categoryId: string): Promise<Category
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
+    const cat = await db.productCategory.findUnique({
+      where: { id: categoryId },
+      select: { id: true, nameFa: true },
+    })
+
     // Check if category has products
     const productCount = await db.product.count({
       where: { categoryId },
     })
 
     if (productCount > 0) {
-      return {
-        error: `این دسته‌بندی دارای ${productCount} محصول است. ابتدا محصولات مربوطه را حذف یا به دسته دیگری منتقل کنید.`,
+      // Find or create fallback general category to avoid orphaned products
+      let fallbackCat = await db.productCategory.findFirst({
+        where: { id: { not: categoryId }, isActive: true },
+      })
+
+      if (!fallbackCat) {
+        fallbackCat = await db.productCategory.create({
+          data: {
+            nameFa: 'ملزومات عمومی پت',
+            nameEn: 'General Pet Supplies',
+            slugFa: `general-supplies-${Date.now().toString(36)}`,
+            slugEn: `general-supplies-${Date.now().toString(36)}`,
+            sortOrder: 99,
+          },
+        })
       }
+
+      // Reassign products to fallback category
+      await db.product.updateMany({
+        where: { categoryId },
+        data: { categoryId: fallbackCat.id },
+      })
     }
 
     await db.productCategory.delete({
       where: { id: categoryId },
     })
 
+    await logAdminChange({
+      action: 'DELETE',
+      entity: 'PRODUCT_CATEGORY',
+      entityId: categoryId,
+      before: cat || { id: categoryId },
+      details: { reallocatedProductCount: productCount },
+    })
+
     revalidatePath('/[locale]/admin/products', 'page')
     revalidatePath('/[locale]/shop', 'page')
-    return { success: true, message: 'دسته‌بندی با موفقیت حذف گردید.' }
+    return {
+      success: true,
+      message: productCount > 0
+        ? `دسته‌بندی با موفقیت حذف شد و ${productCount} محصول مربوطه به دسته دیگری منتقل شدند.`
+        : 'دسته‌بندی با موفقیت حذف گردید.',
+    }
   } catch (err: unknown) {
     console.error('Error deleting category:', err)
     return { error: 'خطا در حذف دسته‌بندی.' }

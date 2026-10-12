@@ -3,6 +3,7 @@
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { revalidatePath, revalidateTag } from 'next/cache'
+import { logAdminChange } from '@/lib/audit'
 
 export interface SettingsActionState {
   error?: string
@@ -70,6 +71,22 @@ export async function updateSiteSettingsAction(formData: FormData): Promise<Sett
         },
       })
     }
+
+    await logAdminChange({
+      action: 'UPDATE',
+      entity: 'SITE_SETTING',
+      entityId: existing?.id || 'GLOBAL_SITE_SETTING',
+      before: existing ? { nameFa: existing.nameFa, heroTitleFa: existing.heroTitleFa } : undefined,
+      after: {
+        nameFa,
+        nameEn,
+        heroTitleFa,
+        heroTitleEn,
+        phones: [phone],
+        addresses: { fa: addressFa, en: addressEn },
+        workingHours: { fa: workingHoursFa, en: workingHoursEn },
+      },
+    })
 
     revalidateTag('site-settings')
     revalidateTag('clinic-nap')

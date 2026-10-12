@@ -39,6 +39,26 @@ export function Header({ logoUrl }: { logoUrl?: string }) {
                 ? pathname === '/'
                 : pathname.startsWith(link.href);
 
+            if (link.href === '/shop') {
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`mx-1.5 px-4 py-2 text-sm font-bold rounded-full transition-all flex items-center gap-2 border shadow-gold ${
+                    isActive
+                      ? 'bg-gradient-gold text-charcoal-950 border-gold-300'
+                      : 'bg-primary/10 text-primary border-primary/40 hover:bg-gradient-gold hover:text-charcoal-950 hover:border-gold-300'
+                  }`}
+                >
+                  <span className="text-base">🛍️</span>
+                  <span>{link.label}</span>
+                  <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/20 text-primary group-hover:bg-charcoal-950 group-hover:text-gold-300 font-extrabold">
+                    {isEnglish ? 'Boutique' : 'ویژه'}
+                  </span>
+                </Link>
+              );
+            }
+
             return (
               <Link
                 key={link.href}
@@ -95,17 +115,32 @@ export function Header({ logoUrl }: { logoUrl?: string }) {
 
       {/* Mobile Navigation Dropdown */}
       {mobileMenuOpen && (
-        <nav className="lg:hidden border-t border-border bg-surface px-4 py-4 space-y-1.5 shadow-xl">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="block px-3.5 py-2.5 text-sm font-medium rounded-lg text-foreground hover:bg-surface-hover hover:text-primary transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
+        <nav className="lg:hidden border-t border-border bg-surface px-4 py-4 space-y-2 shadow-xl">
+          {navLinks.map((link) => {
+            const isShop = link.href === '/shop';
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={
+                  isShop
+                    ? "flex items-center justify-between px-4 py-3 text-sm font-bold rounded-xl bg-primary/15 border border-primary/40 text-primary shadow-gold transition-colors"
+                    : "block px-3.5 py-2.5 text-sm font-medium rounded-lg text-foreground hover:bg-surface-hover hover:text-primary transition-colors"
+                }
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="flex items-center gap-2">
+                  {isShop && <span>🛍️</span>}
+                  <span>{link.label}</span>
+                </div>
+                {isShop && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-gold text-charcoal-950 font-extrabold shadow-xs">
+                    {isEnglish ? 'Special Boutique' : 'بوتیک لوکس'}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
           <div className="pt-3 border-t border-border mt-3 flex flex-col gap-2">
             <Button asChild className="w-full bg-gradient-gold text-charcoal-950 font-bold rounded-full shadow-gold">
               <a href="tel:+982126429715">{t('callNow')}</a>

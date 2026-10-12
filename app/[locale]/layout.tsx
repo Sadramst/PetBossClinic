@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/lib/theme';
 import { getActiveClinicTheme } from '@/lib/theme/theme-server';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
+import { FloatingShopButton } from '@/components/shared/floating-shop-button';
 import { getClinicNAP } from '@/lib/clinic/nap';
 import { getSitePictures } from '@/lib/media';
 import { OrganizationJsonLd, WebSiteJsonLd } from '@/lib/seo/json-ld';
@@ -158,6 +159,7 @@ export default async function LocaleLayout({
           <NextIntlClientProvider messages={messages}>
             <Header logoUrl={sitePictures.site_logo} />
             <main className="flex-grow">{children}</main>
+            <FloatingShopButton />
             <Footer nap={nap} logoUrl={sitePictures.site_logo} />
           </NextIntlClientProvider>
         </ThemeProvider>
