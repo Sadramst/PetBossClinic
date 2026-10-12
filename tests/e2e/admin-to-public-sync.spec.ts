@@ -50,8 +50,7 @@ test.describe('Admin Control to Public Site Synchronization (Phase 1 Acceptance)
 
     // 4. Navigate to Homepage Manager
     await page.goto('/admin/homepage')
-    await expect(page.locator('h1')).toBeVisible()
-    await expect(page.locator('h1')).toContainText(/(مدیریت و کنترل بخش‌های صفحه اصلی|Homepage Sections Control)/)
+    await expect(page.getByRole('heading', { name: /(مدیریت و کنترل بخش‌های صفحه اصلی|Homepage Sections Control)/ })).toBeVisible()
 
     // 5. Navigate to Public Homepage and verify zero prices do NOT exist
     await page.goto('/fa')
