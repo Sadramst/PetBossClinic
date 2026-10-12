@@ -38,8 +38,9 @@ describe('Edge Web Crypto Session Verification (lib/auth/edge.ts)', () => {
   it('rejects a token with a tampered signature', async () => {
     const validToken = createSessionToken(mockUser)
     const [payload, signature] = validToken.split('.')
-    // Tamper with one character of the signature
-    const tamperedSignature = signature.slice(0, -1) + (signature.endsWith('a') ? 'b' : 'a')
+    // Tamper with the first character of the signature to guarantee byte alteration
+    const tamperedChar = signature[0] === 'X' ? 'Y' : 'X'
+    const tamperedSignature = tamperedChar + signature.slice(1)
     const tamperedToken = `${payload}.${tamperedSignature}`
 
     const result = await verifySessionTokenEdge(tamperedToken)
