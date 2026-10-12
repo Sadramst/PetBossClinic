@@ -129,38 +129,39 @@ export async function uploadMediaAction(formData: FormData): Promise<MediaAction
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // Base64 Data URI is completely self-contained and will NEVER return 404 on Vercel or any CDN
-    const base64Data = buffer.toString('base64')
-    const dataUri = `data:${file.type};base64,${base64Data}`
+    const sharp = (await import('sharp')).default
+    const optimizedBuffer = await sharp(buffer)
+      .resize({ width: 1600, withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer()
 
     const timestamp = Date.now()
     const safeName = file.name
       .replace(/[^a-zA-Z0-9.-]/g, '_')
       .toLowerCase()
-    const fileName = `${timestamp}-${safeName}`
+      .replace(/\.[^/.]+$/, '')
+    const fileName = `${timestamp}-${safeName}.webp`
     const mediaKey = `upload_${timestamp}_${Math.random().toString(36).substring(2, 7)}`
+    const effectiveUrl = `/uploads/${fileName}`
 
-    // Attempt local disk save (succeeds on local/VPS, safely caught if running in read-only serverless)
+    // Attempt local disk save
     try {
       const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true })
       }
       const filePath = path.join(uploadsDir, fileName)
-      await fs.promises.writeFile(filePath, buffer)
+      await fs.promises.writeFile(filePath, optimizedBuffer)
     } catch {
-      // Ephemeral serverless container filesystem - safely ignored because we have dataUri in PostgreSQL
+      // Ephemeral serverless container filesystem
     }
-
-    // Use dataUri as the primary URL so it is 100% self-contained and zero 404 risk
-    const effectiveUrl = dataUri
 
     const created = await db.media.create({
       data: {
         key: mediaKey,
         url: effectiveUrl,
-        mime: file.type,
-        size: file.size,
+        mime: 'image/webp',
+        size: optimizedBuffer.length,
         altFa,
         altEn,
       },

@@ -3,8 +3,13 @@ import { db } from '@/lib/db'
 import { ShopCatalogClient } from '@/components/shop'
 import { BreadcrumbJsonLd } from '@/lib/seo/json-ld'
 import { getClinicNAP } from '@/lib/clinic/nap'
+import { setRequestLocale } from 'next-intl/server'
 
 export const revalidate = 60;
+
+export function generateStaticParams() {
+  return [{ locale: 'fa' }, { locale: 'en' }];
+}
 
 export async function generateMetadata({
   params,
@@ -12,6 +17,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>
 }): Promise<Metadata> {
   const { locale } = await params
+  setRequestLocale(locale)
   const isEn = locale === 'en'
 
   const title = isEn
@@ -59,6 +65,7 @@ export default async function ShopPage({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
+  setRequestLocale(locale)
   const isEn = locale === 'en'
 
   const [categories, products, nap] = await Promise.all([

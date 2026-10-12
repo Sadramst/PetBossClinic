@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { db } from "@/lib/db";
 import Image from "next/image";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
@@ -12,12 +12,17 @@ import { getClinicNAP } from "@/lib/clinic/nap";
 
 export const revalidate = 60;
 
+export function generateStaticParams() {
+  return [{ locale: 'fa' }, { locale: 'en' }];
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  setRequestLocale(locale);
   const isEn = locale === 'en';
 
   const title = isEn
@@ -53,6 +58,7 @@ export default async function ServicesPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  setRequestLocale(locale);
   const isEn = locale === 'en';
   const t = await getTranslations('Services');
 

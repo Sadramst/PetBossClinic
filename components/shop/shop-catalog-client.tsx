@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { useLocale } from 'next-intl'
 import { Link } from '@/i18n/routing'
 import { StockStatus } from '@prisma/client'
 import { formatPrice } from '@/lib/format/price'
+import { toPersianDigits } from '@/lib/utils/phone'
 
 export interface ShopCategory {
   id: string
@@ -73,6 +74,14 @@ export function ShopCatalogClient({
   const [sortBy, setSortBy] = useState<'newest' | 'priceAsc' | 'priceDesc' | 'inStock'>('newest')
   const [activeModalProduct, setActiveModalProduct] = useState<ShopProduct | null>(null)
   const [copiedSku, setCopiedSku] = useState<string | null>(null)
+
+  const PAGE_SIZE = 24
+  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE)
+
+  // Reset pagination count on filter/search changes
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE)
+  }, [selectedCategory, speciesFilter, onlyInStock, searchQuery, sortBy])
 
   const productsSectionRef = useRef<HTMLDivElement>(null)
 
@@ -166,6 +175,10 @@ export function ShopCatalogClient({
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       })
   }, [products, selectedCategory, speciesFilter, onlyInStock, searchQuery, sortBy])
+
+  const visibleProducts = useMemo(() => {
+    return filteredProducts.slice(0, visibleCount)
+  }, [filteredProducts, visibleCount])
 
   // Copy SKU handler
   const handleCopySku = (sku: string) => {
@@ -516,7 +529,7 @@ export function ShopCatalogClient({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => {
+            {visibleProducts.map((product) => {
               const pName = isEn ? (product.nameEn || product.nameFa) : product.nameFa
               const pDesc = isEn ? (product.shortDescEn || product.shortDescFa) : product.shortDescFa
               const catName = isEn ? (product.category.nameEn || product.category.nameFa) : product.category.nameFa
@@ -659,6 +672,22 @@ export function ShopCatalogClient({
                 </div>
               )
             })}
+
+            {/* Load More Pagination */}
+            {visibleCount < filteredProducts.length && (
+              <div className="col-span-full mt-10 text-center">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+                  className="px-8 py-3.5 rounded-2xl bg-surface-card border-2 border-primary/40 hover:border-primary text-foreground text-sm font-bold shadow-gold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer inline-flex items-center gap-3"
+                >
+                  <span>✨ {isEn ? 'Load More Products' : 'مشاهده محصولات بیشتر'}</span>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-primary/20 text-primary font-mono font-bold">
+                    {isEn ? `${visibleProducts.length} of ${filteredProducts.length}` : `${toPersianDigits(visibleProducts.length)} از ${toPersianDigits(filteredProducts.length)}`}
+                  </span>
+                </button>
+              </div>
+            )}
           </div>
         )}
 

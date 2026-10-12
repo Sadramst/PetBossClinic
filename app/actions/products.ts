@@ -28,25 +28,43 @@ async function saveUploadedFile(file: File, subfolder: 'products' | 'categories'
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
 
-  const base64Data = buffer.toString('base64')
-  const dataUri = `data:${file.type};base64,${base64Data}`
-
   const timestamp = Date.now()
-  const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase()
-  const fileName = `${timestamp}-${safeName}`
+  const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase().replace(/\.[^/.]+$/, '')
+  const fileName = `${timestamp}-${safeName}.webp`
+  const relativePath = `/uploads/${subfolder}/${fileName}`
 
   try {
+    const sharp = (await import('sharp')).default
+    const optimizedBuffer = await sharp(buffer)
+      .resize({ width: 1000, withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toBuffer()
+
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', subfolder)
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true })
     }
     const filePath = path.join(uploadDir, fileName)
-    await fs.promises.writeFile(filePath, buffer)
-  } catch {
-    // Ephemeral or read-only filesystem on serverless
+    await fs.promises.writeFile(filePath, optimizedBuffer)
+
+    // Index in db.media
+    await db.media.upsert({
+      where: { key: `product_${timestamp}_${safeName}` },
+      update: { url: relativePath, size: optimizedBuffer.length, mime: 'image/webp' },
+      create: {
+        key: `product_${timestamp}_${safeName}`,
+        url: relativePath,
+        size: optimizedBuffer.length,
+        mime: 'image/webp',
+        altFa: file.name,
+        altEn: file.name,
+      },
+    }).catch(() => {})
+  } catch (err) {
+    console.warn('Could not optimize uploaded file:', err)
   }
 
-  return dataUri
+  return relativePath
 }
 
 export async function createProductAction(formData: FormData): Promise<ProductActionState> {

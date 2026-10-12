@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import '@/styles/globals.css';
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { AbstractIntlMessages, NextIntlClientProvider } from 'next-intl';
+import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { Outfit, Vazirmatn } from 'next/font/google';
 import { ThemeProvider } from '@/lib/theme';
@@ -36,6 +36,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  setRequestLocale(locale);
   const isEn = locale === 'en';
   const nap = await getClinicNAP();
 
@@ -127,7 +128,9 @@ export default async function LocaleLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  let messages;
+  setRequestLocale(locale);
+
+  let messages: AbstractIntlMessages = {};
   try {
     messages = await getMessages();
   } catch {

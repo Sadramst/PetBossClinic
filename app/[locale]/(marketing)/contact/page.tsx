@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { LeadForm } from "@/components/forms/lead-form";
 import { getClinicNAP } from "@/lib/clinic/nap";
@@ -7,6 +7,9 @@ import { BreadcrumbJsonLd, VeterinaryCareJsonLd } from "@/lib/seo/json-ld";
 
 export const revalidate = 60;
 
+export function generateStaticParams() {
+  return [{ locale: 'fa' }, { locale: 'en' }];
+}
 
 export async function generateMetadata({
   params,
@@ -14,6 +17,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  setRequestLocale(locale);
   const isEn = locale === 'en';
   const nap = await getClinicNAP();
 
@@ -53,6 +57,7 @@ export default async function ContactPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  setRequestLocale(locale);
   const isEn = locale === 'en';
   const [t, nap] = await Promise.all([
     getTranslations('Contact'),
@@ -128,6 +133,7 @@ export default async function ContactPage({
                 scrolling="no"
                 marginHeight={0}
                 marginWidth={0}
+                loading="lazy"
                 src={`https://maps.google.com/maps?q=${nap.geo.lat},${nap.geo.lng}&hl=${isEn ? 'en' : 'fa'}&z=16&output=embed`}
                 className="w-full h-full grayscale contrast-125 opacity-90 hover:grayscale-0 transition-all duration-300"
               />

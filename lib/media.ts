@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { unstable_cache } from 'next/cache'
 
 export interface SitePictures {
   site_logo: string
@@ -22,7 +23,7 @@ export const DEFAULT_SITE_PICTURES: SitePictures = {
   about_veterinarian: '/images/veterinarian.jpg',
 }
 
-export async function getSitePictures(): Promise<SitePictures> {
+async function fetchSitePicturesFromDb(): Promise<SitePictures> {
   try {
     const records = await db.media.findMany({
       where: {
@@ -45,3 +46,12 @@ export async function getSitePictures(): Promise<SitePictures> {
     return DEFAULT_SITE_PICTURES
   }
 }
+
+export const getSitePictures = unstable_cache(
+  fetchSitePicturesFromDb,
+  ['site-pictures-cache'],
+  {
+    revalidate: 3600,
+    tags: ['site-pictures', 'media', 'site-settings'],
+  }
+)

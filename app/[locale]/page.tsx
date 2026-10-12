@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { db } from "@/lib/db";
 import Image from "next/image";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -19,12 +19,17 @@ import {
 
 export const revalidate = 60;
 
+export function generateStaticParams() {
+  return [{ locale: 'fa' }, { locale: 'en' }];
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  setRequestLocale(locale);
   const isEn = locale === 'en';
 
   const title = isEn
@@ -63,6 +68,7 @@ export default async function HomePage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  setRequestLocale(locale);
   const isEn = locale === 'en';
   const t = await getTranslations('Home');
 
@@ -805,6 +811,7 @@ export default async function HomePage({
                   scrolling="no"
                   marginHeight={0}
                   marginWidth={0}
+                  loading="lazy"
                   src={`https://maps.google.com/maps?q=35.790937,51.4350853&hl=${isEn ? 'en' : 'fa'}&z=16&output=embed`}
                   className="w-full h-full grayscale contrast-125 opacity-90 hover:grayscale-0 transition-all duration-300"
                 />
