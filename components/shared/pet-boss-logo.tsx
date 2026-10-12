@@ -39,13 +39,15 @@ export function PetBossLogo({
   };
 
   const currentSize = sizeMap[size];
-
-
   const defaultSubtitle = subtitle || (isEn ? 'CLINIC & PET SHOP' : 'کلینیک و پت شاپ');
+
+  const effectiveLogoUrl = logoUrl && logoUrl !== '/images/logo.png'
+    ? logoUrl
+    : (showText ? '/images/logo-emblem.png' : '/images/logo.png');
 
   return (
     <div className={`inline-flex items-center gap-3 ${className}`}>
-      {/* Crowned Lion & Animals Authentic Emblem from Logo.jpg */}
+      {/* Crowned Lion & Animals Authentic Emblem */}
       <svg
         width={currentSize.icon}
         height={currentSize.icon}
@@ -71,7 +73,7 @@ export function PetBossLogo({
 
         {/* Authentic Brand Emblem Image */}
         <image
-          href={logoUrl || '/images/logo.png'}
+          href={effectiveLogoUrl}
           x="0"
           y="0"
           width="120"

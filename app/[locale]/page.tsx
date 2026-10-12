@@ -256,7 +256,7 @@ export default async function HomePage({
                   <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(#d4af37_1px,transparent_1px)] [background-size:16px_16px] opacity-15" />
                   
                   <div className="relative z-10 flex flex-col items-center">
-                    <PetBossLogo size="lg" variant="gold" className="mb-6" />
+                    <PetBossLogo size="lg" variant="gold" logoUrl={sitePictures.site_logo} className="mb-6" />
                     
                     <span className="text-sm font-semibold tracking-widest text-primary uppercase mb-2">
                       {isEn ? 'Gheytariyeh, Tehran' : 'قیطریه، تهران'}

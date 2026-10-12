@@ -1,7 +1,7 @@
 'use client'
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useState, useTransition } from 'react'
+import React, { useState, useEffect, useTransition } from 'react'
 import {
   createStaffAction,
   updateStaffAction,
@@ -31,10 +31,15 @@ interface Props {
 }
 
 export function StaffManager({ staff, isEn }: Props) {
+  const [staffList, setStaffList] = useState(staff)
   const [isPending, startTransition] = useTransition()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingStaff, setEditingStaff] = useState<StaffItem | null>(null)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  useEffect(() => {
+    setStaffList(staff)
+  }, [staff])
 
   // Form fields
   const [nameFa, setNameFa] = useState('')
@@ -128,8 +133,25 @@ export function StaffManager({ staff, isEn }: Props) {
   }
 
   const handleToggle = (s: StaffItem) => {
+    const nextActive = !s.isActive
+    setStaffList((prev) =>
+      prev.map((item) => (item.id === s.id ? { ...item, isActive: nextActive } : item))
+    )
     startTransition(async () => {
-      await toggleStaffActiveAction(s.id)
+      const res = await toggleStaffActiveAction(s.id)
+      if (res.error) {
+        setStaffList((prev) =>
+          prev.map((item) => (item.id === s.id ? { ...item, isActive: s.isActive } : item))
+        )
+        setMessage({ type: 'error', text: res.error })
+      } else {
+        setMessage({
+          type: 'success',
+          text: nextActive
+            ? (isEn ? `${s.nameEn || s.nameFa} is now ACTIVE and visible on the website.` : `«${s.nameFa}» با موفقیت فعال شد و در وب‌سایت نمایش داده می‌شود.`)
+            : (isEn ? `${s.nameEn || s.nameFa} is now DEACTIVATED and hidden from the website.` : `«${s.nameFa}» غیرفعال شد و از وب‌سایت پنهان گردید.`),
+        })
+      }
     })
   }
 
@@ -155,10 +177,10 @@ export function StaffManager({ staff, isEn }: Props) {
           <h1 className="text-2xl font-bold text-foreground">
             {isEn ? 'Veterinary & Medical Staff' : 'کادر پزشکی و درمانی'}
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mt-1">
             {isEn
-              ? 'Manage veterinarian profiles, titles, veterinary license numbers, and specialties'
-              : 'مدیریت مشخصات دامپزشکان، تخصص‌ها، سوابق و شماره نظام دامپزشکی'}
+              ? 'Manage veterinarian profiles, titles, veterinary license numbers, and active/inactive visibility'
+              : 'مدیریت مشخصات دامپزشکان، تخصص‌ها، سوابق و قابلیت فعال/غیرفعال‌سازی نمایش در وب‌سایت'}
           </p>
         </div>
         <button
@@ -168,6 +190,16 @@ export function StaffManager({ staff, isEn }: Props) {
           <span>➕</span>
           <span>{isEn ? 'Add Veterinarian' : 'افزودن عضو جدید'}</span>
         </button>
+      </div>
+
+      {/* Helpful Guidance Notice */}
+      <div className="p-3.5 rounded-xl bg-surface-card border border-border flex items-center gap-2.5 text-xs text-muted-foreground">
+        <span className="text-base">💡</span>
+        <span>
+          {isEn
+            ? 'Visibility Control: Use the switch toggle on each doctor profile to instantly activate or deactivate their appearance on the public homepage and about page.'
+            : 'کنترل وضعیت نمایش: برای هر پزشک می‌توانید با سوئیچ فعال/غیرفعال وضعیت نمایش در وب‌سایت را بلافاصله تغییر دهید؛ پزشکان غیرفعال از سایت پنهان می‌شوند.'}
+        </span>
       </div>
 
       {message && (
@@ -185,12 +217,12 @@ export function StaffManager({ staff, isEn }: Props) {
 
       {/* Grid of Staff */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {staff.length === 0 ? (
+        {staffList.length === 0 ? (
           <div className="col-span-full bg-surface border border-dashed border-border rounded-2xl p-12 text-center text-muted-foreground text-sm">
             {isEn ? 'No staff profiles created yet.' : 'هنوز هیچ عضو کادر درمانی ثبت نشده است.'}
           </div>
         ) : (
-          staff.map((member) => {
+          staffList.map((member) => {
             const mName = isEn ? (member.nameEn || member.nameFa) : member.nameFa
             const mTitle = isEn ? (member.titleEn || member.titleFa) : member.titleFa
             const mBio = isEn ? (member.bioEn || member.bioFa) : member.bioFa
@@ -226,23 +258,38 @@ export function StaffManager({ staff, isEn }: Props) {
                 </div>
 
                 <div className="pt-3 border-t border-border flex items-center justify-between text-xs">
-                  <button
-                    type="button"
-                    onClick={() => handleToggle(member)}
-                    disabled={isPending}
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
-                      member.isActive
-                        ? 'text-emerald-400 bg-emerald-500/15 border border-emerald-500/30'
-                        : 'text-rose-400 bg-rose-500/15 border border-rose-500/30'
-                    }`}
-                  >
-                    {member.isActive ? (isEn ? 'Active' : 'فعال') : (isEn ? 'Inactive' : 'غیرفعال')}
-                  </button>
+                  {/* Active/Inactive Switch Toggle */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={member.isActive}
+                      onClick={() => handleToggle(member)}
+                      disabled={isPending}
+                      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
+                        member.isActive ? 'bg-emerald-500' : 'bg-zinc-700'
+                      }`}
+                      title={
+                        member.isActive
+                          ? (isEn ? 'Click to deactivate and hide from site' : 'کلیک کنید تا غیرفعال و از سایت پنهان شود')
+                          : (isEn ? 'Click to activate and show on site' : 'کلیک کنید تا فعال و در سایت نمایش داده شود')
+                      }
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          member.isActive ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                    <span className={`text-[11px] font-bold ${member.isActive ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                      {member.isActive ? (isEn ? 'Active' : 'فعال در سایت') : (isEn ? 'Inactive (Hidden)' : 'غیرفعال (پنهان)')}
+                    </span>
+                  </div>
 
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => openEditModal(member)}
-                      className="text-primary font-bold hover:underline cursor-pointer"
+                      className="text-primary font-bold hover:underline cursor-pointer flex items-center gap-1"
                     >
                       ✏️ {isEn ? 'Edit' : 'ویرایش'}
                     </button>

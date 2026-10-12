@@ -65,7 +65,11 @@ test.describe('Admin Control to Public Site Synchronization (Phase 1 Acceptance)
     // 7. Verify conflicting old address does not exist anywhere on public page
     await expect(page.locator('body')).not.toContainText('بلوار صبا قیطریه')
 
-    // 8. Verify Dr. Ali Hadidi is rendered on public page
-    await expect(page.locator('body')).toContainText('دکتر علی حدیدی')
+    // 8. Verify Dr. Ali Hadidi is inactive and therefore NOT rendered on public page
+    await expect(page.locator('body')).not.toContainText('دکتر علی حدیدی')
+
+    // 9. Navigate to Staff Manager in admin and verify the active/inactive switch toggle is present
+    await page.goto('/admin/staff')
+    await expect(page.locator('button[role="switch"]').first()).toBeAttached()
   })
 })

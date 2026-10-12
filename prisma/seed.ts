@@ -507,7 +507,7 @@ async function main() {
         specialtyFa: 'جراحی بافت نرم و ارتوپدی حیوانات خانگی',
         specialtyEn: 'Soft Tissue Surgery & Orthopedics',
         licenseNo: '48921',
-        isActive: true,
+        isActive: false,
         sortOrder: 1,
       },
     ],

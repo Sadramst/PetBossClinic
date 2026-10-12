@@ -39,9 +39,9 @@ async function verify() {
       details: 'Canonical address rendered on live site',
     },
     {
-      name: '4. Dr. Ali Hadidi rendered on homepage with title and photo badge',
-      pass: body.includes('دکتر علی حدیدی'),
-      details: body.includes('دکتر علی حدیدی') ? 'PASS: Dr. Ali Hadidi found' : 'FAIL: Dr. Ali Hadidi missing',
+      name: '4. Dr. Ali Hadidi deactivated per user instruction (not rendered on public homepage)',
+      pass: !body.includes('دکتر علی حدیدی'),
+      details: !body.includes('دکتر علی حدیدی') ? 'PASS: Dr. Ali Hadidi hidden from public site (deactivated in admin)' : 'FAIL: Dr. Ali Hadidi is still rendered',
     },
     {
       name: '5. Working hours truth rendered from WorkingHour (10:00 to 22:00 everyday)',
