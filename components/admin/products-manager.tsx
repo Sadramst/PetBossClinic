@@ -448,14 +448,27 @@ export function ProductsManager({ products, categories, isEn }: Props) {
                       </td>
                     </tr>
                   ) : (
-                    filteredProducts.map((p) => (
-                      <tr key={p.id} className="hover:bg-surface-elevated/40 transition-colors">
-                        <td className="p-3.5">
-                          <div className="flex items-center gap-3">
-                            {p.images?.[0]?.imageId || p.ogImageId ? (
+                    filteredProducts.map((p) => {
+                      const cat = categories.find((c) => c.id === p.categoryId);
+                      const catImg = cat?.imageId || '/images/categories/other.jpg';
+                      const displayImg = p.images?.[0]?.imageId || p.ogImageId || catImg;
+
+                      return (
+                        <tr key={p.id} className="hover:bg-surface-elevated/40 transition-colors">
+                          <td className="p-3.5">
+                            <div className="flex items-center gap-3">
+                            {displayImg ? (
                               <img
-                                src={p.images?.[0]?.imageId || p.ogImageId || ''}
+                                src={displayImg}
                                 alt={p.nameFa}
+                                onError={(e) => {
+                                  const target = e.currentTarget;
+                                  if (catImg && target.src !== catImg) {
+                                    target.src = catImg;
+                                  } else {
+                                    target.src = '/images/categories/other.jpg';
+                                  }
+                                }}
                                 className="w-11 h-11 rounded-xl object-cover border border-border shrink-0 bg-surface-elevated shadow-xs"
                               />
                             ) : (
@@ -557,8 +570,9 @@ export function ProductsManager({ products, categories, isEn }: Props) {
                             </button>
                           </div>
                         </td>
-                      </tr>
-                    ))
+                        </tr>
+                      )
+                    })
                   )}
                 </tbody>
               </table>

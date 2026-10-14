@@ -142,9 +142,10 @@ export async function uploadMediaAction(formData: FormData): Promise<MediaAction
       .replace(/\.[^/.]+$/, '')
     const fileName = `${timestamp}-${safeName}.webp`
     const mediaKey = `upload_${timestamp}_${Math.random().toString(36).substring(2, 7)}`
-    const effectiveUrl = `/uploads/${fileName}`
+    const dataUri = `data:image/webp;base64,${optimizedBuffer.toString('base64')}`
+    const mediaApiUrl = `/api/media/${mediaKey}`
 
-    // Attempt local disk save
+    // Attempt local disk save where allowed
     try {
       const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
       if (!fs.existsSync(uploadsDir)) {
@@ -159,7 +160,7 @@ export async function uploadMediaAction(formData: FormData): Promise<MediaAction
     const created = await db.media.create({
       data: {
         key: mediaKey,
-        url: effectiveUrl,
+        url: dataUri,
         mime: 'image/webp',
         size: optimizedBuffer.length,
         altFa,
@@ -169,7 +170,7 @@ export async function uploadMediaAction(formData: FormData): Promise<MediaAction
 
     // If an assignment key was specified (e.g. site_logo or hero_reception), assign it immediately
     if (assignToKey && assignToKey in DEFAULT_SITE_PICTURES) {
-      await updateSitePictureAction(assignToKey, effectiveUrl, altFa, altEn)
+      await updateSitePictureAction(assignToKey, mediaApiUrl, altFa, altEn)
     }
 
     revalidatePath('/[locale]/admin/media', 'page')
@@ -182,7 +183,7 @@ export async function uploadMediaAction(formData: FormData): Promise<MediaAction
       media: {
         id: created.id,
         key: created.key,
-        url: created.url,
+        url: mediaApiUrl,
         size: created.size,
         mime: created.mime,
         createdAt: created.createdAt,

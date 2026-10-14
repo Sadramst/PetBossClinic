@@ -29,42 +29,81 @@ async function saveUploadedFile(file: File, subfolder: 'products' | 'categories'
   const buffer = Buffer.from(bytes)
 
   const timestamp = Date.now()
+  const randomSuffix = Math.random().toString(36).substring(2, 7)
   const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase().replace(/\.[^/.]+$/, '')
+  const mediaKey = `upload_${timestamp}_${randomSuffix}`
   const fileName = `${timestamp}-${safeName}.webp`
   const relativePath = `/uploads/${subfolder}/${fileName}`
 
+  let optimizedBuffer = buffer
+  let mimeType = 'image/webp'
   try {
     const sharp = (await import('sharp')).default
-    const optimizedBuffer = await sharp(buffer)
+    optimizedBuffer = await sharp(buffer)
       .resize({ width: 1000, withoutEnlargement: true })
       .webp({ quality: 80 })
       .toBuffer()
+  } catch (err) {
+    console.warn('Could not optimize uploaded file with sharp:', err)
+    mimeType = file.type || 'image/jpeg'
+  }
 
+  // 1. Try local disk save where filesystem is writable (e.g. dev, self-hosted)
+  try {
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', subfolder)
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true })
     }
     const filePath = path.join(uploadDir, fileName)
     await fs.promises.writeFile(filePath, optimizedBuffer)
-
-    // Index in db.media
-    await db.media.upsert({
-      where: { key: `product_${timestamp}_${safeName}` },
-      update: { url: relativePath, size: optimizedBuffer.length, mime: 'image/webp' },
-      create: {
-        key: `product_${timestamp}_${safeName}`,
-        url: relativePath,
-        size: optimizedBuffer.length,
-        mime: 'image/webp',
-        altFa: file.name,
-        altEn: file.name,
-      },
-    }).catch(() => {})
-  } catch (err) {
-    console.warn('Could not optimize uploaded file:', err)
+  } catch {
+    // Read-only serverless filesystem in Vercel - safely handled via db.media & API route
   }
 
-  return relativePath
+  // 2. Persist in db.media (PostgreSQL is 100% durable across serverless deploys)
+  const base64Data = optimizedBuffer.toString('base64')
+  const dataUri = `data:${mimeType};base64,${base64Data}`
+
+  const media = await db.media.upsert({
+    where: { key: mediaKey },
+    update: {
+      url: dataUri,
+      size: optimizedBuffer.length,
+      mime: mimeType,
+      altFa: file.name,
+      altEn: file.name,
+    },
+    create: {
+      key: mediaKey,
+      url: dataUri,
+      size: optimizedBuffer.length,
+      mime: mimeType,
+      altFa: file.name,
+      altEn: file.name,
+    },
+  })
+
+  // 3. Also index by filename so /uploads/:path* fallback can look it up by filename
+  await db.media.upsert({
+    where: { key: fileName.replace(/\.[^/.]+$/, '') },
+    update: {
+      url: dataUri,
+      size: optimizedBuffer.length,
+      mime: mimeType,
+      altFa: file.name,
+      altEn: file.name,
+    },
+    create: {
+      key: fileName.replace(/\.[^/.]+$/, ''),
+      url: dataUri,
+      size: optimizedBuffer.length,
+      mime: mimeType,
+      altFa: file.name,
+      altEn: file.name,
+    },
+  }).catch(() => {})
+
+  return `/api/media/${media.key}`
 }
 
 export async function createProductAction(formData: FormData): Promise<ProductActionState> {

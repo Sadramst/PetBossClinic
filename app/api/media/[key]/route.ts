@@ -13,8 +13,13 @@ export async function GET(
   const { key } = await params;
 
   try {
-    const media = await db.media.findUnique({
-      where: { key },
+    const media = await db.media.findFirst({
+      where: {
+        OR: [
+          { key },
+          { id: key },
+        ],
+      },
     });
 
     if (media && media.url) {
@@ -26,7 +31,8 @@ export async function GET(
           return new NextResponse(buffer, {
             headers: {
               'Content-Type': mimeType,
-              'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+              'Cache-Control': 'public, max-age=31536000, immutable',
+              'ETag': `"${media.key}"`,
             },
           });
         }

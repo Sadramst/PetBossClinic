@@ -17,24 +17,60 @@ async function saveStaffPhoto(file: File): Promise<string> {
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
 
-  const base64Data = buffer.toString('base64')
-  const dataUri = `data:${file.type};base64,${base64Data}`
-
   const timestamp = Date.now()
-  const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase()
-  const fileName = `${timestamp}-${safeName}`
+  const randomSuffix = Math.random().toString(36).substring(2, 7)
+  const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase().replace(/\.[^/.]+$/, '')
+  const mediaKey = `staff_${timestamp}_${randomSuffix}`
+  const fileName = `${timestamp}-${safeName}.webp`
 
+  let optimizedBuffer = buffer
+  let mimeType = 'image/webp'
+  try {
+    const sharp = (await import('sharp')).default
+    optimizedBuffer = await sharp(buffer)
+      .resize({ width: 800, withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toBuffer()
+  } catch {
+    mimeType = file.type || 'image/jpeg'
+  }
+
+  // 1. Try local disk save where allowed
   try {
     const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'staff')
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true })
     }
     const filePath = path.join(uploadDir, fileName)
-    await fs.promises.writeFile(filePath, buffer)
-    return `/uploads/staff/${fileName}`
+    await fs.promises.writeFile(filePath, optimizedBuffer)
   } catch {
-    return dataUri
+    // Ephemeral serverless container
   }
+
+  // 2. Persist in db.media
+  const base64Data = optimizedBuffer.toString('base64')
+  const dataUri = `data:${mimeType};base64,${base64Data}`
+
+  const media = await db.media.upsert({
+    where: { key: mediaKey },
+    update: {
+      url: dataUri,
+      size: optimizedBuffer.length,
+      mime: mimeType,
+      altFa: file.name,
+      altEn: file.name,
+    },
+    create: {
+      key: mediaKey,
+      url: dataUri,
+      size: optimizedBuffer.length,
+      mime: mimeType,
+      altFa: file.name,
+      altEn: file.name,
+    },
+  })
+
+  return `/api/media/${media.key}`
 }
 
 export async function createStaffAction(formData: FormData): Promise<StaffActionState> {

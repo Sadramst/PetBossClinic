@@ -9,81 +9,114 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
-  const { path: pathSegments } = await params;
-  if (!pathSegments || pathSegments.length === 0) {
-    return new NextResponse('Not Found', { status: 404 });
-  }
+  const resolvedParams = await params;
+  const pathSegments = resolvedParams.path || [];
+  const relativeSubpath = pathSegments.join('/');
+  const fullUrlPath = `/uploads/${relativeSubpath}`;
+  const filename = pathSegments[pathSegments.length - 1] || '';
+  const keyCandidate = filename.replace(/\.[^/.]+$/, '');
 
-  const fullPath = pathSegments.join('/');
-  const fileName = pathSegments[pathSegments.length - 1];
-
-  // 1. Try local filesystem (for local dev or if local volume mounted)
   try {
-    const localFilePath = path.join(process.cwd(), 'public', 'uploads', ...pathSegments);
-    if (fs.existsSync(localFilePath)) {
-      const fileBuffer = await fs.promises.readFile(localFilePath);
-      const ext = path.extname(localFilePath).toLowerCase();
+    // 1. Check local filesystem if present (e.g. dev or static build)
+    const localPath = path.join(process.cwd(), 'public', 'uploads', ...pathSegments);
+    if (fs.existsSync(localPath)) {
+      const buffer = await fs.promises.readFile(localPath);
+      const ext = path.extname(localPath).toLowerCase();
       const mimeTypes: Record<string, string> = {
         '.png': 'image/png',
         '.jpg': 'image/jpeg',
         '.jpeg': 'image/jpeg',
         '.webp': 'image/webp',
-        '.svg': 'image/svg+xml',
         '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
       };
-      return new NextResponse(fileBuffer, {
+      return new NextResponse(buffer, {
         headers: {
-          'Content-Type': mimeTypes[ext] || 'application/octet-stream',
+          'Content-Type': mimeTypes[ext] || 'image/webp',
           'Cache-Control': 'public, max-age=31536000, immutable',
         },
       });
     }
-  } catch {
-    // Fall through to database lookup
-  }
 
-  // 2. Lookup in PostgreSQL database by URL or key
-  try {
+    // 2. Search db.media for matching url or key
     const media = await db.media.findFirst({
       where: {
         OR: [
-          { url: { contains: fileName } },
-          { key: { contains: fileName.replace(/\.[^/.]+$/, '') } },
+          { url: fullUrlPath },
+          { url: { contains: filename } },
+          { key: keyCandidate },
+          { key: { contains: keyCandidate } },
         ],
       },
     });
 
-    if (media && media.url && media.url.startsWith('data:')) {
-      const match = media.url.match(/^data:([^;]+);base64,(.+)$/);
-      if (match) {
-        const mimeType = match[1];
-        const buffer = Buffer.from(match[2], 'base64');
+    if (media && media.url) {
+      if (media.url.startsWith('data:')) {
+        const match = media.url.match(/^data:([^;]+);base64,(.+)$/);
+        if (match) {
+          const mimeType = match[1];
+          const buffer = Buffer.from(match[2], 'base64');
+          return new NextResponse(buffer, {
+            headers: {
+              'Content-Type': mimeType,
+              'Cache-Control': 'public, max-age=31536000, immutable',
+            },
+          });
+        }
+      } else if (media.url.startsWith('/images/')) {
+        const imgPath = path.join(process.cwd(), 'public', media.url.replace(/^\//, ''));
+        if (fs.existsSync(imgPath)) {
+          const buffer = await fs.promises.readFile(imgPath);
+          return new NextResponse(buffer, {
+            headers: {
+              'Content-Type': 'image/jpeg',
+              'Cache-Control': 'public, max-age=31536000, immutable',
+            },
+          });
+        }
+      }
+    }
+
+    // 3. If referenced by a ProductImage, find the product category and serve category fallback
+    const productImage = await db.productImage.findFirst({
+      where: { imageId: fullUrlPath },
+      include: {
+        product: {
+          include: { category: true },
+        },
+      },
+    });
+
+    if (productImage?.product?.category?.imageId) {
+      const catImgPath = path.join(
+        process.cwd(),
+        'public',
+        productImage.product.category.imageId.replace(/^\//, '')
+      );
+      if (fs.existsSync(catImgPath)) {
+        const buffer = await fs.promises.readFile(catImgPath);
         return new NextResponse(buffer, {
           headers: {
-            'Content-Type': mimeType,
-            'Cache-Control': 'public, max-age=31536000, immutable',
+            'Content-Type': 'image/jpeg',
+            'Cache-Control': 'public, max-age=3600',
           },
         });
       }
     }
   } catch (err) {
-    console.error('Error serving upload from DB:', err);
+    console.error('Error serving upload fallback:', err);
   }
 
-  // 3. Graceful fallback: If it was a logo request, serve default logo instead of 404
-  if (fullPath.toLowerCase().includes('logo')) {
-    try {
-      const defaultLogoPath = path.join(process.cwd(), 'public', 'images', 'logo.png');
-      if (fs.existsSync(defaultLogoPath)) {
-        const buffer = await fs.promises.readFile(defaultLogoPath);
-        return new NextResponse(buffer, {
-          headers: {
-            'Content-Type': 'image/png',
-            'Cache-Control': 'public, max-age=86400',
-          },
-        });
-      }
-    } catch {}
+  // 4. Default fallback: brand logo
+  const defaultPath = path.join(process.cwd(), 'public', 'images', 'logo.png');
+  if (fs.existsSync(defaultPath)) {
+    const buffer = await fs.promises.readFile(defaultPath);
+    return new NextResponse(buffer, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'public, max-age=3600',
+      },
+    });
   }
 
   return new NextResponse('Not Found', { status: 404 });
