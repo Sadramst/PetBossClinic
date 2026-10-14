@@ -104,7 +104,15 @@ export default async function ShopPage({
         comparePrice: true,
         stockStatus: true,
         isActive: true,
+        isFeatured: true,
         createdAt: true,
+        brand: {
+          select: {
+            id: true,
+            nameFa: true,
+            nameEn: true,
+          },
+        },
         category: {
           select: {
             id: true,

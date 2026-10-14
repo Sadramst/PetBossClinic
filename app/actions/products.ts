@@ -33,7 +33,7 @@ async function saveUploadedFile(file: File, subfolder: 'products' | 'categories'
   const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_').toLowerCase().replace(/\.[^/.]+$/, '')
   const mediaKey = `upload_${timestamp}_${randomSuffix}`
   const fileName = `${timestamp}-${safeName}.webp`
-  const relativePath = `/uploads/${subfolder}/${fileName}`
+  const _relativePath = `/uploads/${subfolder}/${fileName}`
 
   let optimizedBuffer = buffer
   let mimeType = 'image/webp'
