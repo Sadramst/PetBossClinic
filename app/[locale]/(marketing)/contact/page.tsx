@@ -117,6 +117,24 @@ export default async function ContactPage({
                   {nap.email}
                 </a>
               </div>
+              {nap.whatsappLink && (
+                <div>
+                  <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1.5">
+                    {isEn ? 'WhatsApp Support & Orders' : 'واتساپ پشتیبانی و سفارشات'}
+                  </h3>
+                  <a
+                    href={nap.whatsappLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-base font-bold text-emerald-400 hover:underline dir-ltr inline-flex items-center gap-2"
+                  >
+                    <span>+98 991 533 4091</span>
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-medium">
+                      {isEn ? 'Chat on WhatsApp' : 'ارتباط در واتساپ'}
+                    </span>
+                  </a>
+                </div>
+              )}
               <div>
                 <h3 className="text-xs font-bold text-primary uppercase tracking-wider mb-1.5">{t('hoursTitle')}</h3>
                 <p className="text-sm text-foreground/90 font-medium">{isEn ? nap.workingHoursSummaryEn : nap.workingHoursSummaryFa}</p>

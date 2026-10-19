@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { useLocale } from 'next-intl'
 import { Link } from '@/i18n/routing'
@@ -162,44 +162,125 @@ export function ShopCatalogClient({
       .sort((a, b) => b.count - a.count)
   }, [products])
 
-  // Filter Categories by Species Tabs for the showcase carousel
-  const visibleCategories = useMemo(() => {
-    if (speciesFilter === 'all') return categories
-    if (speciesFilter === 'cat') {
+  // Helper to determine category visibility per species
+  const getCategoriesForSpecies = useCallback((species: SpeciesFilter) => {
+    if (species === 'all') return categories
+    if (species === 'cat') {
       return categories.filter(
         (c) =>
-          c.nameFa.includes('گربه') ||
-          (c.nameEn && c.nameEn.toLowerCase().includes('cat'))
+          (c.nameFa.includes('گربه') ||
+            (c.nameEn && c.nameEn.toLowerCase().includes('cat')) ||
+            (c.slugFa && c.slugFa.toLowerCase().includes('cat')) ||
+            (c.slugEn && c.slugEn.toLowerCase().includes('cat'))) &&
+          !c.nameFa.includes('سگ') &&
+          (!c.nameEn || !c.nameEn.toLowerCase().includes('dog'))
       )
     }
-    if (speciesFilter === 'dog') {
+    if (species === 'dog') {
       return categories.filter(
         (c) =>
-          c.nameFa.includes('سگ') ||
-          (c.nameEn && c.nameEn.toLowerCase().includes('dog'))
+          (c.nameFa.includes('سگ') ||
+            (c.nameEn && c.nameEn.toLowerCase().includes('dog')) ||
+            (c.slugFa && c.slugFa.toLowerCase().includes('dog')) ||
+            (c.slugEn && c.slugEn.toLowerCase().includes('dog'))) &&
+          !c.nameFa.includes('گربه') &&
+          (!c.nameEn || !c.nameEn.toLowerCase().includes('cat'))
       )
     }
-    if (speciesFilter === 'health') {
+    if (species === 'health') {
       return categories.filter(
         (c) =>
           c.nameFa.includes('دارویی') ||
           c.nameFa.includes('مکمل') ||
           c.nameFa.includes('بهداشتی') ||
-          c.nameFa.includes('گرومینگ')
+          c.nameFa.includes('گرومینگ') ||
+          (c.slugFa && (c.slugFa.includes('medicines') || c.slugFa.includes('hygiene')))
       )
     }
-    if (speciesFilter === 'play') {
+    if (species === 'play') {
       return categories.filter(
         (c) =>
           c.nameFa.includes('اسباب بازی') ||
+          c.nameFa.includes('سرگرمی') ||
           c.nameFa.includes('قلاده') ||
           c.nameFa.includes('اکسسوری') ||
           c.nameFa.includes('لباس') ||
-          c.nameFa.includes('باکس')
+          c.nameFa.includes('باکس') ||
+          (c.slugFa &&
+            (c.slugFa.includes('toys') ||
+              c.slugFa.includes('collars') ||
+              c.slugFa.includes('carriers') ||
+              c.slugFa.includes('apparel')))
       )
     }
     return categories
-  }, [categories, speciesFilter])
+  }, [categories])
+
+  // Filter Categories by Species Tabs for the showcase carousel & advance filter sidebar
+  const visibleCategories = useMemo(() => {
+    return getCategoriesForSpecies(speciesFilter)
+  }, [getCategoriesForSpecies, speciesFilter])
+
+  // Count products per category taking speciesFilter into account
+  const categoryCounts = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const p of products) {
+      let matchesSpecies = true
+      if (speciesFilter === 'cat') {
+        matchesSpecies = Boolean(
+          p.nameFa.includes('گربه') ||
+          p.category.nameFa.includes('گربه') ||
+          (p.nameEn && p.nameEn.toLowerCase().includes('cat')) ||
+          (p.category.nameEn && p.category.nameEn.toLowerCase().includes('cat'))
+        )
+      } else if (speciesFilter === 'dog') {
+        matchesSpecies = Boolean(
+          p.nameFa.includes('سگ') ||
+          p.category.nameFa.includes('سگ') ||
+          (p.nameEn && p.nameEn.toLowerCase().includes('dog')) ||
+          (p.category.nameEn && p.category.nameEn.toLowerCase().includes('dog'))
+        )
+      } else if (speciesFilter === 'health') {
+        matchesSpecies =
+          p.category.nameFa.includes('دارویی') ||
+          p.category.nameFa.includes('مکمل') ||
+          p.category.nameFa.includes('بهداشتی') ||
+          p.category.slugFa.includes('medicines') ||
+          p.category.slugFa.includes('hygiene')
+      } else if (speciesFilter === 'play') {
+        matchesSpecies =
+          p.category.nameFa.includes('اسباب بازی') ||
+          p.category.nameFa.includes('قلاده') ||
+          p.category.nameFa.includes('اکسسوری') ||
+          p.category.nameFa.includes('لباس') ||
+          p.category.slugFa.includes('toys') ||
+          p.category.slugFa.includes('collars')
+      }
+      if (matchesSpecies) {
+        counts.set(p.categoryId, (counts.get(p.categoryId) || 0) + 1)
+      }
+    }
+    return counts
+  }, [products, speciesFilter])
+
+  const totalSpeciesProductsCount = useMemo(() => {
+    if (speciesFilter === 'all') return products.length
+    let total = 0
+    for (const c of visibleCategories) {
+      total += categoryCounts.get(c.id) || 0
+    }
+    return total
+  }, [speciesFilter, products.length, visibleCategories, categoryCounts])
+
+  const handleSpeciesChange = useCallback((newSpecies: SpeciesFilter) => {
+    setSpeciesFilter(newSpecies)
+    if (selectedCategory !== 'all') {
+      const allowed = getCategoriesForSpecies(newSpecies)
+      if (!allowed.some((c) => c.id === selectedCategory)) {
+        setSelectedCategory('all')
+      }
+    }
+  }, [selectedCategory, getCategoriesForSpecies])
 
   // ─── AI Search Execution ────────────────────────────────────
   const handleRunAiSearch = (query: string) => {
@@ -215,8 +296,8 @@ export function ShopCatalogClient({
     setAiResult(result)
 
     // Automatically align species filter if strongly detected
-    if (result.detectedSpecies === 'cat') setSpeciesFilter('cat')
-    else if (result.detectedSpecies === 'dog') setSpeciesFilter('dog')
+    if (result.detectedSpecies === 'cat') handleSpeciesChange('cat')
+    else if (result.detectedSpecies === 'dog') handleSpeciesChange('dog')
 
     // Scroll to products
     productsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -539,7 +620,7 @@ export function ShopCatalogClient({
                       : 'bg-surface-card text-muted-foreground'
                   }`}
                 >
-                  {products.length}
+                  {speciesFilter === 'all' ? products.length : totalSpeciesProductsCount}
                 </span>
               </div>
               <div>
@@ -556,7 +637,7 @@ export function ShopCatalogClient({
             {visibleCategories.map((cat) => {
               const isSelected = selectedCategory === cat.id
               const catName = isEn ? cat.nameEn || cat.nameFa : cat.nameFa
-              const count = cat._count?.products ?? 0
+              const count = categoryCounts.get(cat.id) ?? cat._count?.products ?? 0
               const categoryImg = cat.imageId || '/images/categories/other.jpg'
 
               return (
@@ -784,7 +865,7 @@ export function ShopCatalogClient({
                 </span>
                 <button
                   type="button"
-                  onClick={() => setSpeciesFilter('all')}
+                  onClick={() => handleSpeciesChange('all')}
                   className="hover:text-red-400 cursor-pointer"
                 >
                   ✕
@@ -994,7 +1075,7 @@ export function ShopCatalogClient({
                   <button
                     key={s.id}
                     type="button"
-                    onClick={() => setSpeciesFilter(s.id as SpeciesFilter)}
+                    onClick={() => handleSpeciesChange(s.id as SpeciesFilter)}
                     className={`py-2 px-2.5 rounded-xl text-xs font-bold text-center transition-all cursor-pointer ${
                       speciesFilter === s.id
                         ? 'bg-primary text-charcoal-950 shadow-gold'
@@ -1034,11 +1115,11 @@ export function ShopCatalogClient({
                   }`}
                 >
                   <span>{isEn ? 'All Categories' : 'همه دسته‌ها'}</span>
-                  <span className="text-[10px] font-mono">{products.length}</span>
+                  <span className="text-[10px] font-mono">{totalSpeciesProductsCount}</span>
                 </button>
-                {categories.map((cat) => {
+                {visibleCategories.map((cat) => {
                   const isSelected = selectedCategory === cat.id
-                  const count = cat._count?.products ?? 0
+                  const count = categoryCounts.get(cat.id) ?? cat._count?.products ?? 0
                   return (
                     <button
                       key={cat.id}
@@ -1766,7 +1847,7 @@ export function ShopCatalogClient({
                   <button
                     key={s.id}
                     type="button"
-                    onClick={() => setSpeciesFilter(s.id as SpeciesFilter)}
+                    onClick={() => handleSpeciesChange(s.id as SpeciesFilter)}
                     className={`py-2 px-2.5 rounded-xl text-xs font-bold text-center cursor-pointer ${
                       speciesFilter === s.id
                         ? 'bg-primary text-charcoal-950 font-bold'
@@ -1776,6 +1857,59 @@ export function ShopCatalogClient({
                     {isEn ? s.labelEn : s.labelFa}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Category Filter for Mobile */}
+            <div className="space-y-2 pt-2 border-t border-border">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-foreground">
+                  {isEn ? 'Categories' : 'دسته‌بندی کالا'}
+                </h4>
+                {selectedCategory !== 'all' && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory('all')}
+                    className="text-[10px] text-primary hover:underline cursor-pointer"
+                  >
+                    {isEn ? 'Reset' : 'همه'}
+                  </button>
+                )}
+              </div>
+              <div className="max-h-44 overflow-y-auto space-y-1 pe-1 scrollbar-thin">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory('all')}
+                  className={`w-full text-start px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                    selectedCategory === 'all'
+                      ? 'bg-primary/20 text-primary font-bold'
+                      : 'text-muted-foreground hover:bg-surface hover:text-foreground'
+                  }`}
+                >
+                  <span>{isEn ? 'All Categories' : 'همه دسته‌ها'}</span>
+                  <span className="text-[10px] font-mono">{totalSpeciesProductsCount}</span>
+                </button>
+                {visibleCategories.map((cat) => {
+                  const isSelected = selectedCategory === cat.id
+                  const count = categoryCounts.get(cat.id) ?? cat._count?.products ?? 0
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={`w-full text-start px-2.5 py-1.5 rounded-xl text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-primary/20 text-primary font-bold'
+                          : 'text-muted-foreground hover:bg-surface hover:text-foreground'
+                      }`}
+                    >
+                      <span className="truncate">
+                        {isEn ? cat.nameEn || cat.nameFa : cat.nameFa}
+                      </span>
+                      <span className="text-[10px] font-mono shrink-0">{count}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 

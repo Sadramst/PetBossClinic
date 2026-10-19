@@ -219,6 +219,8 @@ async function main() {
       phones: {
         primary: '+982126429715',
         landline: '+982126429715',
+        whatsapp: '+989915334091',
+        mobile: '+989915334091',
       },
       emails: {
         primary: 'info@petbossclinic.com',
@@ -245,6 +247,7 @@ async function main() {
     data: [
       { platform: 'INSTAGRAM', url: 'https://instagram.com/petbossclinic', isActive: true, sortOrder: 1 },
       { platform: 'TELEGRAM', url: 'https://t.me/petbossclinic', isActive: true, sortOrder: 2 },
+      { platform: 'WHATSAPP', url: 'https://wa.me/989915334091', isActive: true, sortOrder: 3 },
     ]
   })
 
@@ -253,6 +256,7 @@ async function main() {
     data: [
       { type: 'PHONE', value: '+982126429715', labelFa: 'تلفن ثابت', labelEn: 'Landline', isActive: true, sortOrder: 1 },
       { type: 'EMAIL', value: 'info@petbossclinic.com', labelFa: 'ایمیل', labelEn: 'Email', isActive: true, sortOrder: 2 },
+      { type: 'WHATSAPP', value: '+989915334091', labelFa: 'واتساپ کلینیک', labelEn: 'Clinic WhatsApp', isActive: true, sortOrder: 3 },
     ]
   })
 

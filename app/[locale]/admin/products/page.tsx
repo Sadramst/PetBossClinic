@@ -3,6 +3,8 @@ import { ProductsManager } from "@/components/admin/products-manager";
 import { requireAdmin } from "@/lib/auth/guard";
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 export default async function AdminProductsPage({
   params,
@@ -15,19 +17,17 @@ export default async function AdminProductsPage({
 
   const [products, categories] = await Promise.all([
     db.product.findMany({
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
       include: {
         category: {
-          select: { id: true, nameFa: true, nameEn: true, slugFa: true },
+          select: { id: true, nameFa: true, nameEn: true, slugFa: true, isActive: true },
         },
         images: {
           orderBy: { sortOrder: 'asc' },
         },
       },
-      take: 500,
     }),
     db.productCategory.findMany({
-      where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
       select: {
         id: true,
@@ -39,6 +39,7 @@ export default async function AdminProductsPage({
         descriptionEn: true,
         sortOrder: true,
         imageId: true,
+        isActive: true,
         _count: {
           select: { products: true },
         },

@@ -7,9 +7,11 @@ import {
   updateProductAction,
   deleteProductAction,
   toggleProductFeaturedAction,
+  toggleProductActiveAction,
   createCategoryAction,
   updateCategoryAction,
   deleteCategoryAction,
+  toggleCategoryActiveAction,
 } from '@/app/actions/products'
 import { StockStatus } from '@prisma/client'
 
@@ -23,6 +25,7 @@ export interface ProductCategoryItem {
   descriptionEn?: string | null
   sortOrder?: number
   imageId?: string | null
+  isActive?: boolean
   _count?: {
     products: number
   }
@@ -63,6 +66,8 @@ interface Props {
   isEn: boolean
 }
 
+export type ProductStatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'FEATURED'
+
 export function ProductsManager({ products, categories, isEn }: Props) {
   const [isPending, startTransition] = useTransition()
   const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products')
@@ -74,9 +79,12 @@ export function ProductsManager({ products, categories, isEn }: Props) {
     setTimeout(() => setMessage(null), 5000)
   }
 
-  // Filters
+  // Filters & Pagination
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<ProductStatusFilter>('ALL')
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const [pageSize, setPageSize] = useState<number>(50)
 
   // Product Modal State
   const [productModalOpen, setProductModalOpen] = useState(false)
@@ -270,7 +278,7 @@ export function ProductsManager({ products, categories, isEn }: Props) {
     })
   }
 
-  // Filtered products
+  // Filtered products with SKU, category, name, and status filter
   const filteredProducts = products.filter((p) => {
     const matchesCat = selectedCategoryFilter === 'ALL' || p.categoryId === selectedCategoryFilter
     const q = searchQuery.toLowerCase().trim()
@@ -278,10 +286,32 @@ export function ProductsManager({ products, categories, isEn }: Props) {
       !q ||
       p.nameFa.toLowerCase().includes(q) ||
       (p.nameEn && p.nameEn.toLowerCase().includes(q)) ||
+      (p.sku && p.sku.toLowerCase().includes(q)) ||
       (p.category && p.category.nameFa.toLowerCase().includes(q)) ||
       (p.shortDescFa && p.shortDescFa.toLowerCase().includes(q))
-    return matchesCat && matchesSearch
+
+    let matchesStatus = true
+    if (statusFilter === 'ACTIVE') matchesStatus = p.isActive
+    else if (statusFilter === 'INACTIVE') matchesStatus = !p.isActive
+    else if (statusFilter === 'IN_STOCK') matchesStatus = p.stockStatus === 'IN_STOCK'
+    else if (statusFilter === 'LOW_STOCK') matchesStatus = p.stockStatus === 'LOW_STOCK'
+    else if (statusFilter === 'OUT_OF_STOCK') matchesStatus = p.stockStatus === 'OUT_OF_STOCK'
+    else if (statusFilter === 'FEATURED') matchesStatus = Boolean(p.isFeatured)
+
+    return matchesCat && matchesSearch && matchesStatus
   })
+
+  // Pagination calculation
+  const totalPages = pageSize === -1 ? 1 : Math.max(1, Math.ceil(filteredProducts.length / pageSize))
+  const paginatedProducts = pageSize === -1
+    ? filteredProducts
+    : filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  const activeCount = products.filter((p) => p.isActive).length
+  const inactiveCount = products.filter((p) => !p.isActive).length
+  const inStockCount = products.filter((p) => p.stockStatus === 'IN_STOCK').length
+  const outOfStockCount = products.filter((p) => p.stockStatus === 'OUT_OF_STOCK').length
+  const featuredCount = products.filter((p) => p.isFeatured).length
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -308,8 +338,8 @@ export function ProductsManager({ products, categories, isEn }: Props) {
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
             {isEn
-              ? `${products.length} Products across ${categories.length} Defined Market Categories`
-              : `${products.length} محصول در ${categories.length} دسته‌بندی تخصصی بازار`}
+              ? `${products.length} Products synchronized across ${categories.length} Defined Market Categories`
+              : `${products.length} محصول همگام‌شده در ${categories.length} دسته‌بندی تخصصی بازار`}
           </p>
         </div>
 
@@ -354,9 +384,96 @@ export function ProductsManager({ products, categories, isEn }: Props) {
       {/* ═════════════════════════════════════════════════════════════ */}
       {activeTab === 'products' && (
         <div className="space-y-4">
+          {/* Inventory Sync Status Overview Pills */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+            <button
+              type="button"
+              onClick={() => { setStatusFilter('ALL'); setSelectedCategoryFilter('ALL'); setCurrentPage(1); }}
+              className={`p-3 rounded-xl border text-start transition-all cursor-pointer ${
+                statusFilter === 'ALL' && selectedCategoryFilter === 'ALL'
+                  ? 'bg-primary/15 border-primary shadow-gold text-foreground'
+                  : 'bg-surface border-border text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <div className="text-[10px] font-bold uppercase tracking-wider">{isEn ? 'Total Products' : 'کل موجودی انبار'}</div>
+              <div className="text-xl font-black text-foreground mt-0.5">{products.length}</div>
+              <div className="text-[10px] text-emerald-400 font-semibold mt-0.5">100% {isEn ? 'Synced' : 'همگام در پنل'}</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setStatusFilter('ACTIVE'); setCurrentPage(1); }}
+              className={`p-3 rounded-xl border text-start transition-all cursor-pointer ${
+                statusFilter === 'ACTIVE'
+                  ? 'bg-emerald-500/15 border-emerald-500 text-foreground'
+                  : 'bg-surface border-border text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">{isEn ? 'Active on Site' : 'فعال در فروشگاه'}</div>
+              <div className="text-xl font-black text-emerald-400 mt-0.5">{activeCount}</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">{isEn ? 'Visible to customers' : 'قابل مشاهده کاربران'}</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setStatusFilter('INACTIVE'); setCurrentPage(1); }}
+              className={`p-3 rounded-xl border text-start transition-all cursor-pointer ${
+                statusFilter === 'INACTIVE'
+                  ? 'bg-red-500/15 border-red-500 text-foreground'
+                  : 'bg-surface border-border text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <div className="text-[10px] font-bold uppercase tracking-wider text-red-400">{isEn ? 'Hidden / Inactive' : 'مخفی و غیرفعال'}</div>
+              <div className="text-xl font-black text-red-400 mt-0.5">{inactiveCount}</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">{isEn ? 'Hidden from shop' : 'مخفی از ویترین'}</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setStatusFilter('IN_STOCK'); setCurrentPage(1); }}
+              className={`p-3 rounded-xl border text-start transition-all cursor-pointer ${
+                statusFilter === 'IN_STOCK'
+                  ? 'bg-emerald-500/15 border-emerald-500 text-foreground'
+                  : 'bg-surface border-border text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <div className="text-[10px] font-bold uppercase tracking-wider text-foreground">{isEn ? 'In Stock' : 'موجود'}</div>
+              <div className="text-xl font-black text-foreground mt-0.5">{inStockCount}</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">{isEn ? 'Ready for order' : 'آماده سفارش'}</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setStatusFilter('OUT_OF_STOCK'); setCurrentPage(1); }}
+              className={`p-3 rounded-xl border text-start transition-all cursor-pointer ${
+                statusFilter === 'OUT_OF_STOCK'
+                  ? 'bg-amber-500/15 border-amber-500 text-foreground'
+                  : 'bg-surface border-border text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400">{isEn ? 'Out of Stock' : 'ناموجود'}</div>
+              <div className="text-xl font-black text-amber-400 mt-0.5">{outOfStockCount}</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">{isEn ? 'Needs restock' : 'نیاز به تامین'}</div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setStatusFilter('FEATURED'); setCurrentPage(1); }}
+              className={`p-3 rounded-xl border text-start transition-all cursor-pointer ${
+                statusFilter === 'FEATURED'
+                  ? 'bg-amber-500/15 border-amber-500 text-foreground'
+                  : 'bg-surface border-border text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <div className="text-[10px] font-bold uppercase tracking-wider text-amber-300">⭐ {isEn ? 'Featured' : 'ویژه صفحه اول'}</div>
+              <div className="text-xl font-black text-amber-300 mt-0.5">{featuredCount}</div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">{isEn ? 'Homepage showcase' : 'ویترین صفحه اول'}</div>
+            </button>
+          </div>
+
           {/* Action & Filter Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-border">
-            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-surface p-4 rounded-2xl border border-border">
+            <div className="flex flex-wrap items-center gap-3">
               {/* Category Filter */}
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground font-semibold">
@@ -364,7 +481,10 @@ export function ProductsManager({ products, categories, isEn }: Props) {
                 </span>
                 <select
                   value={selectedCategoryFilter}
-                  onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedCategoryFilter(e.target.value)
+                    setCurrentPage(1)
+                  }}
                   className="px-3 py-1.5 rounded-xl bg-surface-elevated border border-border text-xs text-foreground outline-none focus:border-primary font-medium"
                 >
                   <option value="ALL">
@@ -372,25 +492,54 @@ export function ProductsManager({ products, categories, isEn }: Props) {
                   </option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.nameFa} ({c._count?.products || 0})
+                      {c.nameFa} ({c._count?.products || 0}) {c.isActive === false ? ' [غیرفعال]' : ''}
                     </option>
                   ))}
                 </select>
               </div>
 
+              {/* Status Filter */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">
+                  {isEn ? 'Status:' : 'وضعیت:'}
+                </span>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value as ProductStatusFilter)
+                    setCurrentPage(1)
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-surface-elevated border border-border text-xs text-foreground outline-none focus:border-primary font-medium"
+                >
+                  <option value="ALL">{isEn ? 'All Statuses' : 'همه وضعیت‌ها'}</option>
+                  <option value="ACTIVE">{isEn ? 'Active on Site' : '✓ فقط فعال در سایت'}</option>
+                  <option value="INACTIVE">{isEn ? 'Hidden / Inactive' : '✕ فقط مخفی / غیرفعال'}</option>
+                  <option value="IN_STOCK">{isEn ? 'In Stock' : 'موجود در انبار'}</option>
+                  <option value="LOW_STOCK">{isEn ? 'Low Stock' : 'موجودی محدود'}</option>
+                  <option value="OUT_OF_STOCK">{isEn ? 'Out of Stock' : 'ناموجود'}</option>
+                  <option value="FEATURED">{isEn ? 'Featured on Homepage' : '⭐ ویژه صفحه اصلی'}</option>
+                </select>
+              </div>
+
               {/* Search */}
-              <div className="relative flex-1 sm:w-64">
+              <div className="relative flex-1 min-w-[200px] sm:w-64">
                 <input
                   type="text"
-                  placeholder={isEn ? 'Search products...' : 'جستجوی نام محصول، برند...'}
+                  placeholder={isEn ? 'Search name, SKU barcode, brand...' : 'جستجوی نام، بارکد SKU، مشخصات...'}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setCurrentPage(1)
+                  }}
                   className="w-full px-3 py-1.5 rounded-xl bg-surface-elevated border border-border text-xs text-foreground outline-none focus:border-primary"
                 />
                 {searchQuery && (
                   <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute end-2 top-1.5 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      setSearchQuery('')
+                      setCurrentPage(1)
+                    }}
+                    className="absolute end-2 top-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                   >
                     ✕
                   </button>
@@ -402,7 +551,7 @@ export function ProductsManager({ products, categories, isEn }: Props) {
             <button
               type="button"
               onClick={() => openAddProductModal()}
-              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-gold text-charcoal-950 font-bold text-xs hover:opacity-90 transition-all shadow-gold flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-gold text-charcoal-950 font-bold text-xs hover:opacity-90 transition-all shadow-gold flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
               <span>+</span>
               <span>{isEn ? 'New Product' : 'افزودن محصول جدید'}</span>
@@ -410,18 +559,26 @@ export function ProductsManager({ products, categories, isEn }: Props) {
           </div>
 
           {/* Active filter alert badge if filtered */}
-          {selectedCategoryFilter !== 'ALL' && (
+          {(selectedCategoryFilter !== 'ALL' || statusFilter !== 'ALL' || searchQuery) && (
             <div className="flex items-center justify-between p-3 bg-primary/10 border border-primary/30 rounded-xl text-xs text-primary">
               <span className="font-semibold">
-                {isEn ? 'Filtering by Category:' : 'نمایش محصولات مرتبط با دسته‌بندی:'}{' '}
-                {categories.find((c) => c.id === selectedCategoryFilter)?.nameFa} ({filteredProducts.length} محصول)
+                {isEn ? 'Active Filters:' : 'فیلتر فعال:'}{' '}
+                {selectedCategoryFilter !== 'ALL' ? `[دسته‌بندی: ${categories.find((c) => c.id === selectedCategoryFilter)?.nameFa}] ` : ''}
+                {statusFilter !== 'ALL' ? `[وضعیت: ${statusFilter}] ` : ''}
+                {searchQuery ? `[جستجو: "${searchQuery}"] ` : ''}
+                ({filteredProducts.length} محصول یافت شد)
               </span>
               <button
                 type="button"
-                onClick={() => setSelectedCategoryFilter('ALL')}
-                className="underline hover:opacity-80 font-bold"
+                onClick={() => {
+                  setSelectedCategoryFilter('ALL')
+                  setStatusFilter('ALL')
+                  setSearchQuery('')
+                  setCurrentPage(1)
+                }}
+                className="underline hover:opacity-80 font-bold cursor-pointer"
               >
-                {isEn ? 'Show All' : 'نمایش همه محصولات'}
+                {isEn ? 'Reset All Filters' : 'نمایش همه محصولات'}
               </button>
             </div>
           )}
@@ -435,20 +592,21 @@ export function ProductsManager({ products, categories, isEn }: Props) {
                     <th className="p-3.5 text-start">{isEn ? 'Product Name' : 'نام محصول'}</th>
                     <th className="p-3.5 text-start">{isEn ? 'Category' : 'دسته‌بندی'}</th>
                     <th className="p-3.5 text-start">{isEn ? 'Price' : 'قیمت'}</th>
-                    <th className="p-3.5 text-center">{isEn ? 'Status' : 'وضعیت انبار'}</th>
+                    <th className="p-3.5 text-center">{isEn ? 'Stock' : 'وضعیت انبار'}</th>
+                    <th className="p-3.5 text-center">{isEn ? 'Active on Site' : 'نمایش در سایت'}</th>
                     <th className="p-3.5 text-center">{isEn ? 'Featured' : 'ویژه'}</th>
                     <th className="p-3.5 text-center">{isEn ? 'Actions' : 'عملیات'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filteredProducts.length === 0 ? (
+                  {paginatedProducts.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                      <td colSpan={7} className="p-8 text-center text-muted-foreground">
                         {isEn ? 'No products found matching criteria.' : 'هیچ محصولی با این مشخصات یافت نشد.'}
                       </td>
                     </tr>
                   ) : (
-                    filteredProducts.map((p) => {
+                    paginatedProducts.map((p) => {
                       const cat = categories.find((c) => c.id === p.categoryId);
                       const catImg = cat?.imageId || '/images/categories/other.jpg';
                       const displayImg = p.images?.[0]?.imageId || p.ogImageId || catImg;
@@ -499,7 +657,10 @@ export function ProductsManager({ products, categories, isEn }: Props) {
                         <td className="p-3.5">
                           <button
                             type="button"
-                            onClick={() => setSelectedCategoryFilter(p.categoryId)}
+                            onClick={() => {
+                              setSelectedCategoryFilter(p.categoryId)
+                              setCurrentPage(1)
+                            }}
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/25 border border-primary/20 text-primary text-[11px] font-semibold transition-colors cursor-pointer"
                             title={isEn ? 'Filter by this category' : 'فیلتر بر اساس این دسته‌بندی'}
                           >
@@ -529,6 +690,27 @@ export function ProductsManager({ products, categories, isEn }: Props) {
                               ? isEn ? 'Low Stock' : 'محدود'
                               : isEn ? 'Out of Stock' : 'ناموجود'}
                           </span>
+                        </td>
+                        <td className="p-3.5 text-center whitespace-nowrap">
+                          <button
+                            type="button"
+                            disabled={isPending}
+                            onClick={() => {
+                              startTransition(async () => {
+                                const res = await toggleProductActiveAction(p.id, !p.isActive)
+                                if (res.error) showMessage('error', res.error)
+                                else showMessage('success', res.message || 'به‌روز شد')
+                              })
+                            }}
+                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer ${
+                              p.isActive
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                                : 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
+                            }`}
+                            title={p.isActive ? (isEn ? 'Click to hide from website' : 'کلیک برای مخفی کردن از سایت') : (isEn ? 'Click to activate on website' : 'کلیک برای فعال و نمایش در سایت')}
+                          >
+                            {p.isActive ? (isEn ? '✓ Active' : '✓ فعال در سایت') : (isEn ? '✕ Hidden' : '✕ مخفی از سایت')}
+                          </button>
                         </td>
                         <td className="p-3.5 text-center whitespace-nowrap">
                           <button
@@ -577,6 +759,64 @@ export function ProductsManager({ products, categories, isEn }: Props) {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {filteredProducts.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-surface-elevated/40 border-t border-border text-xs">
+                <div className="text-muted-foreground flex items-center gap-2">
+                  <span>
+                    {isEn
+                      ? `Showing ${pageSize === -1 ? 1 : Math.min((currentPage - 1) * pageSize + 1, filteredProducts.length)} to ${pageSize === -1 ? filteredProducts.length : Math.min(currentPage * pageSize, filteredProducts.length)} of ${filteredProducts.length} filtered items (Total DB inventory: ${products.length} products)`
+                      : `نمایش ${pageSize === -1 ? 1 : Math.min((currentPage - 1) * pageSize + 1, filteredProducts.length)} تا ${pageSize === -1 ? filteredProducts.length : Math.min(currentPage * pageSize, filteredProducts.length)} از ${filteredProducts.length} محصول (کل موجودی انبار: ${products.length} کالا)`}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Page Size Selector */}
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <span>{isEn ? 'Per page:' : 'تعداد در صفحه:'}</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value))
+                        setCurrentPage(1)
+                      }}
+                      className="px-2 py-1 rounded-lg bg-surface border border-border text-xs text-foreground outline-none focus:border-primary"
+                    >
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                      <option value={-1}>{isEn ? 'All' : 'همه'}</option>
+                    </select>
+                  </div>
+
+                  {/* Page Switcher */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={currentPage <= 1}
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        className="px-2.5 py-1 rounded-lg border border-border bg-surface text-foreground hover:bg-surface-elevated disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                      >
+                        {isEn ? 'Previous' : 'قبلی'}
+                      </button>
+                      <span className="px-3 py-1 font-mono font-bold text-primary">
+                        {currentPage} / {totalPages}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        className="px-2.5 py-1 rounded-lg border border-border bg-surface text-foreground hover:bg-surface-elevated disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                      >
+                        {isEn ? 'Next' : 'بعدی'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -662,6 +902,9 @@ export function ProductsManager({ products, categories, isEn }: Props) {
                       type="button"
                       onClick={() => {
                         setSelectedCategoryFilter(cat.id)
+                        setStatusFilter('ALL')
+                        setSearchQuery('')
+                        setCurrentPage(1)
                         setActiveTab('products')
                       }}
                       className="w-full px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary text-primary hover:text-charcoal-950 font-bold text-xs border border-primary/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
@@ -677,6 +920,26 @@ export function ProductsManager({ products, categories, isEn }: Props) {
                         className="flex-1 px-2.5 py-1.5 rounded-lg bg-surface-elevated hover:bg-surface-hover text-foreground text-[11px] font-medium border border-border transition-colors text-center"
                       >
                         + {isEn ? 'Add Product' : 'افزودن محصول به این دسته'}
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={isPending}
+                        onClick={() => {
+                          startTransition(async () => {
+                            const res = await toggleCategoryActiveAction(cat.id, cat.isActive === false ? true : false)
+                            if (res.error) showMessage('error', res.error)
+                            else showMessage('success', res.message || 'به‌روز شد')
+                          })
+                        }}
+                        className={`px-2 py-1.5 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer ${
+                          cat.isActive !== false
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                            : 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20'
+                        }`}
+                        title={cat.isActive !== false ? (isEn ? 'Category active on site' : 'دسته‌بندی در سایت فعال است') : (isEn ? 'Category hidden from site' : 'دسته‌بندی در سایت غیرفعال است')}
+                      >
+                        {cat.isActive !== false ? '✓' : '✕'}
                       </button>
 
                       <button

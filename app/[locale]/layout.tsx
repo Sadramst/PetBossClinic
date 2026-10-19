@@ -9,6 +9,7 @@ import { getActiveClinicTheme } from '@/lib/theme/theme-server';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { FloatingShopButton } from '@/components/shared/floating-shop-button';
+import { FloatingWhatsAppButton } from '@/components/shared/floating-whatsapp-button';
 import { getClinicNAP } from '@/lib/clinic/nap';
 import { getSitePictures } from '@/lib/media';
 import { getNavigationMenu } from '@/lib/navigation/menu';
@@ -164,6 +165,7 @@ export default async function LocaleLayout({
             <Header logoUrl={sitePictures.site_logo} navItems={navItems} phone={nap.phone} />
             <main className="flex-grow">{children}</main>
             <FloatingShopButton />
+            <FloatingWhatsAppButton whatsappNumber={nap.whatsappNumber} />
             <Footer nap={nap} logoUrl={sitePictures.site_logo} navItems={navItems} />
           </NextIntlClientProvider>
         </ThemeProvider>

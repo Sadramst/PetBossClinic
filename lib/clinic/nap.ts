@@ -63,10 +63,10 @@ async function fetchClinicNAPFromDB(): Promise<ClinicNAP> {
     db.socialLink.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } }).catch(() => []),
   ]);
 
-  // Verified defaults (landline is clinic's real number +982126429715)
+  // Verified defaults (landline is clinic's real number +982126429715, WhatsApp: +989915334091)
   let phone = '+982126429715';
-  let waNumber: string | null = null;
-  let waLink: string | null = null;
+  let waNumber: string | null = '+989915334091';
+  let waLink: string | null = 'https://wa.me/989915334091';
   let email = 'petbossclinic@gmail.com';
   let addressFa = 'تهران، خیابان شریعتی، نرسیده به مترو قیطریه، پلاک ۱۷۳۳';
   let addressEn = 'No. 1733, Shariati St., near Gheytariyeh Metro Station, Tehran, Iran';

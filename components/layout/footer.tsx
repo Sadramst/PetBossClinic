@@ -107,6 +107,21 @@ export function Footer({
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-primary"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                 <a href={`mailto:${email}`} className="hover:text-primary transition-colors">{email}</a>
               </li>
+              {nap?.whatsappLink && (
+                <li className="flex items-center gap-2.5">
+                  <span className="shrink-0 text-emerald-400">
+                    <SocialIcon platform="WHATSAPP" size={16} />
+                  </span>
+                  <a
+                    href={nap.whatsappLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-emerald-400 transition-colors dir-ltr font-mono"
+                  >
+                    +98 991 533 4091
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
 

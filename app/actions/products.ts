@@ -24,6 +24,25 @@ function generateSlug(text: string): string {
     .replace(/^-+|-+$/g, '') || `product-${Date.now()}`
 }
 
+export async function revalidateCatalog() {
+  try {
+    revalidatePath('/[locale]/admin/products', 'page')
+    revalidatePath('/[locale]/shop', 'page')
+    revalidatePath('/[locale]', 'page')
+    revalidatePath('/shop')
+    revalidatePath('/fa/shop')
+    revalidatePath('/en/shop')
+    revalidatePath('/admin/products')
+    revalidatePath('/fa/admin/products')
+    revalidatePath('/en/admin/products')
+    revalidatePath('/')
+    revalidatePath('/fa')
+    revalidatePath('/en')
+  } catch (e) {
+    console.warn('Revalidation notice:', e)
+  }
+}
+
 async function saveUploadedFile(file: File, subfolder: 'products' | 'categories'): Promise<string> {
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
@@ -212,9 +231,7 @@ export async function createProductAction(formData: FormData): Promise<ProductAc
       },
     })
 
-    revalidatePath('/[locale]/admin/products', 'page')
-    revalidatePath('/[locale]/shop', 'page')
-    revalidatePath('/[locale]', 'page')
+    revalidateCatalog()
     return { success: true, message: 'محصول با موفقیت ثبت شد.' }
   } catch (err: unknown) {
     console.error('Error creating product:', err)
@@ -321,9 +338,7 @@ export async function updateProductAction(productId: string, formData: FormData)
       after: { nameFa: updated.nameFa, price: updated.price, stockStatus: updated.stockStatus, isActive: updated.isActive, isFeatured: updated.isFeatured },
     })
 
-    revalidatePath('/[locale]/admin/products', 'page')
-    revalidatePath('/[locale]/shop', 'page')
-    revalidatePath('/[locale]', 'page')
+    revalidateCatalog()
     return { success: true, message: 'محصول با موفقیت به‌روزرسانی شد.' }
   } catch (err: unknown) {
     console.error('Error updating product:', err)
@@ -341,13 +356,39 @@ export async function toggleProductFeaturedAction(productId: string, isFeatured:
       data: { isFeatured },
     })
 
-    revalidatePath('/[locale]/admin/products', 'page')
-    revalidatePath('/[locale]/shop', 'page')
-    revalidatePath('/[locale]', 'page')
+    revalidateCatalog()
     return { success: true, message: `محصول ${isFeatured ? 'به عنوان ویژه' : 'از حالت ویژه خارج'} شد.` }
   } catch (err: unknown) {
     console.error('Error toggling featured product:', err)
     return { error: 'خطا در تغییر وضعیت ویژگی محصول.' }
+  }
+}
+
+export async function toggleProductActiveAction(productId: string, isActive: boolean): Promise<ProductActionState> {
+  const session = await getSession()
+  if (!session) return { error: 'دسترسی غیرمجاز.' }
+
+  try {
+    await db.product.update({
+      where: { id: productId },
+      data: { isActive },
+    })
+
+    await logAdminChange({
+      action: 'UPDATE',
+      entity: 'PRODUCT',
+      entityId: productId,
+      details: { field: 'isActive', newValue: isActive },
+    })
+
+    revalidateCatalog()
+    return {
+      success: true,
+      message: isActive ? 'محصول در سایت فعال و نمایش داده شد.' : 'محصول از سایت مخفی و غیرفعال شد.',
+    }
+  } catch (err: unknown) {
+    console.error('Error toggling product active status:', err)
+    return { error: 'خطا در تغییر وضعیت فعال بودن محصول.' }
   }
 }
 
@@ -372,9 +413,7 @@ export async function deleteProductAction(productId: string): Promise<ProductAct
       before: existing || { id: productId },
     })
 
-    revalidatePath('/[locale]/admin/products', 'page')
-    revalidatePath('/[locale]/shop', 'page')
-    revalidatePath('/[locale]', 'page')
+    revalidateCatalog()
     return { success: true, message: 'محصول با موفقیت حذف گردید.' }
   } catch (err: unknown) {
     console.error('Error deleting product:', err)
@@ -548,13 +587,39 @@ export async function updateCategoryAction(categoryId: string, formData: FormDat
       after: { nameFa: updated.nameFa, nameEn: updated.nameEn, sortOrder: updated.sortOrder },
     })
 
-    revalidatePath('/[locale]/admin/products', 'page')
-    revalidatePath('/[locale]/shop', 'page')
-    revalidatePath('/[locale]', 'page')
+    revalidateCatalog()
     return { success: true, message: 'دسته‌بندی با موفقیت ویرایش شد.' }
   } catch (err: unknown) {
     console.error('Error updating category:', err)
     return { error: 'خطا در ویرایش دسته‌بندی.' }
+  }
+}
+
+export async function toggleCategoryActiveAction(categoryId: string, isActive: boolean): Promise<CategoryActionState> {
+  const session = await getSession()
+  if (!session) return { error: 'دسترسی غیرمجاز.' }
+
+  try {
+    await db.productCategory.update({
+      where: { id: categoryId },
+      data: { isActive },
+    })
+
+    await logAdminChange({
+      action: 'UPDATE',
+      entity: 'PRODUCT_CATEGORY',
+      entityId: categoryId,
+      details: { field: 'isActive', newValue: isActive },
+    })
+
+    revalidateCatalog()
+    return {
+      success: true,
+      message: isActive ? 'دسته‌بندی در سایت فعال شد.' : 'دسته‌بندی در سایت غیرفعال شد.',
+    }
+  } catch (err: unknown) {
+    console.error('Error toggling category active status:', err)
+    return { error: 'خطا در تغییر وضعیت دسته‌بندی.' }
   }
 }
 
@@ -610,8 +675,7 @@ export async function deleteCategoryAction(categoryId: string): Promise<Category
       details: { reallocatedProductCount: productCount },
     })
 
-    revalidatePath('/[locale]/admin/products', 'page')
-    revalidatePath('/[locale]/shop', 'page')
+    revalidateCatalog()
     return {
       success: true,
       message: productCount > 0
