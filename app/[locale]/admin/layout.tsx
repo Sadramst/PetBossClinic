@@ -30,7 +30,9 @@ const sidebarSections = [
     labelKey: 'shopSection',
     items: [
       { key: 'products', href: '/admin/products', icon: '📦' },
+      { key: 'orders', href: '/admin/orders', icon: '🧾' },
       { key: 'inventory', href: '/admin/inventory', icon: '⏳' },
+      { key: 'customers', href: '/admin/customers', icon: '👥' },
     ],
   },
   {

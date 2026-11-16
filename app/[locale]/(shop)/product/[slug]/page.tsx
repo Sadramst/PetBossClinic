@@ -5,6 +5,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
 import { Breadcrumbs } from '@/components/shop/breadcrumbs';
 import { ProductCard } from '@/components/shop/product-card';
+import { AddToCart } from '@/components/shop/add-to-cart';
 import { ProductJsonLd } from '@/lib/seo/json-ld';
 import { absoluteUrl } from '@/lib/seo/site';
 import { getClinicNAP } from '@/lib/clinic/nap';
@@ -96,6 +97,16 @@ export default async function ProductPage({ params }: { params: Params }) {
   const whatsappUrl = nap.whatsappNumber
     ? `https://wa.me/${nap.whatsappNumber.replace(/\D/g, '')}?text=${whatsappText}`
     : null;
+
+  const purchasable = inStock && product.price > 0;
+  const sellable = hasBatches ? sellableQuantity(product.inventory, now) : null;
+  const cartLine = {
+    productId: product.id,
+    name: product.nameFa,
+    slug: product.slugFa,
+    price: product.price,
+    image: gallery[0],
+  };
 
   const priceValidUntil = new Date(now.getTime() + 30 * 86400000).toISOString().slice(0, 10);
 
@@ -228,22 +239,27 @@ export default async function ProductPage({ params }: { params: Params }) {
               </div>
             ) : null}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {purchasable && <AddToCart product={cartLine} maxQuantity={sellable} />}
+            <div className="grid grid-cols-2 gap-2">
               {whatsappUrl && (
                 <a
                   href={whatsappUrl}
                   target="_blank"
                   rel="noopener"
-                  className="py-3 rounded-xl bg-gradient-gold text-charcoal-950 font-extrabold text-sm text-center shadow-gold hover:opacity-90"
+                  className={`py-3 rounded-xl font-bold text-sm text-center ${
+                    purchasable
+                      ? 'border border-border hover:border-primary'
+                      : 'bg-gradient-gold text-charcoal-950 font-extrabold shadow-gold hover:opacity-90'
+                  }`}
                 >
-                  {inStock ? 'سفارش در واتس‌اپ' : 'استعلام موجودی در واتس‌اپ'}
+                  {purchasable ? 'سوال دارید؟ واتس‌اپ' : 'استعلام موجودی در واتس‌اپ'}
                 </a>
               )}
               <a
                 href={nap.telLink}
                 className="py-3 rounded-xl border border-primary text-primary font-bold text-sm text-center hover:bg-primary hover:text-charcoal-950 transition-colors"
               >
-                تماس و سفارش تلفنی
+                {purchasable ? 'مشاوره تلفنی' : 'تماس و سفارش تلفنی'}
               </a>
             </div>
           </div>
@@ -284,9 +300,11 @@ export default async function ProductPage({ params }: { params: Params }) {
           <p className="text-[11px] text-muted-foreground truncate">{product.nameFa}</p>
           <p className="font-black text-gradient-gold">{formatPrice(product.price, 'fa')}</p>
         </div>
-        {whatsappUrl ? (
+        {purchasable ? (
+          <AddToCart product={cartLine} maxQuantity={sellable} compact />
+        ) : whatsappUrl ? (
           <a href={whatsappUrl} target="_blank" rel="noopener" className="shrink-0 h-11 px-5 inline-flex items-center rounded-xl bg-gradient-gold text-charcoal-950 font-extrabold text-sm">
-            {inStock ? 'سفارش' : 'استعلام موجودی'}
+            استعلام موجودی
           </a>
         ) : (
           <a href={nap.telLink} className="shrink-0 h-11 px-5 inline-flex items-center rounded-xl bg-gradient-gold text-charcoal-950 font-extrabold text-sm">

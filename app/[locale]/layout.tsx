@@ -9,6 +9,7 @@ import { getActiveClinicTheme } from '@/lib/theme/theme-server';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
+import { CartProvider } from '@/components/shop/cart-provider';
 import { HideOnAdmin } from '@/components/layout/hide-on-admin';
 import { getNavCatalog } from '@/lib/shop/catalog';
 import { getClinicNAP } from '@/lib/clinic/nap';
@@ -169,6 +170,7 @@ export default async function LocaleLayout({
         )}
         <ThemeProvider initialTheme={initialTheme}>
           <NextIntlClientProvider messages={messages}>
+            <CartProvider>
             <Header
               logoUrl={sitePictures.site_logo}
               navItems={navItems}
@@ -185,7 +187,8 @@ export default async function LocaleLayout({
                 brands={navCatalog.brands}
               />
             </HideOnAdmin>
-            <MobileBottomNav phone={nap.phone} whatsappNumber={nap.whatsappNumber} />
+            <MobileBottomNav phone={nap.phone} />
+            </CartProvider>
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

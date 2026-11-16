@@ -690,9 +690,7 @@ model Product {
   speciesCompatibility Species[] @relation("SpeciesProducts")
   inventory Inventory[]
   wishlistedBy Wishlist[]
-  // PHASE 2
-  // orderItems OrderItem[]
-  // cartItems CartItem[]
+  orderItems OrderItem[]
 
   @@index([categoryId])
   @@index([brandId])
@@ -779,66 +777,161 @@ model Wishlist {
 }
 
 // -----------------------------------------------------------------------------
-// SHOP (PHASE 2 - COMMENTED OUT)
+// SHOP: customers, addresses, orders, payments
 // -----------------------------------------------------------------------------
-/*
-model Cart {
-  id        String     @id @default(cuid())
-  userId    String?
-  sessionId String?
-  items     CartItem[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+
+/// A shop customer. Identified by Iranian mobile number (login by SMS one-time code).
+model Customer {
+  id          String    @id @default(cuid())
+  /// Normalised 09xxxxxxxxx
+  phone       String    @unique
+  firstName   String?
+  lastName    String?
+  email       String?
+  isBlocked   Boolean   @default(false)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  addresses Address[]
+  orders    Order[]
+
+  @@index([createdAt])
 }
 
-model CartItem {
-  id        String   @id @default(cuid())
-  cartId    String
-  productId String
-  quantity  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+/// One-time login code sent by SMS. Only a hash of the code is stored.
+model OtpCode {
+  id         String    @id @default(cuid())
+  phone      String
+  codeHash   String
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  ip         String?
+  createdAt  DateTime  @default(now())
+
+  @@index([phone, createdAt])
+}
+
+model Address {
+  id             String    @id @default(cuid())
+  customerId     String
+  title          String?
+  recipientName  String
+  recipientPhone String
+  province       String
+  city           String
+  /// Street, alley and landmarks
+  addressLine    String
+  plaque         String?
+  unit           String?
+  /// 10-digit Iranian postal code
+  postalCode     String
+  lat            Float?
+  lng            Float?
+  isDefault      Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAYMENT_FAILED
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  ONLINE
+  COD
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  customerId      String?
-  totalAmount     Int
-  status          String
-  shippingAddress String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
-  items OrderItem[]
-  payment Payment?
+  id            String        @id @default(cuid())
+  /// Human-friendly order number shown to customers, e.g. PB-1405-000123
+  number        String        @unique
+  customerId    String
+  status        OrderStatus   @default(PENDING_PAYMENT)
+  paymentMethod PaymentMethod
+  /// All amounts in Toman
+  subtotal      Int
+  shippingFee   Int
+  discount      Int           @default(0)
+  total         Int
+  /// Address snapshot at order time (addresses can be edited/deleted later)
+  shipName      String
+  shipPhone     String
+  shipProvince  String
+  shipCity      String
+  shipAddress   String
+  shipPostal    String
+  customerNote  String?
+  adminNote     String?
+  trackingCode  String?
+  stockAllocated Boolean      @default(false)
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  customer Customer    @relation(fields: [customerId], references: [id])
+  items    OrderItem[]
+  payments Payment[]
+
+  @@index([customerId, createdAt])
+  @@index([status, createdAt])
 }
 
 model OrderItem {
   id        String  @id @default(cuid())
   orderId   String
-  productId String
+  productId String?
+  /// Snapshots so the order stays correct if the product changes
+  nameFa    String
+  sku       String?
+  slugFa    String?
+  unitPrice Int
   quantity  Int
-  price     Int
-  
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  lineTotal Int
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+enum PaymentStatus {
+  INITIATED
+  PAID
+  FAILED
 }
 
 model Payment {
-  id            String   @id @default(cuid())
-  orderId       String   @unique
-  gateway       String
-  transactionId String?
-  status        String
-  amount        Int
-  createdAt     DateTime @default(now())
-  
+  id         String        @id @default(cuid())
+  orderId    String
+  provider   String
+  /// Amount in Rial, as sent to the gateway
+  amountRial Int
+  authority  String?       @unique
+  refId      String?
+  cardPan    String?
+  status     PaymentStatus @default(INITIATED)
+  raw        Json?
+  createdAt  DateTime      @default(now())
+  verifiedAt DateTime?
+
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
 }
-*/
 
 // -----------------------------------------------------------------------------
 // MARKETING & CONTENT

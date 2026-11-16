@@ -5,6 +5,7 @@ import { Link, usePathname } from '@/i18n/routing';
 import { PetBossLogo } from '@/components/shared/pet-boss-logo';
 import type { NavItem } from '@/lib/navigation/menu';
 import { categoryPath } from '@/lib/shop/urls';
+import { CartIconLink } from '@/components/shop/add-to-cart';
 
 export interface HeaderCategory {
   id: string;
@@ -116,6 +117,17 @@ export function Header({
         <SiteSearch id="site-search" className="hidden md:block flex-1 max-w-2xl" />
 
         <div className="ms-auto flex items-center gap-2">
+          <Link
+            href="/account"
+            className="p-2.5 rounded-xl border border-border hover:border-primary hover:text-primary"
+            aria-label="حساب کاربری"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21a8 8 0 0 1 16 0" />
+            </svg>
+          </Link>
+          <CartIconLink />
           <a
             href={telLink}
             className="hidden sm:inline-flex items-center gap-2 h-11 px-5 rounded-2xl bg-gradient-gold text-charcoal-950 font-bold text-sm shadow-gold hover:opacity-90"
