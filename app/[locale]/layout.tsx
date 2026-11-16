@@ -8,8 +8,9 @@ import { ThemeProvider } from '@/lib/theme';
 import { getActiveClinicTheme } from '@/lib/theme/theme-server';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-import { FloatingShopButton } from '@/components/shared/floating-shop-button';
-import { FloatingWhatsAppButton } from '@/components/shared/floating-whatsapp-button';
+import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
+import { HideOnAdmin } from '@/components/layout/hide-on-admin';
+import { getNavCatalog } from '@/lib/shop/catalog';
 import { getClinicNAP } from '@/lib/clinic/nap';
 import { getSitePictures } from '@/lib/media';
 import { getNavigationMenu } from '@/lib/navigation/menu';
@@ -137,11 +138,12 @@ export default async function LocaleLayout({
   const initialTheme = await getActiveClinicTheme();
 
   const fontClass = locale === 'fa' ? vazirmatn.className : outfit.className;
-  const [seo, nap, sitePictures, navItems] = await Promise.all([
+  const [seo, nap, sitePictures, navItems, navCatalog] = await Promise.all([
     getSeoConfig(),
     getClinicNAP(),
     getSitePictures(),
     getNavigationMenu('main-header'),
+    getNavCatalog(),
   ]);
 
   return (
@@ -167,11 +169,23 @@ export default async function LocaleLayout({
         )}
         <ThemeProvider initialTheme={initialTheme}>
           <NextIntlClientProvider messages={messages}>
-            <Header logoUrl={sitePictures.site_logo} navItems={navItems} phone={nap.phone} />
+            <Header
+              logoUrl={sitePictures.site_logo}
+              navItems={navItems}
+              phone={nap.phone}
+              categories={navCatalog.categories}
+            />
             <main className="flex-grow">{children}</main>
-            <FloatingShopButton />
-            <FloatingWhatsAppButton whatsappNumber={nap.whatsappNumber} />
-            <Footer nap={nap} logoUrl={sitePictures.site_logo} navItems={navItems} />
+            <HideOnAdmin>
+              <Footer
+                nap={nap}
+                logoUrl={sitePictures.site_logo}
+                navItems={navItems}
+                categories={navCatalog.categories}
+                brands={navCatalog.brands}
+              />
+            </HideOnAdmin>
+            <MobileBottomNav phone={nap.phone} whatsappNumber={nap.whatsappNumber} />
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

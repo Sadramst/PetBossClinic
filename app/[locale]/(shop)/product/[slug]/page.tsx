@@ -10,7 +10,7 @@ import { absoluteUrl } from '@/lib/seo/site';
 import { getClinicNAP } from '@/lib/clinic/nap';
 import { formatPrice } from '@/lib/format/price';
 import { getProductBySlug, getRelatedProducts, productImage } from '@/lib/shop/catalog';
-import { categoryPath, decodeSlug, productPath } from '@/lib/shop/urls';
+import { brandPath, categoryPath, decodeSlug, productPath } from '@/lib/shop/urls';
 import { expiryState, formatJalaliDate, nextShippingExpiry, sellableQuantity } from '@/lib/shop/expiry';
 
 export const revalidate = 300;
@@ -100,7 +100,7 @@ export default async function ProductPage({ params }: { params: Params }) {
   const priceValidUntil = new Date(now.getTime() + 30 * 86400000).toISOString().slice(0, 10);
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:py-10 max-w-6xl">
+    <div className="container mx-auto px-4 pt-6 pb-24 sm:pt-10 lg:pb-10 max-w-6xl">
       <ProductJsonLd
         product={{
           name: product.nameFa,
@@ -168,7 +168,10 @@ export default async function ProductPage({ params }: { params: Params }) {
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
               {product.brand && (
                 <span>
-                  برند: <b className="text-foreground">{product.brand.nameFa}</b>
+                  برند:{' '}
+                  <Link href={brandPath(product.brand.slugFa)} className="font-bold text-foreground hover:text-primary">
+                    {product.brand.nameFa}
+                  </Link>
                 </span>
               )}
               {product.sku && (
@@ -275,6 +278,22 @@ export default async function ProductPage({ params }: { params: Params }) {
           </dl>
         </div>
       </section>
+
+      <div className="lg:hidden fixed inset-x-0 bottom-16 z-40 border-t border-border bg-surface/95 backdrop-blur px-4 py-3 flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] text-muted-foreground truncate">{product.nameFa}</p>
+          <p className="font-black text-gradient-gold">{formatPrice(product.price, 'fa')}</p>
+        </div>
+        {whatsappUrl ? (
+          <a href={whatsappUrl} target="_blank" rel="noopener" className="shrink-0 h-11 px-5 inline-flex items-center rounded-xl bg-gradient-gold text-charcoal-950 font-extrabold text-sm">
+            {inStock ? 'سفارش' : 'استعلام موجودی'}
+          </a>
+        ) : (
+          <a href={nap.telLink} className="shrink-0 h-11 px-5 inline-flex items-center rounded-xl bg-gradient-gold text-charcoal-950 font-extrabold text-sm">
+            تماس و سفارش
+          </a>
+        )}
+      </div>
 
       {related.length > 0 && (
         <section className="mt-12">

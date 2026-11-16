@@ -16,3 +16,7 @@ export function decodeSlug(raw: string): string {
     return raw;
   }
 }
+
+export function brandPath(slug: string): string {
+  return `/brand/${encodeURIComponent(slug)}`;
+}

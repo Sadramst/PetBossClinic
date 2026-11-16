@@ -6,6 +6,15 @@ import { revalidatePath } from 'next/cache'
 import { StockStatus } from '@prisma/client'
 import { logAdminChange } from '@/lib/audit'
 import { normalizeFa, slugifyFa } from '@/lib/text/persian'
+import { detectBrand } from '@/lib/shop/brands'
+
+/** Brand id for a product name (brand rows are created by scripts/assign-brands.ts). */
+async function brandIdFor(name: string): Promise<string | null> {
+  const def = detectBrand(name)
+  if (!def) return null
+  const brand = await db.brand.findUnique({ where: { slugFa: def.slug }, select: { id: true } })
+  return brand?.id ?? null
+}
 
 import fs from 'fs'
 import path from 'path'
@@ -178,6 +187,7 @@ export async function createProductAction(formData: FormData): Promise<ProductAc
     const createdProduct = await db.product.create({
       data: {
         categoryId,
+        brandId: await brandIdFor(nameFa),
         sku,
         nameFa,
         nameEn,
@@ -307,6 +317,8 @@ export async function updateProductAction(productId: string, formData: FormData)
       where: { id: productId },
       data: {
         ...(categoryId ? { categoryId } : {}),
+        // Keep a manually set brand; otherwise infer it from the (possibly renamed) product name.
+        ...(previous?.brandId ? {} : { brandId: await brandIdFor(nameFa) }),
         nameFa,
         nameEn,
         sku,

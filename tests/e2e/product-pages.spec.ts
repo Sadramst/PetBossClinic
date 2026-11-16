@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test.describe('Indexable shop pages', () => {
   test('category page lists products that link to product pages with Product schema', async ({ page }) => {
     await page.goto('/shop', { waitUntil: 'domcontentloaded' })
-    const categoryLink = page.locator('nav[aria-label="دسته‌بندی‌های پت‌شاپ"] a').first()
+    const categoryLink = page.locator('main a[href^="/shop/"]').first()
     await expect(categoryLink).toBeVisible()
     await categoryLink.click()
     await expect(page).toHaveURL(/\/shop\/[^/?]+/)
@@ -30,6 +30,7 @@ test.describe('Indexable shop pages', () => {
     const xml = await res.text()
     expect(xml).toContain('/product/')
     expect(xml).toContain('/shop/')
+    expect(xml).toContain('/brand/')
     expect(xml).not.toContain('/en/')
   })
 

@@ -1,2 +1,3 @@
-export { ShopCatalogClient } from './shop-catalog-client'
-export type { ShopCategory, ShopProduct } from './shop-catalog-client'
+export { ProductCard } from './product-card'
+export { ProductListing } from './product-listing'
+export { Breadcrumbs } from './breadcrumbs'

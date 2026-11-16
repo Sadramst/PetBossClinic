@@ -1,7 +1,9 @@
 import 'server-only';
 import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import { db } from '@/lib/db';
 import { Prisma } from '@prisma/client';
+import { buildProductOrder, buildProductWhere, type ShopFilters } from '@/lib/shop/filters';
 
 export const CATEGORY_PAGE_SIZE = 24;
 
@@ -88,3 +90,75 @@ export async function getCategoryProducts(categoryId: string, page: number) {
   ]);
   return { total, products, pageCount: Math.max(1, Math.ceil(total / CATEGORY_PAGE_SIZE)) };
 }
+
+// ─── Filtered listings (shop, category, brand pages) ────────────────────────
+
+export async function getListing(filters: ShopFilters, scope: Prisma.ProductWhereInput = {}) {
+  const where = buildProductWhere(filters, scope);
+  const [total, products] = await Promise.all([
+    db.product.count({ where }),
+    db.product.findMany({
+      where,
+      orderBy: buildProductOrder(filters.sort),
+      skip: (filters.page - 1) * CATEGORY_PAGE_SIZE,
+      take: CATEGORY_PAGE_SIZE,
+      select: productCardSelect,
+    }),
+  ]);
+  return { total, products, pageCount: Math.max(1, Math.ceil(total / CATEGORY_PAGE_SIZE)) };
+}
+
+export const getActiveBrands = cache(async () => {
+  return db.brand.findMany({
+    where: { isActive: true, deletedAt: null, products: { some: visibleProduct } },
+    orderBy: { sortOrder: 'asc' },
+    select: {
+      id: true,
+      slugFa: true,
+      nameFa: true,
+      nameEn: true,
+      updatedAt: true,
+      _count: { select: { products: { where: visibleProduct } } },
+    },
+  });
+});
+
+export const getBrandBySlug = cache(async (slug: string) => {
+  return db.brand.findFirst({ where: { slugFa: slug, isActive: true, deletedAt: null } });
+});
+
+/** Featured/curated products for homepage rails. */
+export async function getProductRail(scope: Prisma.ProductWhereInput, take = 10) {
+  return db.product.findMany({
+    where: { ...visibleProduct, stockStatus: { in: ['IN_STOCK', 'LOW_STOCK'] }, price: { gt: 0 }, ...scope },
+    orderBy: [{ isFeatured: 'desc' }, { sortOrder: 'asc' }],
+    take,
+    select: productCardSelect,
+  });
+}
+
+/** Categories and brands for header/footer menus (cached across requests). */
+export const getNavCatalog = unstable_cache(
+  async () => {
+    try {
+      const [categories, brands] = await Promise.all([
+        db.productCategory.findMany({
+          where: { isActive: true, deletedAt: null, products: { some: visibleProduct } },
+          orderBy: { sortOrder: 'asc' },
+          select: { id: true, slugFa: true, nameFa: true },
+        }),
+        db.brand.findMany({
+          where: { isActive: true, deletedAt: null, products: { some: visibleProduct } },
+          orderBy: [{ products: { _count: 'desc' } }],
+          select: { id: true, slugFa: true, nameFa: true },
+        }),
+      ]);
+      return { categories, brands };
+    } catch (err) {
+      console.error('getNavCatalog failed', err);
+      return { categories: [], brands: [] };
+    }
+  },
+  ['nav-catalog'],
+  { revalidate: 600, tags: ['catalog'] }
+);

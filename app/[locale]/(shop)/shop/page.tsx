@@ -1,206 +1,109 @@
-import { Metadata } from 'next'
-import { db } from '@/lib/db'
-import { ShopCatalogClient } from '@/components/shop'
-import { BreadcrumbJsonLd } from '@/lib/seo/json-ld'
-import { getClinicNAP } from '@/lib/clinic/nap'
-import { setRequestLocale } from 'next-intl/server'
-import { Link } from '@/i18n/routing'
-import { categoryPath } from '@/lib/shop/urls'
+import type { Metadata } from 'next';
+import Image from 'next/image';
+import { setRequestLocale } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
+import { ProductListing } from '@/components/shop/product-listing';
+import { getClinicNAP } from '@/lib/clinic/nap';
+import { absoluteUrl } from '@/lib/seo/site';
+import { getActiveBrands, getActiveCategories, getListing } from '@/lib/shop/catalog';
+import { isFilteredView, parseShopFilters } from '@/lib/shop/filters';
+import { listingMetadata } from '@/lib/shop/listing-meta';
+import { categoryPath } from '@/lib/shop/urls';
 
-export const revalidate = 60;
+type Params = Promise<{ locale: string }>;
+type Search = Promise<Record<string, string | string[] | undefined>>;
 
-export function generateStaticParams() {
-  return [{ locale: 'fa' }];
+const DESCRIPTION =
+  'خرید آنلاین غذای خشک و تر سگ و گربه، تشویقی، دارو و مکمل، خاک گربه، قلاده و اسباب‌بازی از پت‌شاپ کلینیک دامپزشکی پت‌باس تهران؛ اصالت کالا، تاریخ انقضای معتبر و مشاوره رایگان دامپزشک.';
+
+export async function generateMetadata({ params, searchParams }: { params: Params; searchParams: Search }): Promise<Metadata> {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  return listingMetadata({
+    basePath: '/shop',
+    filters: parseShopFilters(await searchParams),
+    title: 'پت‌شاپ آنلاین | خرید غذا و لوازم سگ و گربه در تهران',
+    description: DESCRIPTION,
+    image: '/images/categories/cat-dry-food.jpg',
+  });
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ locale: string }>
-}): Promise<Metadata> {
-  const { locale } = await params
-  setRequestLocale(locale)
-  const isEn = locale === 'en'
+export default async function ShopPage({ params, searchParams }: { params: Params; searchParams: Search }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const filters = parseShopFilters(await searchParams);
 
-  const title = isEn
-    ? 'Pet Shop & Luxury Boutique | Pet Boss Veterinary Clinic'
-    : 'پت‌شاپ و بوتیک لوکس حیوانات خانگی | کلینیک دامپزشکی پت باس قیطریه'
-
-  const description = isEn
-    ? 'Exclusive collection of super-premium dry food, veterinary prescription diets, grooming essentials, and luxury accessories with clinic veterinarian guidance in Tehran.'
-    : 'مجموعه انحصاری غذای خشک سوپرپرمیوم، غذاهای رژیمی و درمانی دامپزشکی، خمیرهای مالت، خاک گربه و اکسسوری‌های لوکس با تایید و نظارت دامپزشک در قیطریه تهران.'
-
-  return {
-    title,
-    description,
-    keywords: isEn
-      ? ['pet shop Tehran', 'veterinary boutique Gheytariyeh', 'Royal Canin Tehran', 'Josera cat food', 'cat litter Tehran']
-      : ['پت شاپ تهران', 'پت شاپ قیطریه', 'پت شاپ شریعتی', 'خرید غذای خشک سگ تهران', 'غذای گربه رویال کنین', 'خاک گربه قیطریه', 'لوازم حیوانات خانگی'],
-    alternates: {
-      canonical: 'https://www.petbossclinic.com/shop',
-    },
-    openGraph: {
-      title,
-      description,
-      url: 'https://www.petbossclinic.com/shop',
-      images: [
-        {
-          url: '/images/categories/cat-dry-food.jpg',
-          width: 1200,
-          height: 630,
-          alt: title,
-        },
-      ],
-      locale: isEn ? 'en_US' : 'fa_IR',
-      type: 'website',
-    },
-  }
-}
-
-export default async function ShopPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>
-}) {
-  const { locale } = await params
-  setRequestLocale(locale)
-  const isEn = locale === 'en'
-
-  const [categories, products, nap] = await Promise.all([
-    db.productCategory.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: 'asc' },
-      select: {
-        id: true,
-        nameFa: true,
-        nameEn: true,
-        slugFa: true,
-        slugEn: true,
-        descriptionFa: true,
-        descriptionEn: true,
-        sortOrder: true,
-        imageId: true,
-        _count: {
-          select: {
-            products: true,
-          },
-        },
-      },
-    }),
-    db.product.findMany({
-      where: { isActive: true },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-      select: {
-        id: true,
-        categoryId: true,
-        sku: true,
-        slugFa: true,
-        nameFa: true,
-        nameEn: true,
-        shortDescFa: true,
-        shortDescEn: true,
-        price: true,
-        comparePrice: true,
-        stockStatus: true,
-        isActive: true,
-        isFeatured: true,
-        createdAt: true,
-        brand: {
-          select: {
-            id: true,
-            nameFa: true,
-            nameEn: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            nameFa: true,
-            nameEn: true,
-            slugFa: true,
-            imageId: true,
-          },
-        },
-        images: {
-          orderBy: { sortOrder: 'asc' },
-          select: {
-            imageId: true,
-          },
-        },
-      },
-    }),
+  const [listing, categories, brands, nap] = await Promise.all([
+    getListing(filters),
+    getActiveCategories(),
+    getActiveBrands(),
     getClinicNAP(),
-  ])
+  ]);
+  const visibleCategories = categories.filter((c) => c._count.products > 0);
 
-  // JSON-LD structured data for E-commerce & Search Engines
-  const jsonLd = {
+  const storeJsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'Store',
-    name: isEn ? (nap.nameEn || 'Pet Boss Luxury Boutique & Shop') : (nap.nameFa || 'بوتیک و پت‌شاپ لوکس پت باس'),
-    description: isEn
-      ? 'Premier super-premium pet food, prescription veterinary diets, and luxury pet accessories.'
-      : 'عرضه تخصصی غذاهای سوپرپرمیوم، مکمل‌های درمانی و ملزومات لوکس سگ و گربه.',
-    url: 'https://www.petbossclinic.com/shop',
+    '@type': 'PetStore',
+    '@id': absoluteUrl('/shop#store'),
+    name: 'پت‌شاپ کلینیک دامپزشکی پت‌باس',
+    url: absoluteUrl('/shop'),
     telephone: nap.phone,
+    image: absoluteUrl('/images/petboss-sign.jpg'),
+    priceRange: '$$',
     address: {
       '@type': 'PostalAddress',
-      streetAddress: isEn ? nap.addressEn : nap.addressFa,
-      addressLocality: 'Tehran',
+      streetAddress: nap.addressFa,
+      addressLocality: 'تهران',
       addressCountry: 'IR',
     },
-    geo: {
-      '@type': 'GeoCoordinates',
-      latitude: nap.geo.lat,
-      longitude: nap.geo.lng,
-    },
-    hasOfferCatalog: {
-      '@type': 'OfferCatalog',
-      name: isEn ? 'Pet Boss Product Catalog' : 'کاتالوگ محصولات پت باس',
-      itemListElement: categories.map((cat, idx) => ({
-        '@type': 'OfferCatalog',
-        name: isEn ? (cat.nameEn || cat.nameFa) : cat.nameFa,
-        position: idx + 1,
-      })),
-    },
-  }
+    geo: { '@type': 'GeoCoordinates', latitude: nap.geo.lat, longitude: nap.geo.lng },
+    parentOrganization: { '@id': absoluteUrl('/#organization') },
+  };
+
+  const showCategoryStrip = !isFilteredView(filters) && filters.page === 1;
 
   return (
     <>
-      <BreadcrumbJsonLd
-        items={[
-          { name: isEn ? 'Home' : 'خانه', href: '/' },
-          { name: isEn ? 'Pet Shop' : 'پت‌شاپ', href: '/shop' },
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(storeJsonLd) }} />
+
+      {showCategoryStrip && (
+        <section aria-label="دسته‌بندی‌های پت‌شاپ" className="border-b border-border bg-surface">
+          <div className="container mx-auto px-4 py-6 max-w-7xl">
+            <ul className="flex gap-3 overflow-x-auto pb-2 snap-x">
+              {visibleCategories.map((c) => (
+                <li key={c.id} className="snap-start shrink-0">
+                  <Link href={categoryPath(c.slugFa)} className="group flex flex-col items-center gap-2 w-24 text-center">
+                    <span className="relative w-20 h-20 rounded-2xl overflow-hidden border border-border group-hover:border-primary transition-colors">
+                      <Image
+                        src={c.imageId && !c.imageId.startsWith('data:') ? c.imageId : '/images/categories/other.jpg'}
+                        alt={c.nameFa}
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                      />
+                    </span>
+                    <span className="text-xs leading-5 group-hover:text-primary">{c.nameFa}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
+      <ProductListing
+        title={filters.q ? `نتایج جستجو برای «${filters.q}»` : 'پت‌شاپ آنلاین پت‌باس'}
+        intro="غذا، تشویقی، دارو و لوازم سگ و گربه با ضمانت اصالت و تاریخ انقضای معتبر؛ انتخاب‌شده و نگهداری‌شده زیر نظر دامپزشکان کلینیک."
+        breadcrumbs={[
+          { name: 'خانه', href: '/' },
+          { name: 'پت‌شاپ', href: '/shop' },
         ]}
-        locale={locale}
+        basePath="/shop"
+        filters={filters}
+        {...listing}
+        categories={visibleCategories.map((c) => ({ ...c, count: c._count.products }))}
+        brands={brands.map((b) => ({ ...b, count: b._count.products }))}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <ShopCatalogClient
-        categories={categories}
-        products={products}
-        whatsappNumber={nap.whatsappNumber}
-        phone={nap.phone}
-      />
-      <nav aria-label="دسته‌بندی‌های پت‌شاپ" className="container mx-auto px-4 pb-16 max-w-7xl">
-        <h2 className="text-lg font-bold mb-4">خرید بر اساس دسته‌بندی</h2>
-        <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 text-sm">
-          {categories
-            .filter((c) => c._count.products > 0)
-            .map((c) => (
-              <li key={c.id}>
-                <Link
-                  href={categoryPath(c.slugFa)}
-                  className="flex justify-between rounded-xl border border-border bg-surface-card px-4 py-3 hover:border-primary hover:text-primary transition-colors"
-                >
-                  <span>خرید {c.nameFa}</span>
-                  <span className="text-xs text-muted-foreground">{c._count.products.toLocaleString('fa-IR')}</span>
-                </Link>
-              </li>
-            ))}
-        </ul>
-      </nav>
     </>
-  )
+  );
 }

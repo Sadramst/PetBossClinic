@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 import { db } from '@/lib/db';
 import { absoluteUrl } from '@/lib/seo/site';
-import { categoryPath, productPath } from '@/lib/shop/urls';
+import { brandPath, categoryPath, productPath } from '@/lib/shop/urls';
 import { visibleProduct } from '@/lib/shop/catalog';
 
 export const revalidate = 3600;
@@ -28,10 +28,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   try {
-    const [categories, products] = await Promise.all([
+    const [categories, brands, products] = await Promise.all([
       db.productCategory.findMany({
         where: { isActive: true, deletedAt: null, noindex: false, products: { some: visibleProduct } },
         select: { slugFa: true, updatedAt: true, imageId: true },
+        orderBy: { sortOrder: 'asc' },
+      }),
+      db.brand.findMany({
+        where: { isActive: true, deletedAt: null, products: { some: visibleProduct } },
+        select: { slugFa: true, updatedAt: true },
         orderBy: { sortOrder: 'asc' },
       }),
       db.product.findMany({
@@ -52,6 +57,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'daily',
         priority: 0.85,
         images: imageUrl(c.imageId),
+      });
+    }
+    for (const b of brands) {
+      entries.push({
+        url: absoluteUrl(brandPath(b.slugFa)),
+        lastModified: b.updatedAt,
+        changeFrequency: 'weekly',
+        priority: 0.75,
       });
     }
     for (const p of products) {
