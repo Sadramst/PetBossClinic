@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { getSessionWithRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { logAdminChange } from '@/lib/audit'
 
@@ -15,7 +15,7 @@ export async function updateHomepageSectionAction(
   sectionKey: string,
   formData: FormData
 ): Promise<HomepageActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   const titleFa = formData.get('titleFa')?.toString().trim() || null
@@ -95,7 +95,7 @@ export async function toggleHomepageSectionVisibilityAction(
   sectionKey: string,
   isVisible: boolean
 ): Promise<HomepageActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {

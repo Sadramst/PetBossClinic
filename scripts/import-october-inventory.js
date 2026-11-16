@@ -208,7 +208,23 @@ async function main() {
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
   console.log(`📊 Loaded ${rows.length} rows from Excel sheet.`);
 
-  // 1. Fetch categories
+  // 1. Ensure every category exists (fresh databases have none), then fetch them
+  for (const def of categoryDefs) {
+    await prisma.productCategory.upsert({
+      where: { slugFa: def.slugFa },
+      update: {},
+      create: {
+        slugFa: def.slugFa,
+        nameFa: def.nameFa,
+        nameEn: def.nameEn,
+        descriptionFa: def.descriptionFa,
+        descriptionEn: def.descriptionEn,
+        imageId: def.image,
+        sortOrder: def.sortOrder,
+        isActive: true,
+      },
+    });
+  }
   const categories = await prisma.productCategory.findMany();
   const categoryMap = new Map();
   for (const def of categoryDefs) {
@@ -243,7 +259,8 @@ async function main() {
   for (let i = 2; i < rows.length; i++) {
     const r = rows[i];
     if (!r || !r[7]) continue;
-    const name = String(r[7]).trim();
+    // Arabic Yeh/Kaf -> Persian (see lib/text/persian.ts)
+    const name = String(r[7]).replace(/\u064A|\u0649/g, '\u06CC').replace(/\u0643/g, '\u06A9').replace(/\s{2,}/g, ' ').trim();
     if (!name || name === 'نام کالا') continue;
 
     const totalSales = r[0] != null ? Number(r[0]) : 0;

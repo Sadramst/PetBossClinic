@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { getSessionWithRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 
 export interface MessageActionState {
@@ -11,7 +11,7 @@ export interface MessageActionState {
 }
 
 export async function toggleMessageReadAction(messageId: string): Promise<MessageActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
@@ -36,7 +36,7 @@ export async function toggleMessageReadAction(messageId: string): Promise<Messag
 }
 
 export async function deleteMessageAction(messageId: string): Promise<MessageActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {

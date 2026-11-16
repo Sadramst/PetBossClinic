@@ -18,9 +18,10 @@ test.describe('Admin Authentication & Protection Flow', () => {
     await expect(submitButton).toBeVisible();
   });
 
-  test('redirects unauthenticated visitor from /en/admin to /en/admin/login', async ({ page }) => {
+  test('redirects legacy /en/admin to the Farsi admin login', async ({ page }) => {
     await page.goto('/en/admin', { waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL(/\/en\/admin\/login/);
+    await expect(page).toHaveURL(/\/admin\/login/);
+    expect(page.url()).not.toContain('/en/');
   });
 
   test('rejects forged session cookie without valid signature', async ({ page, context }) => {

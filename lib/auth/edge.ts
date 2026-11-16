@@ -14,7 +14,7 @@ export interface EdgeSessionPayload {
   expiresAt: number;
 }
 
-const DEFAULT_SECRET = 'petboss-super-secure-secret-key-2026-v1';
+const DEV_ONLY_SECRET = 'petboss-local-development-secret-not-for-production';
 
 function base64UrlToUint8Array(base64Url: string): Uint8Array {
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -34,10 +34,11 @@ function base64UrlToUint8Array(base64Url: string): Uint8Array {
  */
 export async function verifySessionTokenEdge(
   token: string,
-  secret: string = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || DEFAULT_SECRET
+  secret: string | undefined = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET ||
+    (process.env.NODE_ENV === 'production' ? undefined : DEV_ONLY_SECRET)
 ): Promise<EdgeSessionPayload | null> {
   try {
-    if (!token || typeof token !== 'string') return null;
+    if (!secret || !token || typeof token !== 'string') return null;
 
     const parts = token.split('.');
     if (parts.length !== 2) return null;

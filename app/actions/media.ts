@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { getSessionWithRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import fs from 'fs'
 import path from 'path'
@@ -30,7 +30,7 @@ export async function updateSitePictureAction(
   altFa: string = 'تصویر کلینیک پت‌باس',
   altEn: string = 'Pet Boss Clinic Image'
 ): Promise<MediaActionResult> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   if (!url || typeof url !== 'string' || !url.trim()) {
@@ -85,7 +85,7 @@ export async function updateSitePictureAction(
  * Resets a primary picture to its default asset
  */
 export async function resetSitePictureAction(key: string): Promise<MediaActionResult> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   // @ts-expect-error key lookup
@@ -102,7 +102,7 @@ export async function resetSitePictureAction(key: string): Promise<MediaActionRe
  * writes to public/uploads/ where possible, and indexes it in db.media.
  */
 export async function uploadMediaAction(formData: FormData): Promise<MediaActionResult> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   const file = formData.get('file') as File | null
@@ -199,7 +199,7 @@ export async function uploadMediaAction(formData: FormData): Promise<MediaAction
  * Deletes a media item
  */
 export async function deleteMediaAction(id: string): Promise<MediaActionResult> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {

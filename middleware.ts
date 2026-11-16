@@ -5,45 +5,40 @@ import { verifySessionTokenEdge } from '@/lib/auth/edge';
 
 const intlMiddleware = createMiddleware(routing);
 
+/**
+ * Legacy locale prefixes. The English version was retired and the site is
+ * Farsi-only with unprefixed URLs, so /en/... and /fa/... permanently redirect
+ * to the bare path. This keeps any backlinks and indexed URLs' ranking.
+ */
+const LEGACY_PREFIX = /^\/(en|fa)(?=\/|$)/;
+
 export default async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
 
-  const isAdminRoute =
-    pathname === '/admin' ||
-    pathname.startsWith('/admin/') ||
-    pathname === '/fa/admin' ||
-    pathname.startsWith('/fa/admin/') ||
-    pathname === '/en/admin' ||
-    pathname.startsWith('/en/admin/');
+  if (LEGACY_PREFIX.test(pathname)) {
+    const target = new URL(request.url);
+    target.pathname = pathname.replace(LEGACY_PREFIX, '') || '/';
+    target.search = search;
+    return NextResponse.redirect(target, 301);
+  }
 
-  const isLoginPage =
-    pathname === '/admin/login' ||
-    pathname === '/fa/admin/login' ||
-    pathname === '/en/admin/login';
-
-  const isEn = pathname.startsWith('/en');
-  const loginPath = isEn ? '/en/admin/login' : '/admin/login';
-  const adminPath = isEn ? '/en/admin' : '/admin';
+  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
+  const isLoginPage = pathname === '/admin/login';
 
   if (isAdminRoute) {
-    let session = null;
     const sessionToken = request.cookies.get('petboss_session')?.value;
-    if (sessionToken) {
-      session = await verifySessionTokenEdge(sessionToken);
-    }
+    const session = sessionToken ? await verifySessionTokenEdge(sessionToken) : null;
 
     if (!isLoginPage && !session) {
-      const redirectUrl = new URL(loginPath, request.url);
-      const redirectResponse = NextResponse.redirect(redirectUrl);
-      redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow');
-      return redirectResponse;
+      const res = NextResponse.redirect(new URL('/admin/login', request.url));
+      res.headers.set('X-Robots-Tag', 'noindex, nofollow');
+      return res;
     }
 
     if (isLoginPage && session) {
-      const redirectUrl = new URL(adminPath, request.url);
-      const redirectResponse = NextResponse.redirect(redirectUrl);
-      redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow');
-      return redirectResponse;
+      const res = NextResponse.redirect(new URL('/admin', request.url));
+      res.headers.set('X-Robots-Tag', 'noindex, nofollow');
+      return res;
     }
   }
 
@@ -57,5 +52,6 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+  // feeds/* are machine endpoints (Torob etc.): no locale handling.
+  matcher: ['/((?!api|_next|_vercel|feeds/|.*\\..*).*)'],
 };

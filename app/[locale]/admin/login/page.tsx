@@ -9,7 +9,7 @@ import { loginAction } from '@/app/actions/auth'
 export default function AdminLoginPage() {
   const t = useTranslations('Admin')
   const locale = useLocale()
-  const isEn = locale === 'en'
+  const _isEn = locale === 'en'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -38,17 +38,6 @@ export default function AdminLoginPage() {
     <div className="min-h-screen flex flex-col justify-center items-center px-4 py-12 bg-[#121418] text-[#F3F4F6] relative overflow-hidden">
       {/* Subtle luxury glow effect */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/10 blur-[130px] pointer-events-none rounded-full" />
-
-      {/* Language Switcher */}
-      <div className="absolute top-6 end-6">
-        <Link
-          href="/admin/login"
-          locale={isEn ? 'fa' : 'en'}
-          className="text-xs px-3 py-1.5 rounded-full border border-primary/30 bg-surface/80 text-foreground hover:border-primary transition-colors font-medium backdrop-blur"
-        >
-          {isEn ? 'فارسی' : 'English'}
-        </Link>
-      </div>
 
       <div className="w-full max-w-md z-10">
         {/* Logo Card */}

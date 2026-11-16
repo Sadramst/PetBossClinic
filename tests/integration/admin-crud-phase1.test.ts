@@ -72,16 +72,23 @@ vi.mock('@/lib/audit', () => ({
 }))
 
 // Mock auth session as authenticated ADMIN
-vi.mock('@/lib/auth', () => ({
-  getSession: vi.fn().mockResolvedValue({
+vi.mock('@/lib/auth', () => {
+  const adminSession = {
     userId: 'admin_test_1',
     email: 'admin@petboss.com',
     role: 'ADMIN',
     name: 'مدیر کلینیک',
-  }),
-  hashPassword: vi.fn((p: string) => `hashed_${p}`),
-  verifyPassword: vi.fn(() => true),
-}))
+  }
+  const rank: Record<string, number> = { SUPER_ADMIN: 5, ADMIN: 4, EDITOR: 3, AUTHOR: 2, VIEWER: 1 }
+  return {
+    getSession: vi.fn().mockResolvedValue(adminSession),
+    // Mirrors the real helper: the ADMIN session passes EDITOR/ADMIN checks, fails SUPER_ADMIN.
+    getSessionWithRole: vi.fn(async (minRole: string) => (rank[adminSession.role] >= rank[minRole] ? adminSession : null)),
+    hasRoleAccess: vi.fn((r: string, min: string) => rank[r] >= rank[min]),
+    hashPassword: vi.fn((p: string) => `hashed_${p}`),
+    verifyPassword: vi.fn(() => true),
+  }
+})
 
 // Mock database operations
 vi.mock('@/lib/db', () => ({

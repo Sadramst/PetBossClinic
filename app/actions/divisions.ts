@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { getSessionWithRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { logAdminChange } from '@/lib/audit'
 
@@ -21,7 +21,7 @@ function generateSlug(text: string): string {
 }
 
 export async function createDivisionAction(formData: FormData): Promise<DivisionActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   const nameFa = formData.get('nameFa')?.toString().trim()
@@ -79,7 +79,7 @@ export async function createDivisionAction(formData: FormData): Promise<Division
 }
 
 export async function updateDivisionAction(divisionId: string, formData: FormData): Promise<DivisionActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   const nameFa = formData.get('nameFa')?.toString().trim()
@@ -128,7 +128,7 @@ export async function updateDivisionAction(divisionId: string, formData: FormDat
 }
 
 export async function toggleDivisionActiveAction(divisionId: string): Promise<DivisionActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
@@ -162,7 +162,7 @@ export async function toggleDivisionActiveAction(divisionId: string): Promise<Di
 }
 
 export async function deleteDivisionAction(divisionId: string): Promise<DivisionActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {

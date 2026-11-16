@@ -13,7 +13,7 @@ import { getClinicNAP } from "@/lib/clinic/nap";
 export const revalidate = 60;
 
 export function generateStaticParams() {
-  return [{ locale: 'fa' }, { locale: 'en' }];
+  return [{ locale: 'fa' }];
 }
 
 export async function generateMetadata({
@@ -37,16 +37,12 @@ export async function generateMetadata({
     title,
     description,
     alternates: {
-      canonical: isEn ? 'https://www.petbossclinic.com/en/services' : 'https://www.petbossclinic.com/services',
-      languages: {
-        'fa-IR': 'https://www.petbossclinic.com/services',
-        en: 'https://www.petbossclinic.com/en/services',
-      },
+      canonical: 'https://www.petbossclinic.com/services',
     },
     openGraph: {
       title,
       description,
-      url: isEn ? 'https://www.petbossclinic.com/en/services' : 'https://www.petbossclinic.com/services',
+      url: 'https://www.petbossclinic.com/services',
       images: [{ url: '/images/veterinarian.jpg', width: 1200, height: 630 }],
     },
   };

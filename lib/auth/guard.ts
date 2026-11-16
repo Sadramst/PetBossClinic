@@ -12,8 +12,8 @@ export async function requireAdmin(
   locale: string = 'fa'
 ): Promise<SessionPayload> {
   const session = await getSession()
-  const isEn = locale === 'en'
-  const loginPath = isEn ? '/en/admin/login' : '/admin/login'
+  void locale
+  const loginPath = '/admin/login'
 
   if (!session) {
     redirect(loginPath)

@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { getSessionWithRole } from '@/lib/auth'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { logAdminChange } from '@/lib/audit'
 
@@ -12,7 +12,7 @@ export interface SettingsActionState {
 }
 
 export async function updateSiteSettingsAction(formData: FormData): Promise<SettingsActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('ADMIN')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   const nameFa = formData.get('nameFa')?.toString().trim() || 'کلینیک دامپزشکی و پت شاپ پت باس'

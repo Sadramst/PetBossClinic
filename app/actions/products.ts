@@ -1,10 +1,20 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { getSessionWithRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { StockStatus } from '@prisma/client'
 import { logAdminChange } from '@/lib/audit'
+import { normalizeFa, slugifyFa } from '@/lib/text/persian'
+import { detectBrand } from '@/lib/shop/brands'
+
+/** Brand id for a product name (brand rows are created by scripts/assign-brands.ts). */
+async function brandIdFor(name: string): Promise<string | null> {
+  const def = detectBrand(name)
+  if (!def) return null
+  const brand = await db.brand.findUnique({ where: { slugFa: def.slug }, select: { id: true } })
+  return brand?.id ?? null
+}
 
 import fs from 'fs'
 import path from 'path'
@@ -16,12 +26,7 @@ export interface ProductActionState {
 }
 
 function generateSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\u0600-\u06FF\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '') || `product-${Date.now()}`
+  return slugifyFa(text) || `product-${Date.now()}`
 }
 
 export async function revalidateCatalog() {
@@ -30,14 +35,8 @@ export async function revalidateCatalog() {
     revalidatePath('/[locale]/shop', 'page')
     revalidatePath('/[locale]', 'page')
     revalidatePath('/shop')
-    revalidatePath('/fa/shop')
-    revalidatePath('/en/shop')
     revalidatePath('/admin/products')
-    revalidatePath('/fa/admin/products')
-    revalidatePath('/en/admin/products')
     revalidatePath('/')
-    revalidatePath('/fa')
-    revalidatePath('/en')
   } catch (e) {
     console.warn('Revalidation notice:', e)
   }
@@ -126,11 +125,11 @@ async function saveUploadedFile(file: File, subfolder: 'products' | 'categories'
 }
 
 export async function createProductAction(formData: FormData): Promise<ProductActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   let categoryId = formData.get('categoryId')?.toString().trim()
-  const nameFa = formData.get('nameFa')?.toString().trim()
+  const nameFa = normalizeFa(formData.get('nameFa')?.toString())
   const nameEn = formData.get('nameEn')?.toString().trim() || null
   const sku = formData.get('sku')?.toString().trim() || null
   const slugFaInput = formData.get('slugFa')?.toString().trim()
@@ -188,6 +187,7 @@ export async function createProductAction(formData: FormData): Promise<ProductAc
     const createdProduct = await db.product.create({
       data: {
         categoryId,
+        brandId: await brandIdFor(nameFa),
         sku,
         nameFa,
         nameEn,
@@ -240,11 +240,11 @@ export async function createProductAction(formData: FormData): Promise<ProductAc
 }
 
 export async function updateProductAction(productId: string, formData: FormData): Promise<ProductActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   const categoryId = formData.get('categoryId')?.toString().trim()
-  const nameFa = formData.get('nameFa')?.toString().trim()
+  const nameFa = normalizeFa(formData.get('nameFa')?.toString())
   const nameEn = formData.get('nameEn')?.toString().trim() || null
   const sku = formData.get('sku')?.toString().trim() || null
   const priceStr = formData.get('price')?.toString().trim()
@@ -317,6 +317,8 @@ export async function updateProductAction(productId: string, formData: FormData)
       where: { id: productId },
       data: {
         ...(categoryId ? { categoryId } : {}),
+        // Keep a manually set brand; otherwise infer it from the (possibly renamed) product name.
+        ...(previous?.brandId ? {} : { brandId: await brandIdFor(nameFa) }),
         nameFa,
         nameEn,
         sku,
@@ -347,7 +349,7 @@ export async function updateProductAction(productId: string, formData: FormData)
 }
 
 export async function toggleProductFeaturedAction(productId: string, isFeatured: boolean): Promise<ProductActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
@@ -365,7 +367,7 @@ export async function toggleProductFeaturedAction(productId: string, isFeatured:
 }
 
 export async function toggleProductActiveAction(productId: string, isActive: boolean): Promise<ProductActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
@@ -393,7 +395,7 @@ export async function toggleProductActiveAction(productId: string, isActive: boo
 }
 
 export async function deleteProductAction(productId: string): Promise<ProductActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
@@ -432,10 +434,10 @@ export interface CategoryActionState {
 }
 
 export async function createCategoryAction(formData: FormData): Promise<CategoryActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
-  const nameFa = formData.get('nameFa')?.toString().trim()
+  const nameFa = normalizeFa(formData.get('nameFa')?.toString())
   const nameEn = formData.get('nameEn')?.toString().trim() || null
   const slugFaInput = formData.get('slugFa')?.toString().trim()
   const descriptionFa = formData.get('descriptionFa')?.toString().trim() || null
@@ -523,10 +525,10 @@ export async function createCategoryAction(formData: FormData): Promise<Category
 }
 
 export async function updateCategoryAction(categoryId: string, formData: FormData): Promise<CategoryActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
-  const nameFa = formData.get('nameFa')?.toString().trim()
+  const nameFa = normalizeFa(formData.get('nameFa')?.toString())
   const nameEn = formData.get('nameEn')?.toString().trim() || null
   const descriptionFa = formData.get('descriptionFa')?.toString().trim() || null
   const descriptionEn = formData.get('descriptionEn')?.toString().trim() || null
@@ -596,7 +598,7 @@ export async function updateCategoryAction(categoryId: string, formData: FormDat
 }
 
 export async function toggleCategoryActiveAction(categoryId: string, isActive: boolean): Promise<CategoryActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
@@ -624,7 +626,7 @@ export async function toggleCategoryActiveAction(categoryId: string, isActive: b
 }
 
 export async function deleteCategoryAction(categoryId: string): Promise<CategoryActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {

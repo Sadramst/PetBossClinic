@@ -20,10 +20,10 @@ describe('Server-Side requireAdmin Guard (lib/auth/guard.ts)', () => {
     await expect(requireAdmin('VIEWER', 'fa')).rejects.toThrow('NEXT_REDIRECT:/admin/login')
   })
 
-  it('redirects unauthenticated English requests to /en/admin/login', async () => {
+  it('always redirects to the Farsi login (English locale retired)', async () => {
     vi.spyOn(authModule, 'getSession').mockResolvedValue(null)
 
-    await expect(requireAdmin('VIEWER', 'en')).rejects.toThrow('NEXT_REDIRECT:/en/admin/login')
+    await expect(requireAdmin('VIEWER', 'en')).rejects.toThrow('NEXT_REDIRECT:/admin/login')
   })
 
   it('redirects when authenticated user does not have required minimum role', async () => {

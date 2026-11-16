@@ -9,7 +9,7 @@ import { BreadcrumbJsonLd } from "@/lib/seo/json-ld";
 export const revalidate = 60;
 
 export function generateStaticParams() {
-  return [{ locale: 'fa' }, { locale: 'en' }];
+  return [{ locale: 'fa' }];
 }
 
 export async function generateMetadata({
@@ -33,16 +33,12 @@ export async function generateMetadata({
     title,
     description,
     alternates: {
-      canonical: isEn ? 'https://www.petbossclinic.com/en/about' : 'https://www.petbossclinic.com/about',
-      languages: {
-        'fa-IR': 'https://www.petbossclinic.com/about',
-        en: 'https://www.petbossclinic.com/en/about',
-      },
+      canonical: 'https://www.petbossclinic.com/about',
     },
     openGraph: {
       title,
       description,
-      url: isEn ? 'https://www.petbossclinic.com/en/about' : 'https://www.petbossclinic.com/about',
+      url: 'https://www.petbossclinic.com/about',
       images: [{ url: '/images/reception.jpg', width: 1200, height: 630 }],
     },
   };

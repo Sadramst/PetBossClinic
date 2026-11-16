@@ -1,168 +1,251 @@
 'use client';
 
-import { useTranslations, useLocale } from 'next-intl';
+import { useEffect, useState } from 'react';
 import { Link, usePathname } from '@/i18n/routing';
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { PetBossLogo } from '@/components/shared/pet-boss-logo';
 import type { NavItem } from '@/lib/navigation/menu';
+import { categoryPath } from '@/lib/shop/urls';
+import { CartIconLink } from '@/components/shop/add-to-cart';
+
+export interface HeaderCategory {
+  id: string;
+  slugFa: string;
+  nameFa: string;
+}
+
+const DEFAULT_LINKS = [
+  { href: '/services', label: 'خدمات کلینیک' },
+  { href: '/about', label: 'درباره ما' },
+  { href: '/faq', label: 'سوالات متداول' },
+  { href: '/contact', label: 'تماس با ما' },
+];
+
+const PHONE_PATH =
+  'M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.18 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.1 9.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.58 2.81.7A2 2 0 0 1 22 16.92z';
+
+/** Product search box. A plain GET form to /shop, so it works before hydration too. */
+export function SiteSearch({ id, className = '' }: { id: string; className?: string }) {
+  return (
+    <form action="/shop" method="get" role="search" className={`relative ${className}`}>
+      <label htmlFor={id} className="sr-only">
+        جستجوی محصولات
+      </label>
+      <input
+        id={id}
+        type="search"
+        name="q"
+        placeholder="جستجو در غذا، تشویقی و لوازم سگ و گربه…"
+        className="w-full h-11 rounded-2xl border border-border bg-input ps-11 pe-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+      />
+      <button
+        type="submit"
+        aria-label="جستجو"
+        className="absolute inset-y-0 start-0 w-11 flex items-center justify-center text-muted-foreground hover:text-primary"
+      >
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
+      </button>
+    </form>
+  );
+}
 
 export function Header({
   logoUrl,
   navItems,
   phone = '',
+  categories = [],
 }: {
   logoUrl?: string;
   navItems?: NavItem[];
   phone?: string;
+  categories?: HeaderCategory[];
 }) {
-  const t = useTranslations('Navigation');
-  const locale = useLocale();
   const pathname = usePathname();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const isEnglish = locale === 'en';
+  useEffect(() => setDrawerOpen(false), [pathname]);
 
-  const navLinks = navItems && navItems.length > 0
-    ? navItems.map((item) => ({
-        href: item.url,
-        label: isEnglish ? (item.labelEn || item.labelFa) : item.labelFa,
-      }))
-    : [
-        { href: '/', label: t('home') },
-        { href: '/services', label: t('services') },
-        { href: '/shop', label: t('shop') },
-        { href: '/about', label: t('about') },
-        { href: '/faq', label: t('faq') },
-        { href: '/contact', label: t('contact') },
-      ];
+  if (pathname.startsWith('/admin')) return null;
 
-  const telLink = phone ? `tel:${phone.replace(/\s+/g, '')}` : '#';
+  // Admin-managed menu; home and shop have dedicated slots in this layout.
+  const links =
+    navItems && navItems.length > 0
+      ? navItems.filter((i) => i.url !== '/' && i.url !== '/shop').map((i) => ({ href: i.url, label: i.labelFa }))
+      : DEFAULT_LINKS;
+  const telLink = phone ? `tel:${phone.replace(/\s+/g, '')}` : '/contact';
+  const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80 transition-colors duration-200">
-      <div className="container-site flex h-20 items-center justify-between">
-        {/* Crowned Lion Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <PetBossLogo size="md" variant="gold" logoUrl={logoUrl} />
-        </Link>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center gap-1">
-          {navLinks.map((link) => {
-            const isActive =
-              link.href === '/'
-                ? pathname === '/'
-                : pathname.startsWith(link.href);
-
-            if (link.href === '/shop') {
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`mx-1.5 px-4 py-2 text-sm font-bold rounded-full transition-all flex items-center gap-2 border shadow-gold ${
-                    isActive
-                      ? 'bg-gradient-gold text-charcoal-950 border-gold-300'
-                      : 'bg-primary/10 text-primary border-primary/40 hover:bg-gradient-gold hover:text-charcoal-950 hover:border-gold-300'
-                  }`}
-                >
-                  <span className="text-base">🛍️</span>
-                  <span>{link.label}</span>
-                  <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/20 text-primary group-hover:bg-charcoal-950 group-hover:text-gold-300 font-extrabold">
-                    {isEnglish ? 'Boutique' : 'ویژه'}
-                  </span>
-                </Link>
-              );
-            }
-
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`px-3.5 py-2 text-sm font-medium rounded-lg transition-all ${
-                  isActive
-                    ? 'text-primary bg-primary/10 font-semibold'
-                    : 'text-foreground/80 hover:text-primary hover:bg-surface-hover'
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Right side: Language + Emergency CTA */}
-        <div className="flex items-center gap-3">
-          {/* Language Switcher */}
-          <Link
-            href={pathname}
-            locale={isEnglish ? 'fa' : 'en'}
-            className="text-xs font-semibold px-3 py-1.5 rounded-full border border-border-gold bg-surface-card/60 text-foreground hover:border-primary hover:text-primary transition-all"
-            title="Switch Language"
-          >
-            {isEnglish ? 'فارسی' : 'English'}
-          </Link>
-
-          {/* Luxury CTA Button */}
-          <Button
-            asChild
-            className="hidden sm:inline-flex bg-gradient-gold hover:opacity-90 text-charcoal-950 font-bold rounded-full px-6 shadow-gold border border-gold-300/30 text-sm"
-          >
-            <a href={telLink} className="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-              <span>{t('callNow')}</span>
+    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85">
+      {/* Trust strip */}
+      <div className="hidden md:block border-b border-border/50 bg-background/60 text-[12px] text-muted-foreground">
+        <div className="container mx-auto max-w-7xl px-4 h-8 flex items-center justify-between">
+          <p className="flex gap-5">
+            <span>✓ ضمانت اصالت کالا</span>
+            <span>✓ تاریخ انقضای معتبر</span>
+            <span>✓ مشاوره رایگان دامپزشک</span>
+            <span>✓ ارسال سریع در تهران</span>
+          </p>
+          {phone && (
+            <a href={telLink} className="hover:text-primary" dir="ltr">
+              {phone}
             </a>
-          </Button>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-lg text-foreground hover:text-primary hover:bg-surface-hover transition-colors"
-            aria-label="Toggle Menu"
-          >
-            {mobileMenuOpen ? (
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
-            )}
-          </button>
+          )}
         </div>
       </div>
 
-      {/* Mobile Navigation Dropdown */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-border bg-surface/98 backdrop-blur px-4 py-6 space-y-3 transition-colors duration-200">
-          <nav className="flex flex-col space-y-1">
-            {navLinks.map((link) => {
-              const isActive =
-                link.href === '/'
-                  ? pathname === '/'
-                  : pathname.startsWith(link.href);
+      {/* Main row */}
+      <div className="container mx-auto max-w-7xl px-4 h-16 lg:h-20 flex items-center gap-3 lg:gap-6">
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(true)}
+          className="lg:hidden p-2 -ms-2 rounded-lg hover:bg-surface-hover"
+          aria-label="باز کردن منو"
+          aria-expanded={drawerOpen}
+        >
+          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
 
-              return (
+        <Link href="/" className="shrink-0" aria-label="پت‌باس - صفحه اصلی">
+          <PetBossLogo size="md" variant="gold" logoUrl={logoUrl} />
+        </Link>
+
+        <SiteSearch id="site-search" className="hidden md:block flex-1 max-w-2xl" />
+
+        <div className="ms-auto flex items-center gap-2">
+          <Link
+            href="/account"
+            className="p-2.5 rounded-xl border border-border hover:border-primary hover:text-primary"
+            aria-label="حساب کاربری"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21a8 8 0 0 1 16 0" />
+            </svg>
+          </Link>
+          <CartIconLink />
+          <a
+            href={telLink}
+            className="hidden sm:inline-flex items-center gap-2 h-11 px-5 rounded-2xl bg-gradient-gold text-charcoal-950 font-bold text-sm shadow-gold hover:opacity-90"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+              <path d={PHONE_PATH} />
+            </svg>
+            تماس و مشاوره
+          </a>
+          <a href={telLink} className="sm:hidden p-2.5 rounded-xl border border-primary/50 text-primary" aria-label="تماس با کلینیک">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+              <path d={PHONE_PATH} />
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      {/* Mobile search */}
+      <div className="md:hidden px-4 pb-3">
+        <SiteSearch id="site-search-mobile" />
+      </div>
+
+      {/* Desktop nav */}
+      <nav aria-label="منوی اصلی" className="hidden lg:block border-t border-border/50">
+        <div className="container mx-auto max-w-7xl px-4 h-12 flex items-center gap-1 text-sm">
+          <div className="relative group">
+            <Link
+              href="/shop"
+              className={`h-12 inline-flex items-center gap-2 px-4 font-bold ${isActive('/shop') ? 'text-primary' : 'hover:text-primary'}`}
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                <path d="M4 6h16M4 12h16M4 18h10" />
+              </svg>
+              دسته‌بندی محصولات
+            </Link>
+            {categories.length > 0 && (
+              <div className="invisible opacity-0 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 transition-opacity absolute top-full start-0 w-[560px] rounded-2xl border border-border bg-surface-card shadow-gold-lg p-5 grid grid-cols-2 gap-x-6 gap-y-1">
+                {categories.map((c) => (
+                  <Link key={c.id} href={categoryPath(c.slugFa)} className="rounded-lg px-3 py-2 hover:bg-surface-hover hover:text-primary">
+                    {c.nameFa}
+                  </Link>
+                ))}
                 <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'text-primary bg-primary/10 font-bold'
-                      : 'text-foreground hover:text-primary hover:bg-surface-hover'
-                  }`}
+                  href="/shop"
+                  className="col-span-2 mt-2 text-center rounded-lg px-3 py-2 border border-primary/40 text-primary font-bold hover:bg-primary/10"
                 >
-                  {link.label}
+                  مشاهده همه محصولات
                 </Link>
-              );
-            })}
-          </nav>
+              </div>
+            )}
+          </div>
+          <Link href="/shop?pet=cat" className="px-3 h-12 inline-flex items-center hover:text-primary">
+            محصولات گربه
+          </Link>
+          <Link href="/shop?pet=dog" className="px-3 h-12 inline-flex items-center hover:text-primary">
+            محصولات سگ
+          </Link>
+          <Link href="/blog" className={`px-3 h-12 inline-flex items-center ${isActive('/blog') ? 'text-primary font-bold' : 'hover:text-primary'}`}>
+            مجله پت‌باس
+          </Link>
+          <span className="mx-2 h-5 w-px bg-border" aria-hidden />
+          {links.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className={`px-3 h-12 inline-flex items-center ${isActive(l.href) ? 'text-primary font-bold' : 'text-foreground/85 hover:text-primary'}`}
+            >
+              {l.label}
+            </Link>
+          ))}
+        </div>
+      </nav>
 
-          <div className="pt-4 border-t border-border flex flex-col gap-3">
-            <Button asChild className="w-full bg-gradient-gold text-charcoal-950 font-bold rounded-xl shadow-gold">
-              <a href={telLink} className="flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                <span>{t('callNow')}</span>
-              </a>
-            </Button>
+      {/* Mobile drawer */}
+      {drawerOpen && (
+        <div className="lg:hidden fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="منو">
+          <button className="absolute inset-0 bg-black/60" aria-label="بستن منو" onClick={() => setDrawerOpen(false)} />
+          <div className="absolute inset-y-0 start-0 w-[85%] max-w-sm bg-surface border-e border-border overflow-y-auto p-5 space-y-6">
+            <div className="flex items-center justify-between">
+              <PetBossLogo size="sm" variant="gold" logoUrl={logoUrl} />
+              <button onClick={() => setDrawerOpen(false)} className="p-2 rounded-lg hover:bg-surface-hover" aria-label="بستن منو">
+                ✕
+              </button>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-primary mb-2">پت‌شاپ</p>
+              <ul className="space-y-1 text-sm">
+                <li>
+                  <Link href="/shop" className="block rounded-lg px-3 py-2 hover:bg-surface-hover font-bold">
+                    همه محصولات
+                  </Link>
+                </li>
+                {categories.map((c) => (
+                  <li key={c.id}>
+                    <Link href={categoryPath(c.slugFa)} className="block rounded-lg px-3 py-2 hover:bg-surface-hover">
+                      {c.nameFa}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-primary mb-2">کلینیک</p>
+              <ul className="space-y-1 text-sm">
+                <li>
+                  <Link href="/blog" className="block rounded-lg px-3 py-2 hover:bg-surface-hover">
+                    مجله پت‌باس
+                  </Link>
+                </li>
+                {links.map((l) => (
+                  <li key={l.href}>
+                    <Link href={l.href} className="block rounded-lg px-3 py-2 hover:bg-surface-hover">
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       )}

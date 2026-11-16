@@ -8,12 +8,16 @@ import { ThemeProvider } from '@/lib/theme';
 import { getActiveClinicTheme } from '@/lib/theme/theme-server';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-import { FloatingShopButton } from '@/components/shared/floating-shop-button';
-import { FloatingWhatsAppButton } from '@/components/shared/floating-whatsapp-button';
+import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
+import { CartProvider } from '@/components/shop/cart-provider';
+import { HideOnAdmin } from '@/components/layout/hide-on-admin';
+import { getNavCatalog } from '@/lib/shop/catalog';
 import { getClinicNAP } from '@/lib/clinic/nap';
 import { getSitePictures } from '@/lib/media';
 import { getNavigationMenu } from '@/lib/navigation/menu';
 import { OrganizationJsonLd, WebSiteJsonLd } from '@/lib/seo/json-ld';
+import { getSeoConfig, isValidGa4Id } from '@/lib/seo/settings';
+import Script from 'next/script';
 
 const outfit = Outfit({
   subsets: ['latin'],
@@ -28,7 +32,7 @@ const vazirmatn = Vazirmatn({
 });
 
 export function generateStaticParams() {
-  return [{ locale: 'fa' }, { locale: 'en' }];
+  return [{ locale: 'fa' }];
 }
 
 export async function generateMetadata({
@@ -39,7 +43,7 @@ export async function generateMetadata({
   const { locale } = await params;
   setRequestLocale(locale);
   const isEn = locale === 'en';
-  const nap = await getClinicNAP();
+  const [nap, seo] = await Promise.all([getClinicNAP(), getSeoConfig()]);
 
   const title = isEn
     ? 'Pet Boss Clinic & Pet Shop | Premier Veterinary & Pet Boutique in Tehran'
@@ -63,18 +67,12 @@ export async function generateMetadata({
     creator: 'Pet Boss Clinic',
     publisher: 'Pet Boss Clinic',
     alternates: {
-      canonical: isEn ? 'https://www.petbossclinic.com/en' : 'https://www.petbossclinic.com',
-      languages: {
-        'fa-IR': 'https://www.petbossclinic.com',
-        en: 'https://www.petbossclinic.com/en',
-        'x-default': 'https://www.petbossclinic.com',
-      },
+      canonical: 'https://www.petbossclinic.com',
     },
     openGraph: {
       type: 'website',
       locale: isEn ? 'en_US' : 'fa_IR',
-      alternateLocale: isEn ? 'fa_IR' : 'en_US',
-      url: isEn ? 'https://www.petbossclinic.com/en' : 'https://www.petbossclinic.com',
+      url: 'https://www.petbossclinic.com',
       siteName: isEn ? 'Pet Boss Clinic & Pet Shop' : 'کلینیک و پت شاپ پت باس',
       title,
       description,
@@ -115,8 +113,8 @@ export async function generateMetadata({
       shortcut: '/favicon.ico',
     },
     verification: {
-      // Add your Google Search Console verification code here after setup
-      // google: 'YOUR_GOOGLE_VERIFICATION_CODE',
+      ...(seo.gscVerification && { google: seo.gscVerification }),
+      ...(seo.bingVerification && { other: { 'msvalidate.01': seo.bingVerification } }),
     },
   };
 }
@@ -141,10 +139,12 @@ export default async function LocaleLayout({
   const initialTheme = await getActiveClinicTheme();
 
   const fontClass = locale === 'fa' ? vazirmatn.className : outfit.className;
-  const [nap, sitePictures, navItems] = await Promise.all([
+  const [seo, nap, sitePictures, navItems, navCatalog] = await Promise.all([
+    getSeoConfig(),
     getClinicNAP(),
     getSitePictures(),
     getNavigationMenu('main-header'),
+    getNavCatalog(),
   ]);
 
   return (
@@ -160,13 +160,36 @@ export default async function LocaleLayout({
       <body
         className={`${fontClass} antialiased bg-background text-foreground min-h-screen flex flex-col selection:bg-primary selection:text-primary-foreground`}
       >
+        {seo.ga4Id && isValidGa4Id(seo.ga4Id) && (
+          <>
+            <Script src={`https://www.googletagmanager.com/gtag/js?id=${seo.ga4Id}`} strategy="afterInteractive" />
+            <Script id="ga4-init" strategy="afterInteractive">
+              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${seo.ga4Id}');`}
+            </Script>
+          </>
+        )}
         <ThemeProvider initialTheme={initialTheme}>
           <NextIntlClientProvider messages={messages}>
-            <Header logoUrl={sitePictures.site_logo} navItems={navItems} phone={nap.phone} />
+            <CartProvider>
+            <Header
+              logoUrl={sitePictures.site_logo}
+              navItems={navItems}
+              phone={nap.phone}
+              categories={navCatalog.categories}
+            />
             <main className="flex-grow">{children}</main>
-            <FloatingShopButton />
-            <FloatingWhatsAppButton whatsappNumber={nap.whatsappNumber} />
-            <Footer nap={nap} logoUrl={sitePictures.site_logo} navItems={navItems} />
+            <HideOnAdmin>
+              <Footer
+                nap={nap}
+                logoUrl={sitePictures.site_logo}
+                navItems={navItems}
+                categories={navCatalog.categories}
+                brands={navCatalog.brands}
+                enamad={seo.enamad}
+              />
+            </HideOnAdmin>
+            <MobileBottomNav phone={nap.phone} />
+            </CartProvider>
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

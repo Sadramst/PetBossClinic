@@ -30,6 +30,10 @@ const sidebarSections = [
     labelKey: 'shopSection',
     items: [
       { key: 'products', href: '/admin/products', icon: '📦' },
+      { key: 'orders', href: '/admin/orders', icon: '🧾' },
+      { key: 'inventory', href: '/admin/inventory', icon: '⏳' },
+      { key: 'customers', href: '/admin/customers', icon: '👥' },
+      { key: 'posts', href: '/admin/posts', icon: '📰' },
     ],
   },
   {
@@ -57,7 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = async () => {
     const res = await logoutAction(locale);
-    window.location.href = res?.redirectUrl || (isEn ? '/en/admin/login' : '/admin/login');
+    window.location.href = res?.redirectUrl || '/admin/login';
   };
 
   // If viewing the login page, render full screen without sidebar
@@ -145,14 +149,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </span>
           </div>
           <div className="flex items-center gap-4">
-            {/* Language switch button in admin */}
-            <Link
-              href={pathname}
-              locale={isEn ? 'fa' : 'en'}
-              className="text-xs px-2.5 py-1 rounded-full border border-border bg-surface-elevated text-foreground hover:text-primary transition-colors font-medium"
-            >
-              {isEn ? 'فارسی' : 'English'}
-            </Link>
+
             <Link
               href="/admin/theme"
               className="text-xs px-3 py-1.5 rounded-full border border-border-gold text-foreground hover:bg-surface-elevated transition-colors flex items-center gap-1.5"

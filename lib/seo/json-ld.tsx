@@ -10,13 +10,21 @@ const BASE_URL = 'https://www.petbossclinic.com';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
-function JsonLdScript({ data }: { data: Record<string, unknown> }) {
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
-    />
-  );
+/**
+ * JSON for embedding inside <script>. JSON.stringify does not escape "<", so a
+ * product name like "</script><script>…" would otherwise break out of the tag.
+ */
+export function safeJsonLd(data: unknown): string {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+export function JsonLdScript({ data }: { data: Record<string, unknown> | Record<string, unknown>[] }) {
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(data) }} />;
 }
 
 // ─── VeterinaryCare (LocalBusiness) ──────────────────────────────────────────
@@ -50,7 +58,6 @@ export function VeterinaryCareJsonLd({ nap, locale }: VeterinaryCareSchemaProps)
       addressLocality: isEn ? 'Tehran' : 'تهران',
       addressRegion: isEn ? 'Tehran' : 'تهران',
       addressCountry: 'IR',
-      postalCode: '',
     },
     geo: {
       '@type': 'GeoCoordinates',
@@ -167,7 +174,8 @@ interface BreadcrumbSchemaProps {
 }
 
 export function BreadcrumbJsonLd({ items, locale }: BreadcrumbSchemaProps) {
-  const prefix = locale === 'en' ? '/en' : '';
+  void locale;
+  const prefix = '';
 
   const data = {
     '@context': 'https://schema.org',
@@ -263,4 +271,75 @@ export function ServiceJsonLd({ services, providerName, locale }: ServiceSchemaP
       ))}
     </>
   );
+}
+
+// ─── Product ─────────────────────────────────────────────────────────────────
+
+const AVAILABILITY: Record<string, string> = {
+  IN_STOCK: 'https://schema.org/InStock',
+  LOW_STOCK: 'https://schema.org/LimitedAvailability',
+  ON_BACKORDER: 'https://schema.org/BackOrder',
+  OUT_OF_STOCK: 'https://schema.org/OutOfStock',
+};
+
+export interface ProductSchemaInput {
+  name: string;
+  description: string;
+  url: string;
+  images: string[];
+  sku?: string | null;
+  barcode?: string | null;
+  brand?: string | null;
+  category?: string | null;
+  /** Price in Toman. 0 / null means "call for price" (no Offer price is emitted). */
+  price?: number | null;
+  stockStatus: string;
+  /** ISO date until which the price is valid (Google recommends it). */
+  priceValidUntil?: string;
+}
+
+export function ProductJsonLd({ product }: { product: ProductSchemaInput }) {
+  const hasPrice = !!product.price && product.price > 0;
+  const gtin = product.barcode && /^\d{8,14}$/.test(product.barcode) ? product.barcode : undefined;
+
+  const data: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    '@id': `${product.url}#product`,
+    name: product.name,
+    description: product.description,
+    url: product.url,
+    image: product.images,
+    ...(product.sku && { sku: product.sku }),
+    ...(gtin && { gtin }),
+    ...(product.brand && { brand: { '@type': 'Brand', name: product.brand } }),
+    ...(product.category && { category: product.category }),
+    offers: {
+      '@type': 'Offer',
+      url: product.url,
+      priceCurrency: 'IRR',
+      ...(hasPrice && { price: product.price! * 10 }), // Toman -> Rial
+      ...(hasPrice && product.priceValidUntil && { priceValidUntil: product.priceValidUntil }),
+      availability: AVAILABILITY[product.stockStatus] ?? AVAILABILITY.OUT_OF_STOCK,
+      itemCondition: 'https://schema.org/NewCondition',
+      seller: { '@id': `${BASE_URL}/#organization` },
+      areaServed: { '@type': 'Country', name: 'IR' },
+    },
+  };
+
+  return <JsonLdScript data={data} />;
+}
+
+// ─── ItemList (category / listing pages) ─────────────────────────────────────
+
+export function ItemListJsonLd({ name, urls }: { name: string; urls: string[] }) {
+  if (urls.length === 0) return null;
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name,
+    numberOfItems: urls.length,
+    itemListElement: urls.map((url, i) => ({ '@type': 'ListItem', position: i + 1, url })),
+  };
+  return <JsonLdScript data={data} />;
 }

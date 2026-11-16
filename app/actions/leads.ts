@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { getSessionWithRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { createLeadSchema } from '@/lib/validation/lead'
@@ -148,7 +148,7 @@ export async function createLeadAction(
  * Admin action to update status of a lead. Requires authenticated session.
  */
 export async function updateLeadStatusAction(leadId: string, status: string): Promise<LeadActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
@@ -169,7 +169,7 @@ export async function updateLeadStatusAction(leadId: string, status: string): Pr
  * Admin action to delete a lead. Requires authenticated session.
  */
 export async function deleteLeadAction(leadId: string): Promise<LeadActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
