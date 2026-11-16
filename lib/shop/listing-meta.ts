@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { absoluteUrl } from '@/lib/seo/site';
+import { pageMetadata } from '@/lib/seo/metadata';
 import { isFilteredView, type ShopFilters } from '@/lib/shop/filters';
 
 /**
@@ -18,22 +18,18 @@ export function listingMetadata(opts: {
 }): Metadata {
   const { filters } = opts;
   const pageSuffix = filters.page > 1 ? ` - صفحه ${filters.page.toLocaleString('fa-IR')}` : '';
-  const url = absoluteUrl(filters.page > 1 ? `${opts.basePath}?page=${filters.page}` : opts.basePath);
+  const path = filters.page > 1 ? `${opts.basePath}?page=${filters.page}` : opts.basePath;
   const filtered = isFilteredView(filters);
   const title = filters.q ? `نتایج جستجوی «${filters.q}»` : `${opts.title}${pageSuffix}`;
 
-  return {
-    title: { absolute: `${title} | پت‌شاپ پت‌باس` },
+  return pageMetadata({
+    title,
     description: opts.description,
-    alternates: { canonical: !filtered && filters.page === 1 && opts.canonicalOverride ? opts.canonicalOverride : url },
-    robots: filtered || opts.noindex ? { index: false, follow: true } : undefined,
-    openGraph: {
-      type: 'website',
-      locale: 'fa_IR',
-      url,
-      title,
-      description: opts.description,
-      ...(opts.image && !opts.image.startsWith('data:') && { images: [{ url: absoluteUrl(opts.image) }] }),
-    },
-  };
+    path,
+    image: opts.image,
+    // A custom canonical only applies to the clean, unfiltered first page.
+    canonical: !filtered && filters.page === 1 ? opts.canonicalOverride : undefined,
+    noindex: filtered || opts.noindex,
+    follow: true,
+  });
 }

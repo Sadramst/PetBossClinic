@@ -5,11 +5,12 @@ import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
 import { Breadcrumbs } from '@/components/shop/breadcrumbs';
 import { ProductCard } from '@/components/shop/product-card';
-import { JsonLdScript } from '@/lib/seo/json-ld';
+import { ArticleJsonLd } from '@/lib/seo/json-ld';
 import { ArticleBody, articleHeadings, readingMinutes } from '@/lib/blog/render';
 import { getPublishedPost, postPath } from '@/lib/blog/posts';
 import { getListing } from '@/lib/shop/catalog';
 import { parseShopFilters } from '@/lib/shop/filters';
+import { pageMetadata, postSeoTitle } from '@/lib/seo/metadata';
 import { absoluteUrl } from '@/lib/seo/site';
 import { formatJalaliDate } from '@/lib/shop/expiry';
 import { decodeSlug } from '@/lib/shop/urls';
@@ -26,27 +27,33 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const post = await getPublishedPost(decodeSlug(slug));
-  if (!post) return { title: 'مقاله یافت نشد', robots: { index: false } };
-  const url = absoluteUrl(postPath(post.slugFa));
-  const title = post.metaTitleFa || post.titleFa;
-  const description = post.metaDescriptionFa || post.excerptFa || undefined;
-  const image = post.ogImageId || post.imageId;
-  return {
-    title: { absolute: `${title} | مجله پت‌باس` },
+  if (!post) return { title: 'مقاله یافت نشد', robots: { index: false, follow: false } };
+
+  const image =
+    post.ogImageId && !post.ogImageId.startsWith('data:')
+      ? post.ogImageId
+      : post.imageId && !post.imageId.startsWith('data:')
+        ? post.imageId
+        : '/images/petboss-sign.jpg';
+
+  const description =
+    post.metaDescriptionFa ||
+    post.excerptFa ||
+    `${post.titleFa}؛ مقاله‌ای از مجله پت‌باس درباره تغذیه، سلامت و نگهداری سگ و گربه.`;
+
+  return pageMetadata({
+    title: post.metaTitleFa || postSeoTitle(post.titleFa),
     description,
-    alternates: { canonical: post.canonicalUrl || url },
-    robots: post.noindex ? { index: false, follow: true } : undefined,
-    openGraph: {
-      type: 'article',
-      locale: 'fa_IR',
-      url,
-      title,
-      description,
-      publishedTime: post.publishedAt?.toISOString(),
-      modifiedTime: post.updatedAt.toISOString(),
-      ...(image && !image.startsWith('data:') && { images: [{ url: absoluteUrl(image) }] }),
-    },
-  };
+    path: postPath(post.slugFa),
+    canonical: post.canonicalUrl,
+    image,
+    imageAlt: post.titleFa,
+    type: 'article',
+    publishedTime: post.publishedAt?.toISOString(),
+    modifiedTime: post.updatedAt.toISOString(),
+    noindex: post.noindex,
+    keywords: [post.focusKeyword, post.category.nameFa, 'سگ', 'گربه'].filter((v): v is string => !!v),
+  });
 }
 
 export default async function BlogPostPage({ params }: { params: Params }) {
@@ -59,31 +66,30 @@ export default async function BlogPostPage({ params }: { params: Params }) {
   const toc = articleHeadings(content);
   const url = absoluteUrl(postPath(post.slugFa));
   const image = post.imageId && !post.imageId.startsWith('data:') ? post.imageId : null;
+  const socialImage =
+    (post.ogImageId && !post.ogImageId.startsWith('data:') ? post.ogImageId : null) ??
+    image ??
+    '/images/petboss-sign.jpg';
   // Products related to the article's focus keyword, e.g. "غذای خشک گربه".
   const related = post.focusKeyword
     ? (await getListing(parseShopFilters({ q: post.focusKeyword, stock: '1' }))).products.slice(0, 4)
     : [];
 
-  const articleJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: post.titleFa,
-    description: post.excerptFa ?? undefined,
-    mainEntityOfPage: url,
-    url,
-    inLanguage: 'fa-IR',
-    datePublished: post.publishedAt?.toISOString(),
-    dateModified: post.updatedAt.toISOString(),
-    ...(image && { image: [absoluteUrl(image)] }),
-    author: post.author
-      ? { '@type': 'Person', name: post.author.nameFa }
-      : { '@type': 'Organization', name: 'کلینیک دامپزشکی پت‌باس', url: absoluteUrl('/') },
-    publisher: { '@id': absoluteUrl('/#organization') },
-  };
-
   return (
     <div className="container mx-auto max-w-6xl px-4 py-6 sm:py-10">
-      <JsonLdScript data={articleJsonLd} />
+      <ArticleJsonLd
+        article={{
+          title: post.titleFa,
+          description: post.excerptFa,
+          url,
+          images: [absoluteUrl(socialImage)],
+          publishedAt: post.publishedAt?.toISOString(),
+          modifiedAt: post.updatedAt.toISOString(),
+          authorName: post.author?.nameFa,
+          section: post.category.nameFa,
+          keywords: [post.focusKeyword, post.category.nameFa].filter((v): v is string => !!v).join(', '),
+        }}
+      />
       <Breadcrumbs
         items={[
           { name: 'خانه', href: '/' },

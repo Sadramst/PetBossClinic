@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { getSitePictures } from "@/lib/media";
 import { BreadcrumbJsonLd, ServiceJsonLd } from '@/lib/seo/json-ld';
+import { pageMetadata } from '@/lib/seo/metadata';
 import { formatServicePrice } from "@/lib/format/price";
 import { getClinicNAP } from "@/lib/clinic/nap";
 
@@ -23,29 +24,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isEn = locale === 'en';
 
-  const title = isEn
-    ? 'Veterinary Services & Pricing'
-    : 'خدمات و تعرفه‌های دامپزشکی | واکسیناسیون، جراحی، گرومینگ قیطریه تهران';
-
-  const description = isEn
-    ? 'Complete veterinary services: vaccination, surgery, orthopedics, dental care, grooming & parasite therapy at Pet Boss Clinic, Gheitariyeh Tehran.'
-    : 'خدمات جامع دامپزشکی پت باس: واکسیناسیون سگ و گربه، جراحی بافت نرم، ارتوپدی، دندانپزشکی، گرومینگ حرفه‌ای و انگل‌درمانی در قیطریه تهران.';
-
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: 'https://www.petbossclinic.com/services',
-    },
-    openGraph: {
-      title,
-      description,
-      url: 'https://www.petbossclinic.com/services',
-      images: [{ url: '/images/veterinarian.jpg', width: 1200, height: 630 }],
-    },
-  };
+  return pageMetadata({
+    title: 'خدمات دامپزشکی پت‌باس | واکسیناسیون، جراحی و گرومینگ',
+    description:
+      'واکسیناسیون، جراحی، ارتوپدی، دندانپزشکی و گرومینگ سگ و گربه زیر نظر دامپزشکان پت‌باس در قیطریه تهران؛ همراه با تعرفه‌ها و نوبت‌دهی.',
+    path: '/services',
+    image: '/images/veterinarian.jpg',
+    keywords: ['واکسیناسیون سگ و گربه', 'جراحی دامپزشکی تهران', 'گرومینگ قیطریه', 'تعرفه دامپزشکی'],
+  });
 }
 
 export default async function ServicesPage({

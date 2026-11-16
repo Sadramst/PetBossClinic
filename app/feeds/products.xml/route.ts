@@ -11,7 +11,7 @@ export async function GET() {
   const rest = await Promise.all(
     Array.from({ length: first.maxPages - 1 }, (_, i) => feedProducts({ page: i + 2 }))
   );
-  const rows = [first, ...rest].flatMap((r) => r.rows);
+  const rows = [first, ...rest].flatMap((r) => r.rows).filter((p) => p.price > 0);
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">

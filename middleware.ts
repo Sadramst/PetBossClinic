@@ -44,7 +44,16 @@ export default async function middleware(request: NextRequest) {
 
   const response = intlMiddleware(request);
 
+  // The whole public site is Persian; tell crawlers and browsers explicitly.
+  response.headers.set('Content-Language', 'fa-IR');
+
   if (isAdminRoute) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  }
+
+  // Private customer areas are noindexed in their layout too, but the header
+  // also covers error/redirect responses where page metadata never renders.
+  if (/^\/(account|cart|checkout)(\/|$)/.test(pathname)) {
     response.headers.set('X-Robots-Tag', 'noindex, nofollow');
   }
 

@@ -11,19 +11,30 @@ test.describe('Indexable shop pages', () => {
 
     const productLink = page.locator('article a[href^="/product/"]').first()
     await expect(productLink).toBeVisible()
+
+    // Clicking before hydration triggers a full document navigation, which some
+    // headless builds abort; wait for React to own the link, then use the router.
+    await page.waitForFunction(() => {
+      const el = document.querySelector('article a[href^="/product/"]')
+      return !!el && Object.keys(el).some((k) => k.startsWith('__reactProps'))
+    })
     await productLink.click()
-    await expect(page).toHaveURL(/\/product\//)
+    await expect(page).toHaveURL(/\/product\//, { timeout: 20000 })
     await expect(page.locator('h1')).toBeVisible()
 
-    // Check head tags on a fresh load (during client-side navigation Next.js briefly
-    // keeps the previous page's tags, which is not what crawlers receive).
-    await page.goto(page.url())
+    // Client-side navigation updates the head asynchronously; wait for this
+    // page's canonical instead of reloading (a reload can race hydration).
+    await expect(page.locator('link[rel="canonical"]').last()).toHaveAttribute(
+      'href',
+      /^https:\/\/www\.petbossclinic\.com\/product\//,
+      { timeout: 20000 }
+    )
     const schemas = await page.locator('script[type="application/ld+json"]').allTextContents()
     const product = schemas.map((s) => JSON.parse(s)).find((j) => j['@type'] === 'Product')
     expect(product).toBeTruthy()
     expect(product.offers.priceCurrency).toBe('IRR')
 
-    const canonical = await page.locator('link[rel="canonical"]').getAttribute('href')
+    const canonical = await page.locator('link[rel="canonical"]').last().getAttribute('href')
     expect(canonical).toMatch(/^https:\/\/www\.petbossclinic\.com\/product\//)
   })
 

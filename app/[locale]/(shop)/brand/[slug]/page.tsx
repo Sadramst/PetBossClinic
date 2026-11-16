@@ -6,6 +6,7 @@ import { getActiveBrands, getActiveCategories, getBrandBySlug, getListing } from
 import { parseShopFilters } from '@/lib/shop/filters';
 import { listingMetadata } from '@/lib/shop/listing-meta';
 import { brandPath, decodeSlug } from '@/lib/shop/urls';
+import { brandSeoTitle } from '@/lib/seo/metadata';
 
 type Params = Promise<{ locale: string; slug: string }>;
 type Search = Promise<Record<string, string | string[] | undefined>>;
@@ -20,13 +21,16 @@ export async function generateMetadata({ params, searchParams }: { params: Param
   const brand = await getBrandBySlug(decodeSlug(slug));
   if (!brand) return { title: 'برند یافت نشد', robots: { index: false } };
 
+  const description =
+    brand.descriptionFa ||
+    `خرید محصولات اصل ${brandTitle(brand)} برای سگ و گربه از پت‌شاپ کلینیک دامپزشکی پت‌باس تهران؛ ضمانت اصالت، تاریخ انقضای معتبر و مشاوره رایگان دامپزشک.`;
+
   return listingMetadata({
     basePath: brandPath(brand.slugFa),
     filters: parseShopFilters(await searchParams),
-    title: `خرید محصولات ${brandTitle(brand)} | قیمت و اصالت کالا`,
-    description:
-      brand.descriptionFa ||
-      `خرید محصولات اصل ${brandTitle(brand)} برای سگ و گربه از پت‌شاپ کلینیک دامپزشکی پت‌باس تهران؛ ضمانت اصالت، تاریخ انقضای معتبر و مشاوره رایگان دامپزشک.`,
+    title: brandSeoTitle(brandTitle(brand)),
+    description,
+    image: brand.logoId,
   });
 }
 

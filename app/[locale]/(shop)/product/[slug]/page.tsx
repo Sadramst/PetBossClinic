@@ -7,6 +7,7 @@ import { Breadcrumbs } from '@/components/shop/breadcrumbs';
 import { ProductCard } from '@/components/shop/product-card';
 import { AddToCart } from '@/components/shop/add-to-cart';
 import { ProductJsonLd } from '@/lib/seo/json-ld';
+import { pageMetadata, productSeoTitle } from '@/lib/seo/metadata';
 import { absoluteUrl } from '@/lib/seo/site';
 import { getClinicNAP } from '@/lib/clinic/nap';
 import { formatPrice } from '@/lib/format/price';
@@ -23,41 +24,36 @@ export function generateStaticParams() {
 
 type Params = Promise<{ locale: string; slug: string }>;
 
-function seoTitle(name: string) {
-  return `خرید ${name} | قیمت و مشخصات`;
-}
-
 function seoDescription(p: { nameFa: string; shortDescFa: string | null; price: number; category: { nameFa: string } }) {
   const price = p.price > 0 ? ` با قیمت ${formatPrice(p.price, 'fa')}` : '';
   const base = p.shortDescFa && p.shortDescFa.length > 40 ? `${p.shortDescFa} ` : '';
-  return `${base}خرید ${p.nameFa}${price} از پت‌شاپ کلینیک دامپزشکی پت‌باس؛ اصالت کالا، تاریخ انقضای معتبر و ارسال سریع در تهران. دسته ${p.category.nameFa}.`.slice(0, 300);
+  return `${base}خرید ${p.nameFa}${price} از پت‌شاپ کلینیک دامپزشکی پت‌باس؛ اصالت کالا، تاریخ انقضای معتبر و ارسال سریع در تهران. دسته ${p.category.nameFa}.`;
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { locale, slug } = await params;
   setRequestLocale(locale);
   const product = await getProductBySlug(decodeSlug(slug));
-  if (!product) return { title: 'محصول یافت نشد', robots: { index: false } };
+  if (!product) return { title: 'محصول یافت نشد', robots: { index: false, follow: false } };
 
-  const url = absoluteUrl(productPath(product.slugFa));
-  const title = product.metaTitleFa || seoTitle(product.nameFa);
-  const description = product.metaDescriptionFa || seoDescription(product);
   const image = absoluteUrl(productImage(product));
 
-  return {
-    title: { absolute: `${title} | پت‌شاپ پت‌باس` },
-    description,
-    alternates: { canonical: product.canonicalUrl || url },
-    robots: product.noindex ? { index: false, follow: true } : undefined,
-    openGraph: {
-      type: 'website',
-      locale: 'fa_IR',
-      url,
-      title,
-      description,
-      images: [{ url: image, alt: product.nameFa }],
-    },
-  };
+  return pageMetadata({
+    title: product.metaTitleFa || productSeoTitle(product.nameFa),
+    description: product.metaDescriptionFa || seoDescription(product),
+    path: productPath(product.slugFa),
+    canonical: product.canonicalUrl,
+    image,
+    imageAlt: product.nameFa,
+    noindex: product.noindex,
+    keywords: [
+      product.nameFa,
+      product.category.nameFa,
+      ...(product.brand ? [product.brand.nameFa] : []),
+      'خرید',
+      'قیمت',
+    ],
+  });
 }
 
 export default async function ProductPage({ params }: { params: Params }) {
@@ -125,6 +121,8 @@ export default async function ProductPage({ params }: { params: Params }) {
           price: product.price,
           stockStatus,
           priceValidUntil,
+          weight: product.weight,
+          attributes: product.attributes.map((a) => ({ name: a.nameFa, value: a.valueFa })),
         }}
       />
 

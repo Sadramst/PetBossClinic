@@ -5,8 +5,9 @@
  */
 
 import type { ClinicNAP } from '@/lib/clinic/nap';
+import { SITE_LOGO, SITE_NAME_LONG_FA, SITE_URL, absoluteUrl } from '@/lib/seo/site';
 
-const BASE_URL = 'https://www.petbossclinic.com';
+const BASE_URL = SITE_URL;
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
@@ -27,6 +28,19 @@ export function JsonLdScript({ data }: { data: Record<string, unknown> | Record<
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(data) }} />;
 }
 
+const postalAddress = (nap: ClinicNAP) => ({
+  '@type': 'PostalAddress',
+  streetAddress: nap.addressFa,
+  addressLocality: 'تهران',
+  addressRegion: 'تهران',
+  addressCountry: 'IR',
+});
+
+const sameAs = (nap: ClinicNAP) =>
+  [nap.instagramUrl, nap.telegramUrl, `https://maps.google.com/?q=${nap.geo.lat},${nap.geo.lng}`].filter(
+    (v): v is string => !!v
+  );
+
 // ─── VeterinaryCare (LocalBusiness) ──────────────────────────────────────────
 
 interface VeterinaryCareSchemaProps {
@@ -43,22 +57,18 @@ export function VeterinaryCareJsonLd({ nap, locale }: VeterinaryCareSchemaProps)
     '@id': `${BASE_URL}/#veterinary`,
     name: isEn ? nap.nameEn : nap.nameFa,
     alternateName: isEn ? nap.nameFa : nap.nameEn,
-    url: BASE_URL,
+    url: `${BASE_URL}/`,
     telephone: nap.phone,
     email: nap.email,
     priceRange: '$$',
+    currenciesAccepted: 'IRR',
+    paymentAccepted: isEn ? 'Cash, credit card, online payment' : 'نقدی، کارت بانکی، پرداخت آنلاین',
     image: `${BASE_URL}/images/petboss-sign.jpg`,
-    logo: `${BASE_URL}/images/logo.png`,
+    logo: `${BASE_URL}${SITE_LOGO}`,
     description: isEn
       ? 'Premier veterinary surgery, dental clinic, grooming salon & luxury pet boutique in Gheitariyeh, Tehran. Open every day 10AM–10PM.'
       : 'کلینیک تخصصی جراحی، دندانپزشکی، گرومینگ حرفه‌ای و پت شاپ لوکس پت باس در قیطریه تهران. همه روزه ۱۰ صبح الی ۲۲ شب.',
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: isEn ? nap.addressEn : nap.addressFa,
-      addressLocality: isEn ? 'Tehran' : 'تهران',
-      addressRegion: isEn ? 'Tehran' : 'تهران',
-      addressCountry: 'IR',
-    },
+    address: postalAddress(nap),
     geo: {
       '@type': 'GeoCoordinates',
       latitude: nap.geo.lat,
@@ -73,10 +83,7 @@ export function VeterinaryCareJsonLd({ nap, locale }: VeterinaryCareSchemaProps)
         closes: '22:00',
       },
     ],
-    sameAs: [
-      nap.instagramUrl,
-      nap.telegramUrl,
-    ].filter(Boolean),
+    sameAs: sameAs(nap),
     areaServed: {
       '@type': 'GeoCircle',
       geoMidpoint: {
@@ -121,25 +128,28 @@ export function OrganizationJsonLd({ nap }: OrganizationSchemaProps) {
     '@type': 'Organization',
     '@id': `${BASE_URL}/#organization`,
     name: 'Pet Boss Clinic',
-    alternateName: 'کلینیک دامپزشکی پت باس',
-    url: BASE_URL,
+    alternateName: SITE_NAME_LONG_FA,
+    url: `${BASE_URL}/`,
     logo: {
       '@type': 'ImageObject',
-      url: `${BASE_URL}/images/logo.png`,
+      url: `${BASE_URL}${SITE_LOGO}`,
       width: 512,
       height: 512,
     },
+    image: `${BASE_URL}/images/petboss-sign.jpg`,
+    telephone: nap.phone,
+    email: nap.email,
+    address: postalAddress(nap),
+    areaServed: { '@type': 'Country', name: 'IR' },
     contactPoint: {
       '@type': 'ContactPoint',
       telephone: nap.phone,
+      email: nap.email,
       contactType: 'customer service',
-      availableLanguage: ['Persian', 'English'],
+      availableLanguage: ['fa-IR', 'en'],
       areaServed: 'IR',
     },
-    sameAs: [
-      nap.instagramUrl,
-      nap.telegramUrl,
-    ].filter(Boolean),
+    sameAs: sameAs(nap),
   };
 
   return <JsonLdScript data={data} />;
@@ -154,8 +164,17 @@ export function WebSiteJsonLd() {
     '@id': `${BASE_URL}/#website`,
     name: 'Pet Boss Clinic',
     alternateName: 'کلینیک دامپزشکی و پت شاپ پت باس',
-    url: BASE_URL,
-    inLanguage: ['fa-IR', 'en'],
+    url: `${BASE_URL}/`,
+    inLanguage: 'fa-IR',
+    publisher: { '@id': `${BASE_URL}/#organization` },
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${BASE_URL}/shop?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
   };
 
   return <JsonLdScript data={data} />;
@@ -175,7 +194,6 @@ interface BreadcrumbSchemaProps {
 
 export function BreadcrumbJsonLd({ items, locale }: BreadcrumbSchemaProps) {
   void locale;
-  const prefix = '';
 
   const data = {
     '@context': 'https://schema.org',
@@ -184,7 +202,7 @@ export function BreadcrumbJsonLd({ items, locale }: BreadcrumbSchemaProps) {
       '@type': 'ListItem',
       position: index + 1,
       name: item.name,
-      item: `${BASE_URL}${prefix}${item.href === '/' ? (prefix ? '' : '/') : item.href}`,
+      item: absoluteUrl(item.href),
     })),
   };
 
@@ -255,10 +273,11 @@ export function ServiceJsonLd({ services, providerName, locale }: ServiceSchemaP
     },
     ...(svc.priceFrom && {
       offers: {
-        '@type': 'Offer',
+        '@type': 'AggregateOffer',
         priceCurrency: 'IRR',
-        price: svc.priceFrom * 10, // Toman to Rial
-        ...(svc.priceTo && { highPrice: svc.priceTo * 10 }),
+        lowPrice: svc.priceFrom * 10, // Toman to Rial
+        ...(svc.priceTo && svc.priceTo > svc.priceFrom && { highPrice: svc.priceTo * 10 }),
+        offerCount: 1,
         availability: 'https://schema.org/InStock',
       },
     }),
@@ -296,6 +315,9 @@ export interface ProductSchemaInput {
   stockStatus: string;
   /** ISO date until which the price is valid (Google recommends it). */
   priceValidUntil?: string;
+  /** Weight in kilograms. */
+  weight?: number | null;
+  attributes?: Array<{ name: string; value: string }>;
 }
 
 export function ProductJsonLd({ product }: { product: ProductSchemaInput }) {
@@ -310,10 +332,20 @@ export function ProductJsonLd({ product }: { product: ProductSchemaInput }) {
     description: product.description,
     url: product.url,
     image: product.images,
-    ...(product.sku && { sku: product.sku }),
+    ...(product.sku && { sku: product.sku, mpn: product.sku }),
     ...(gtin && { gtin }),
     ...(product.brand && { brand: { '@type': 'Brand', name: product.brand } }),
     ...(product.category && { category: product.category }),
+    ...(product.weight && product.weight > 0 && {
+      weight: { '@type': 'QuantitativeValue', value: product.weight, unitCode: 'KGM' },
+    }),
+    ...(product.attributes?.length && {
+      additionalProperty: product.attributes.map((a) => ({
+        '@type': 'PropertyValue',
+        name: a.name,
+        value: a.value,
+      })),
+    }),
     offers: {
       '@type': 'Offer',
       url: product.url,
@@ -324,6 +356,53 @@ export function ProductJsonLd({ product }: { product: ProductSchemaInput }) {
       itemCondition: 'https://schema.org/NewCondition',
       seller: { '@id': `${BASE_URL}/#organization` },
       areaServed: { '@type': 'Country', name: 'IR' },
+    },
+  };
+
+  return <JsonLdScript data={data} />;
+}
+
+// ─── Article (blog posts) ────────────────────────────────────────────────────
+
+export interface ArticleSchemaInput {
+  title: string;
+  description?: string | null;
+  url: string;
+  images?: string[];
+  publishedAt?: string | null;
+  modifiedAt?: string;
+  authorName?: string | null;
+  section?: string | null;
+  keywords?: string | null;
+}
+
+export function ArticleJsonLd({ article }: { article: ArticleSchemaInput }) {
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: article.title,
+    description: article.description ?? undefined,
+    url: article.url,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': article.url },
+    inLanguage: 'fa-IR',
+    datePublished: article.publishedAt ?? undefined,
+    dateModified: article.modifiedAt ?? article.publishedAt ?? undefined,
+    ...(article.images?.length && { image: article.images }),
+    ...(article.section && { articleSection: article.section }),
+    ...(article.keywords && { keywords: article.keywords }),
+    author: article.authorName
+      ? { '@type': 'Person', name: article.authorName }
+      : { '@type': 'Organization', name: 'کلینیک دامپزشکی پت‌باس', url: `${BASE_URL}/` },
+    publisher: {
+      '@type': 'Organization',
+      '@id': `${BASE_URL}/#organization`,
+      name: 'کلینیک دامپزشکی پت‌باس',
+      logo: {
+        '@type': 'ImageObject',
+        url: `${BASE_URL}${SITE_LOGO}`,
+        width: 512,
+        height: 512,
+      },
     },
   };
 

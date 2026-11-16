@@ -3,7 +3,9 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { LeadForm } from "@/components/forms/lead-form";
 import { getClinicNAP } from "@/lib/clinic/nap";
-import { BreadcrumbJsonLd, VeterinaryCareJsonLd } from "@/lib/seo/json-ld";
+import { BreadcrumbJsonLd, JsonLdScript, VeterinaryCareJsonLd } from "@/lib/seo/json-ld";
+import { pageMetadata } from "@/lib/seo/metadata";
+import { absoluteUrl } from "@/lib/seo/site";
 
 export const revalidate = 60;
 
@@ -18,33 +20,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isEn = locale === 'en';
   const nap = await getClinicNAP();
 
-  const title = isEn
-    ? 'Contact Pet Boss Clinic | Address & Phone Gheitariyeh Tehran'
-    : 'تماس با کلینیک دامپزشکی پت باس | آدرس و شماره تلفن قیطریه تهران';
-
-  const description = isEn
-    ? `Contact Pet Boss Veterinary Clinic in ${nap.addressEn}. Call ${nap.phoneDisplayEn} or book online. Open daily ${nap.workingHoursSummaryEn}.`
-    : `تماس با کلینیک دامپزشکی پت باس در ${nap.addressFa}. شماره تلفن ${nap.phoneDisplayFa}. رزرو آنلاین نوبت، مشاوره و آدرس روی نقشه. ${nap.workingHoursSummaryFa}.`;
-
-  return {
-    title,
-    description,
-    keywords: isEn
-      ? ['contact Pet Boss Clinic', 'veterinary phone Tehran', 'vet clinic address Gheitariyeh', 'Pet Boss appointment']
-      : ['تماس با دامپزشکی پت باس', 'شماره تلفن دامپزشکی قیطریه', 'آدرس کلینیک پت باس شریعتی', 'رزرو نوبت دامپزشکی تهران'],
-    alternates: {
-      canonical: 'https://www.petbossclinic.com/contact',
-    },
-    openGraph: {
-      title,
-      description,
-      url: 'https://www.petbossclinic.com/contact',
-      images: [{ url: '/images/petboss-sign.jpg', width: 1200, height: 630 }],
-    },
-  };
+  return pageMetadata({
+    title: 'تماس با کلینیک پت‌باس | آدرس و تلفن قیطریه تهران',
+    description: `تماس با کلینیک دامپزشکی پت‌باس؛ ${nap.addressFa}؛ تلفن ${nap.phoneDisplayFa}؛ ${nap.workingHoursSummaryFa}. رزرو نوبت، مشاوره و مسیریابی روی نقشه.`,
+    path: '/contact',
+    image: '/images/petboss-sign.jpg',
+    keywords: ['تماس با دامپزشکی پت‌باس', 'شماره تلفن دامپزشکی قیطریه', 'آدرس کلینیک پت باس شریعتی', 'رزرو نوبت دامپزشکی تهران'],
+  });
 }
 
 export default async function ContactPage({
@@ -63,6 +47,17 @@ export default async function ContactPage({
   return (
     <>
       <VeterinaryCareJsonLd nap={nap} locale={locale} />
+      <JsonLdScript
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'ContactPage',
+          name: 'تماس با کلینیک دامپزشکی پت‌باس',
+          url: absoluteUrl('/contact'),
+          inLanguage: 'fa-IR',
+          isPartOf: { '@id': absoluteUrl('/#website') },
+          mainEntity: { '@id': absoluteUrl('/#veterinary') },
+        }}
+      />
       <BreadcrumbJsonLd
         items={[
           { name: isEn ? 'Home' : 'خانه', href: '/' },

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import '@/styles/globals.css';
 import { AbstractIntlMessages, NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
@@ -17,6 +17,13 @@ import { getSitePictures } from '@/lib/media';
 import { getNavigationMenu } from '@/lib/navigation/menu';
 import { OrganizationJsonLd, WebSiteJsonLd } from '@/lib/seo/json-ld';
 import { getSeoConfig, isValidGa4Id } from '@/lib/seo/settings';
+import {
+  SITE_HOME_DESCRIPTION,
+  SITE_HOME_TITLE,
+  SITE_NAME_LONG_FA,
+  SITE_OG_IMAGE,
+  SITE_URL,
+} from '@/lib/seo/site';
 import Script from 'next/script';
 
 const outfit = Outfit({
@@ -35,6 +42,17 @@ export function generateStaticParams() {
   return [{ locale: 'fa' }];
 }
 
+/**
+ * Keep the HTML document language/direction and browser chrome signals in one
+ * place. `fa-IR` (not bare `fa`) is the BCP-47 tag Google expects for Persian.
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#c5a059',
+  colorScheme: 'dark light',
+};
+
 export async function generateMetadata({
   params,
 }: {
@@ -45,51 +63,46 @@ export async function generateMetadata({
   const isEn = locale === 'en';
   const [nap, seo] = await Promise.all([getClinicNAP(), getSeoConfig()]);
 
-  const title = isEn
-    ? 'Pet Boss Clinic & Pet Shop | Premier Veterinary & Pet Boutique in Tehran'
-    : 'کلینیک دامپزشکی پت باس | جراحی، واکسیناسیون، گرومینگ و پت شاپ قیطریه تهران';
+  const title = isEn ? 'Pet Boss Clinic & Pet Shop | Veterinary Clinic in Tehran' : SITE_HOME_TITLE;
 
   const description = isEn
     ? `Premier veterinary surgery, dental clinic, grooming salon & luxury pet boutique in Gheytariyeh, Tehran. ${nap.addressEn}. ${nap.workingHoursSummaryEn}.`
-    : `کلینیک تخصصی جراحی دامپزشکی، دندانپزشکی، واکسیناسیون، ارتوپدی، گرومینگ حرفه‌ای و پت شاپ لوکس در قیطریه تهران. ${nap.addressFa}. ${nap.workingHoursSummaryFa}.`;
+    : SITE_HOME_DESCRIPTION;
 
   return {
-    metadataBase: new URL('https://www.petbossclinic.com'),
+    metadataBase: new URL(SITE_URL),
+    // No layout-level canonical: each page sets its own (or pageMetadata does),
+    // so 404s and private pages never inherit the homepage canonical.
     title: {
       default: title,
-      template: isEn ? '%s | Pet Boss Clinic Tehran' : '%s | کلینیک دامپزشکی پت باس تهران',
+      // Short brand suffix: page titles are already authored to ~60 characters.
+      template: isEn ? '%s | Pet Boss Clinic' : '%s | پت‌باس',
     },
+    applicationName: SITE_NAME_LONG_FA,
     description,
     keywords: isEn
       ? ['veterinary clinic Tehran', 'pet shop Gheitariyeh', 'dog cat grooming Tehran', 'pet surgery Tehran', 'vaccination dog cat', 'Pet Boss Clinic']
       : ['کلینیک دامپزشکی تهران', 'دامپزشکی قیطریه', 'دامپزشکی شریعتی', 'پت شاپ قیطریه', 'گرومینگ سگ و گربه تهران', 'واکسیناسیون سگ و گربه', 'جراحی حیوانات خانگی', 'پت باس'],
-    authors: [{ name: 'Pet Boss Clinic', url: 'https://www.petbossclinic.com' }],
+    authors: [{ name: 'Pet Boss Clinic', url: SITE_URL }],
     creator: 'Pet Boss Clinic',
     publisher: 'Pet Boss Clinic',
-    alternates: {
-      canonical: 'https://www.petbossclinic.com',
-    },
+    category: 'pets',
+    // Iranian phone numbers must not be auto-linked by iOS/Safari.
+    formatDetection: { telephone: false, email: false, address: false },
     openGraph: {
       type: 'website',
-      locale: isEn ? 'en_US' : 'fa_IR',
-      url: 'https://www.petbossclinic.com',
-      siteName: isEn ? 'Pet Boss Clinic & Pet Shop' : 'کلینیک و پت شاپ پت باس',
+      locale: 'fa_IR',
+      url: `${SITE_URL}/`,
+      siteName: SITE_NAME_LONG_FA,
       title,
       description,
-      images: [
-        {
-          url: '/images/petboss-sign.jpg',
-          width: 1200,
-          height: 630,
-          alt: isEn ? 'Pet Boss Veterinary Clinic & Pet Shop Tehran' : 'کلینیک دامپزشکی و پت شاپ پت باس تهران',
-        },
-      ],
+      images: [{ url: SITE_OG_IMAGE, width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: ['/images/petboss-sign.jpg'],
+      images: [SITE_OG_IMAGE],
     },
     robots: {
       index: true,
@@ -107,9 +120,7 @@ export async function generateMetadata({
         { url: '/favicon.ico', sizes: 'any' },
         { url: '/icon.png', type: 'image/png', sizes: '512x512' },
       ],
-      apple: [
-        { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
-      ],
+      apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
       shortcut: '/favicon.ico',
     },
     verification: {
@@ -148,12 +159,8 @@ export default async function LocaleLayout({
   ]);
 
   return (
-    <html lang={locale} dir={locale === 'fa' ? 'rtl' : 'ltr'} data-theme={initialTheme} suppressHydrationWarning>
+    <html lang={locale === 'fa' ? 'fa-IR' : locale} dir={locale === 'fa' ? 'rtl' : 'ltr'} data-theme={initialTheme} suppressHydrationWarning>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/icon.png" type="image/png" sizes="512x512" />
-        <link rel="apple-touch-icon" href="/apple-icon.png" sizes="180x180" />
         <OrganizationJsonLd nap={nap} />
         <WebSiteJsonLd />
       </head>

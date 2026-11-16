@@ -92,9 +92,15 @@ const xml = (s: string) =>
 
 /** Google Merchant style RSS 2.0 item (also accepted by many Iranian comparison sites). */
 export function toGoogleItem(p: FeedRow): string {
+  // Google requires a positive price. "Call for price" items are skipped rather
+  // than published as `0 IRR`, which would invalidate the whole feed item.
+  if (!(p.price > 0)) return '';
+
   const imgs = feedImages(p);
   const available = isAvailable(p);
   const gtin = p.barcode && /^\d{8,14}$/.test(p.barcode) ? p.barcode : null;
+  const onSale = !!p.comparePrice && p.comparePrice > p.price;
+  const listPrice = onSale ? p.comparePrice! : p.price;
   const lines = [
     `<g:id>${xml(p.id)}</g:id>`,
     `<title>${xml(p.nameFa)}</title>`,
@@ -104,7 +110,8 @@ export function toGoogleItem(p: FeedRow): string {
     ...imgs.slice(1, 10).map((i) => `<g:additional_image_link>${xml(i)}</g:additional_image_link>`),
     `<g:availability>${available ? 'in_stock' : 'out_of_stock'}</g:availability>`,
     // Google expects ISO 4217 amounts: Toman x 10 = IRR
-    `<g:price>${p.price * 10} IRR</g:price>`,
+    `<g:price>${listPrice * 10} IRR</g:price>`,
+    ...(onSale ? [`<g:sale_price>${p.price * 10} IRR</g:sale_price>`] : []),
     `<g:condition>new</g:condition>`,
     `<g:product_type>${xml(p.category.nameFa)}</g:product_type>`,
     p.brand ? `<g:brand>${xml(p.brand.nameEn || p.brand.nameFa)}</g:brand>` : '',

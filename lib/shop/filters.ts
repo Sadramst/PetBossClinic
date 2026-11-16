@@ -106,6 +106,11 @@ export function buildProductWhere(
   if (f.min || f.max) {
     and.push({ price: { gt: 0, ...(f.min && { gte: f.min }), ...(f.max && { lte: f.max }) } });
   }
+  // Call-for-price products (price 0) have no comparable price, so they must not
+  // lead "cheapest first" / "biggest discount" listings or their pagination.
+  if (f.sort === 'price-asc' || f.sort === 'price-desc' || f.sort === 'discount') {
+    and.push({ price: { gt: 0 } });
+  }
   return { AND: and };
 }
 

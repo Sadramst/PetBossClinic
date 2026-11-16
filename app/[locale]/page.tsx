@@ -7,10 +7,11 @@ import { SiteSearch } from '@/components/layout/header';
 import { ProductCard } from '@/components/shop/product-card';
 import { getClinicNAP } from '@/lib/clinic/nap';
 import { formatServicePrice } from '@/lib/format/price';
-import { VeterinaryCareJsonLd, FAQPageJsonLd } from '@/lib/seo/json-ld';
-import { SITE_URL } from '@/lib/seo/site';
+import { VeterinaryCareJsonLd, FAQPageJsonLd, ItemListJsonLd } from '@/lib/seo/json-ld';
+import { pageMetadata } from '@/lib/seo/metadata';
+import { SITE_HOME_DESCRIPTION, SITE_HOME_TITLE, absoluteUrl } from '@/lib/seo/site';
 import { getActiveCategories, getNavCatalog, getProductRail, type ProductCardData } from '@/lib/shop/catalog';
-import { brandPath, categoryPath } from '@/lib/shop/urls';
+import { brandPath, categoryPath, productPath } from '@/lib/shop/urls';
 
 export const revalidate = 300;
 
@@ -18,24 +19,15 @@ export function generateStaticParams() {
   return [{ locale: 'fa' }];
 }
 
-const TITLE = 'پت‌شاپ و کلینیک دامپزشکی پت‌باس | خرید غذا و لوازم سگ و گربه در تهران';
-const DESCRIPTION =
-  'خرید آنلاین غذای سگ و گربه، تشویقی، دارو و لوازم حیوانات خانگی با ضمانت اصالت و تاریخ انقضای معتبر از پت‌شاپ پت‌باس؛ و کلینیک تخصصی دامپزشکی، جراحی، واکسیناسیون و گرومینگ در قیطریه تهران.';
-
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  return {
-    title: { absolute: TITLE },
-    description: DESCRIPTION,
-    alternates: { canonical: SITE_URL },
-    openGraph: {
-      title: TITLE,
-      description: DESCRIPTION,
-      url: SITE_URL,
-      images: [{ url: '/images/petboss-sign.jpg', width: 1200, height: 630, alt: TITLE }],
-    },
-  };
+  return pageMetadata({
+    title: SITE_HOME_TITLE,
+    description: SITE_HOME_DESCRIPTION,
+    path: '/',
+    image: '/images/petboss-sign.jpg',
+  });
 }
 
 const TRUST = [
@@ -89,6 +81,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     <>
       <VeterinaryCareJsonLd nap={nap} locale="fa" />
       {faqs.length > 0 && <FAQPageJsonLd faqs={faqs.map((f) => ({ question: f.questionFa, answer: f.answerFa }))} />}
+      <ItemListJsonLd
+        name="منتخب محصولات پت‌باس"
+        urls={picks.map((p) => absoluteUrl(productPath(p.slugFa)))}
+      />
 
       {/* ═══ HERO ═══ */}
       {visible('hero') && (

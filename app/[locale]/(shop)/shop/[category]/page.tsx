@@ -6,6 +6,7 @@ import { getActiveBrands, getActiveCategories, getCategoryBySlug, getListing } f
 import { parseShopFilters } from '@/lib/shop/filters';
 import { listingMetadata } from '@/lib/shop/listing-meta';
 import { categoryPath, decodeSlug } from '@/lib/shop/urls';
+import { categorySeoTitle } from '@/lib/seo/metadata';
 
 type Params = Promise<{ locale: string; category: string }>;
 type Search = Promise<Record<string, string | string[] | undefined>>;
@@ -16,13 +17,22 @@ export async function generateMetadata({ params, searchParams }: { params: Param
   const category = await getCategoryBySlug(decodeSlug(rawSlug));
   if (!category) return { title: 'دسته‌بندی یافت نشد', robots: { index: false } };
 
+  const intro = category.descriptionFa?.replace(/\s+/g, ' ').replace(/[.،؛\s]+$/u, '').trim();
+  const description =
+    category.metaDescriptionFa ||
+    [
+      `خرید ${category.nameFa} اصل با تاریخ انقضای معتبر از پت‌شاپ کلینیک دامپزشکی پت‌باس تهران.`,
+      intro ? `${intro}.` : '',
+      'مقایسه قیمت، موجودی و مشاوره رایگان دامپزشک.',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
   return listingMetadata({
     basePath: categoryPath(category.slugFa),
     filters: parseShopFilters(await searchParams),
-    title: category.metaTitleFa || `خرید ${category.nameFa} | قیمت و بهترین برندها`,
-    description:
-      category.metaDescriptionFa ||
-      `خرید ${category.nameFa} اصل با تاریخ انقضای معتبر از پت‌شاپ کلینیک دامپزشکی پت‌باس تهران. ${category.descriptionFa ?? ''} مقایسه قیمت، موجودی و مشاوره رایگان دامپزشک.`.trim(),
+    title: category.metaTitleFa || categorySeoTitle(category.nameFa),
+    description,
     image: category.imageId,
     canonicalOverride: category.canonicalUrl,
     noindex: category.noindex,

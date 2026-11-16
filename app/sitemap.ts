@@ -27,6 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: absoluteUrl(p.path),
     changeFrequency: p.changeFrequency,
     priority: p.priority,
+    ...(p.path === '/' && { images: [absoluteUrl('/images/petboss-sign.jpg')] }),
   }));
 
   try {
@@ -38,7 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }),
       db.brand.findMany({
         where: { isActive: true, deletedAt: null, products: { some: visibleProduct } },
-        select: { slugFa: true, updatedAt: true },
+        select: { slugFa: true, updatedAt: true, logoId: true },
         orderBy: { sortOrder: 'asc' },
       }),
       db.product.findMany({
@@ -82,6 +83,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: b.updatedAt,
         changeFrequency: 'weekly',
         priority: 0.75,
+        images: imageUrl(b.logoId),
       });
     }
     for (const p of products) {

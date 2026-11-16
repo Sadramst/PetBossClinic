@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { BreadcrumbJsonLd, FAQPageJsonLd } from "@/lib/seo/json-ld";
+import { pageMetadata } from "@/lib/seo/metadata";
 import { getClinicNAP } from "@/lib/clinic/nap";
 
 export const revalidate = 60;
@@ -20,32 +21,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isEn = locale === 'en';
 
-  const title = isEn
-    ? 'Frequently Asked Questions (FAQ)'
-    : 'سوالات متداول دامپزشکی و نگهداری حیوانات خانگی | کلینیک پت باس تهران';
-
-  const description = isEn
-    ? 'Answers to common questions about pet vaccination schedules, grooming, surgery recovery, diet, and clinic policies at Pet Boss Clinic Tehran.'
-    : 'پاسخ به سوالات متداول درباره زمان‌بندی واکسیناسیون سگ و گربه، مراقبت‌های پس از جراحی، گرومینگ، رژیم غذایی و خدمات کلینیک دامپزشکی پت باس.';
-
-  return {
-    title,
-    description,
-    keywords: isEn
-      ? ['veterinary FAQ Tehran', 'dog vaccination schedule', 'cat grooming FAQ', 'pet surgery care']
-      : ['سوالات متداول دامپزشکی', 'زمان واکسن سگ و گربه', 'هزینه واکسیناسیون سگ تهران', 'مراقبت بعد از عقیم سازی'],
-    alternates: {
-      canonical: 'https://www.petbossclinic.com/faq',
-    },
-    openGraph: {
-      title,
-      description,
-      url: 'https://www.petbossclinic.com/faq',
-      images: [{ url: '/images/petboss-sign.jpg', width: 1200, height: 630 }],
-    },
-  };
+  return pageMetadata({
+    title: 'سوالات متداول دامپزشکی | کلینیک پت‌باس تهران',
+    description:
+      'پاسخ دامپزشکان پت‌باس به سوالات متداول درباره واکسیناسیون، جراحی، گرومینگ، تغذیه و مراقبت از سگ و گربه در تهران.',
+    path: '/faq',
+    image: '/images/veterinarian.jpg',
+    keywords: ['سوالات متداول دامپزشکی', 'زمان واکسن سگ و گربه', 'هزینه واکسیناسیون سگ تهران', 'مراقبت بعد از عقیم سازی'],
+  });
 }
 
 export default async function FaqPage({

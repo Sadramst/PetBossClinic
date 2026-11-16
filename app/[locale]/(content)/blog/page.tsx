@@ -4,14 +4,16 @@ import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
 import { Breadcrumbs } from '@/components/shop/breadcrumbs';
 import { PostCard } from '@/components/blog/post-card';
-import { getBlogCategories, listPosts } from '@/lib/blog/posts';
+import { getBlogCategories, listPosts, postPath } from '@/lib/blog/posts';
+import { ItemListJsonLd } from '@/lib/seo/json-ld';
+import { pageMetadata } from '@/lib/seo/metadata';
 import { absoluteUrl } from '@/lib/seo/site';
 
 type Search = Promise<{ page?: string; category?: string }>;
 
-const TITLE = 'مجله پت‌باس | راهنمای تغذیه، سلامت و نگهداری سگ و گربه';
+const TITLE = 'مجله پت‌باس | راهنمای تغذیه و سلامت سگ و گربه';
 const DESCRIPTION =
-  'مقالات کاربردی دامپزشکان کلینیک پت‌باس درباره تغذیه، واکسیناسیون، بهداشت، رفتار و نگهداری سگ و گربه؛ به زبان ساده و قابل اعتماد.';
+  'مقالات آموزشی دامپزشکان پت‌باس درباره تغذیه، واکسیناسیون، بهداشت، رفتار و نگهداری سگ و گربه؛ ساده، کاربردی و قابل اعتماد.';
 
 function parse(sp: { page?: string; category?: string }) {
   const n = Number(sp.page);
@@ -20,14 +22,14 @@ function parse(sp: { page?: string; category?: string }) {
 
 export async function generateMetadata({ searchParams }: { searchParams: Search }): Promise<Metadata> {
   const { page, category } = parse(await searchParams);
-  const url = absoluteUrl(page > 1 ? `/blog?page=${page}` : '/blog');
-  return {
-    title: { absolute: page > 1 ? `${TITLE} - صفحه ${page.toLocaleString('fa-IR')}` : TITLE },
+  return pageMetadata({
+    title: page > 1 ? `${TITLE} - صفحه ${page.toLocaleString('fa-IR')}` : TITLE,
     description: DESCRIPTION,
-    alternates: { canonical: url },
-    robots: category ? { index: false, follow: true } : undefined,
-    openGraph: { type: 'website', locale: 'fa_IR', url, title: TITLE, description: DESCRIPTION },
-  };
+    path: page > 1 ? `/blog?page=${page}` : '/blog',
+    // Topic filters are thin duplicates of the archive; keep them crawlable but out of the index.
+    noindex: !!category,
+    follow: true,
+  });
 }
 
 export default async function BlogPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Search }) {
@@ -39,6 +41,10 @@ export default async function BlogPage({ params, searchParams }: { params: Promi
   return (
     <div className="container mx-auto max-w-6xl px-4 py-6 sm:py-10 space-y-6">
       <Breadcrumbs items={[{ name: 'خانه', href: '/' }, { name: 'مجله پت‌باس', href: '/blog' }]} />
+      <ItemListJsonLd
+        name="مقالات مجله پت‌باس"
+        urls={posts.map((p) => absoluteUrl(postPath(p.slugFa)))}
+      />
       <header>
         <h1 className="text-2xl sm:text-3xl font-black">مجله پت‌باس</h1>
         <p className="mt-2 text-sm text-muted-foreground leading-7 max-w-2xl">{DESCRIPTION}</p>

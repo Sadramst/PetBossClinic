@@ -15,7 +15,7 @@ type Params = Promise<{ locale: string }>;
 type Search = Promise<Record<string, string | string[] | undefined>>;
 
 const DESCRIPTION =
-  'خرید آنلاین غذای خشک و تر سگ و گربه، تشویقی، دارو و مکمل، خاک گربه، قلاده و اسباب‌بازی از پت‌شاپ کلینیک دامپزشکی پت‌باس تهران؛ اصالت کالا، تاریخ انقضای معتبر و مشاوره رایگان دامپزشک.';
+  'خرید آنلاین غذای خشک و تر، تشویقی، دارو و مکمل، خاک گربه و لوازم سگ و گربه با ضمانت اصالت و تاریخ انقضای معتبر از پت‌شاپ پت‌باس تهران.';
 
 export async function generateMetadata({ params, searchParams }: { params: Params; searchParams: Search }): Promise<Metadata> {
   const { locale } = await params;
@@ -23,7 +23,7 @@ export async function generateMetadata({ params, searchParams }: { params: Param
   return listingMetadata({
     basePath: '/shop',
     filters: parseShopFilters(await searchParams),
-    title: 'پت‌شاپ آنلاین | خرید غذا و لوازم سگ و گربه در تهران',
+    title: 'پت‌شاپ آنلاین پت‌باس | خرید غذای سگ و گربه در تهران',
     description: DESCRIPTION,
     image: '/images/categories/cat-dry-food.jpg',
   });
@@ -49,15 +49,22 @@ export default async function ShopPage({ params, searchParams }: { params: Param
     name: 'پت‌شاپ کلینیک دامپزشکی پت‌باس',
     url: absoluteUrl('/shop'),
     telephone: nap.phone,
+    email: nap.email,
     image: absoluteUrl('/images/petboss-sign.jpg'),
     priceRange: '$$',
+    currenciesAccepted: 'IRR',
+    paymentAccepted: 'نقدی، کارت بانکی، پرداخت آنلاین',
+    openingHours: 'Mo-Su 10:00-22:00',
     address: {
       '@type': 'PostalAddress',
       streetAddress: nap.addressFa,
       addressLocality: 'تهران',
+      addressRegion: 'تهران',
       addressCountry: 'IR',
     },
     geo: { '@type': 'GeoCoordinates', latitude: nap.geo.lat, longitude: nap.geo.lng },
+    hasMap: `https://maps.google.com/?q=${nap.geo.lat},${nap.geo.lng}`,
+    sameAs: [nap.instagramUrl, nap.telegramUrl].filter(Boolean),
     parentOrganization: { '@id': absoluteUrl('/#organization') },
   };
 
