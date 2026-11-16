@@ -185,6 +185,9 @@ export function Header({
           <Link href="/shop?pet=dog" className="px-3 h-12 inline-flex items-center hover:text-primary">
             محصولات سگ
           </Link>
+          <Link href="/blog" className={`px-3 h-12 inline-flex items-center ${isActive('/blog') ? 'text-primary font-bold' : 'hover:text-primary'}`}>
+            مجله پت‌باس
+          </Link>
           <span className="mx-2 h-5 w-px bg-border" aria-hidden />
           {links.map((l) => (
             <Link
@@ -229,6 +232,11 @@ export function Header({
             <div>
               <p className="text-xs font-bold text-primary mb-2">کلینیک</p>
               <ul className="space-y-1 text-sm">
+                <li>
+                  <Link href="/blog" className="block rounded-lg px-3 py-2 hover:bg-surface-hover">
+                    مجله پت‌باس
+                  </Link>
+                </li>
                 {links.map((l) => (
                   <li key={l.href}>
                     <Link href={l.href} className="block rounded-lg px-3 py-2 hover:bg-surface-hover">

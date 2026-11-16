@@ -45,21 +45,29 @@ export async function issueOtp(phone: string, ip: string | null, now = new Date(
   return { ok: true, code };
 }
 
-/** Checks a code; each wrong guess counts, and the code dies after OTP_MAX_ATTEMPTS. */
+/**
+ * Checks a code. Each guess reserves an attempt atomically *before* comparing, so
+ * firing many guesses in parallel still gets at most OTP_MAX_ATTEMPTS tries per
+ * code; a correct code is consumed with a conditional update so it works only once.
+ */
 export async function verifyOtp(phone: string, code: string, now = new Date()): Promise<boolean> {
   const otp = await db.otpCode.findFirst({
     where: { phone, consumedAt: null, expiresAt: { gt: now } },
     orderBy: { createdAt: 'desc' },
+    select: { id: true, codeHash: true },
   });
-  if (!otp || otp.attempts >= OTP_MAX_ATTEMPTS) return false;
+  if (!otp) return false;
+
+  const reserved = await db.otpCode.updateMany({
+    where: { id: otp.id, consumedAt: null, attempts: { lt: OTP_MAX_ATTEMPTS } },
+    data: { attempts: { increment: 1 } },
+  });
+  if (reserved.count === 0) return false;
 
   const a = Buffer.from(otp.codeHash, 'hex');
   const b = Buffer.from(hashCode(phone, code), 'hex');
-  const match = a.length === b.length && crypto.timingSafeEqual(a, b);
+  if (!(a.length === b.length && crypto.timingSafeEqual(a, b))) return false;
 
-  await db.otpCode.update({
-    where: { id: otp.id },
-    data: match ? { consumedAt: now } : { attempts: { increment: 1 } },
-  });
-  return match;
+  const consumed = await db.otpCode.updateMany({ where: { id: otp.id, consumedAt: null }, data: { consumedAt: now } });
+  return consumed.count === 1;
 }

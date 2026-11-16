@@ -52,5 +52,6 @@ export default async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+  // feeds/* are machine endpoints (Torob etc.): no locale handling.
+  matcher: ['/((?!api|_next|_vercel|feeds/|.*\\..*).*)'],
 };

@@ -8,7 +8,18 @@ import { quoteAction, type Quote } from '@/app/actions/checkout';
 import { formatPrice } from '@/lib/format/price';
 import { productPath } from '@/lib/shop/urls';
 
-export function CartView({ loggedIn }: { loggedIn: boolean }) {
+export function CartView({
+  loggedIn,
+  onlineCheckout = true,
+  whatsappNumber,
+  phoneLink,
+}: {
+  loggedIn: boolean;
+  /** False until SMS login is configured: orders go by WhatsApp/phone instead. */
+  onlineCheckout?: boolean;
+  whatsappNumber?: string | null;
+  phoneLink?: string;
+}) {
   const { lines, ready, setQuantity, remove } = useCart();
   const [quote, setQuote] = useState<Quote | null>(null);
 
@@ -100,15 +111,44 @@ export function CartView({ loggedIn }: { loggedIn: boolean }) {
           </p>
         )}
         {hasProblems && <p className="text-xs text-red-400">لطفاً اقلام ناموجود را از سبد حذف کنید.</p>}
-        <Link
-          href={loggedIn ? '/checkout' : '/account/login?next=/checkout'}
-          aria-disabled={hasProblems || !quote}
-          className={`block text-center h-12 leading-[3rem] rounded-xl bg-gradient-gold text-charcoal-950 font-extrabold ${
-            hasProblems || !quote ? 'pointer-events-none opacity-50' : ''
-          }`}
-        >
-          {loggedIn ? 'ادامه و انتخاب نشانی' : 'ورود و ادامه خرید'}
-        </Link>
+        {onlineCheckout ? (
+          <Link
+            href={loggedIn ? '/checkout' : '/account/login?next=/checkout'}
+            aria-disabled={hasProblems || !quote}
+            className={`block text-center h-12 leading-[3rem] rounded-xl bg-gradient-gold text-charcoal-950 font-extrabold ${
+              hasProblems || !quote ? 'pointer-events-none opacity-50' : ''
+            }`}
+          >
+            {loggedIn ? 'ادامه و انتخاب نشانی' : 'ورود و ادامه خرید'}
+          </Link>
+        ) : (
+          <div className="space-y-2">
+            {whatsappNumber && quote && (
+              <a
+                href={`https://wa.me/${whatsappNumber.replace(/\D/g, '')}?text=${encodeURIComponent(
+                  [
+                    'سلام، می‌خواهم این سفارش را از سایت پت‌باس ثبت کنم:',
+                    ...quote.lines
+                      .filter((l) => !l.problem)
+                      .map((l) => `- ${l.nameFa}${l.sku ? ` (کد ${l.sku})` : ''} × ${l.quantity}`),
+                    `جمع کالاها: ${formatPrice(quote.subtotal, 'fa')}`,
+                  ].join('\n')
+                )}`}
+                target="_blank"
+                rel="noopener"
+                className="block text-center h-12 leading-[3rem] rounded-xl bg-gradient-gold text-charcoal-950 font-extrabold"
+              >
+                ثبت سفارش در واتس‌اپ
+              </a>
+            )}
+            {phoneLink && (
+              <a href={phoneLink} className="block text-center h-11 leading-[2.75rem] rounded-xl border border-primary text-primary font-bold text-sm">
+                ثبت سفارش تلفنی
+              </a>
+            )}
+            <p className="text-[11px] text-muted-foreground leading-6">پرداخت آنلاین به‌زودی فعال می‌شود.</p>
+          </div>
+        )}
         <p className="text-[11px] text-muted-foreground leading-6">
           تاریخ انقضای اقلام خوراکی پیش از ارسال توسط دامپزشک کنترل می‌شود.
         </p>

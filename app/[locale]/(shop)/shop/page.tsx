@@ -4,6 +4,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
 import { ProductListing } from '@/components/shop/product-listing';
 import { getClinicNAP } from '@/lib/clinic/nap';
+import { JsonLdScript } from '@/lib/seo/json-ld';
 import { absoluteUrl } from '@/lib/seo/site';
 import { getActiveBrands, getActiveCategories, getListing } from '@/lib/shop/catalog';
 import { isFilteredView, parseShopFilters } from '@/lib/shop/filters';
@@ -64,7 +65,7 @@ export default async function ShopPage({ params, searchParams }: { params: Param
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(storeJsonLd) }} />
+      <JsonLdScript data={storeJsonLd} />
 
       {showCategoryStrip && (
         <section aria-label="دسته‌بندی‌های پت‌شاپ" className="border-b border-border bg-surface">

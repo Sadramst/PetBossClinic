@@ -10,13 +10,21 @@ const BASE_URL = 'https://www.petbossclinic.com';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
-function JsonLdScript({ data }: { data: Record<string, unknown> }) {
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
-    />
-  );
+/**
+ * JSON for embedding inside <script>. JSON.stringify does not escape "<", so a
+ * product name like "</script><script>…" would otherwise break out of the tag.
+ */
+export function safeJsonLd(data: unknown): string {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+export function JsonLdScript({ data }: { data: Record<string, unknown> | Record<string, unknown>[] }) {
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(data) }} />;
 }
 
 // ─── VeterinaryCare (LocalBusiness) ──────────────────────────────────────────

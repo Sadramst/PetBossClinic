@@ -74,9 +74,15 @@ export async function getCustomer() {
   return customer && !customer.isBlocked ? customer : null;
 }
 
-/** Only allow same-site relative paths as post-login targets (no open redirects). */
+/**
+ * Only allow same-site relative paths as post-login targets (no open redirects).
+ * Control characters and backslashes are rejected anywhere: browsers strip tabs and
+ * newlines while parsing, so "/\t/evil.com" would otherwise become "//evil.com".
+ */
 export function safeNext(next: string | null | undefined, fallback = '/account'): string {
-  return next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/\\') ? next : fallback;
+  if (!next || next.length > 500) return fallback;
+  if (!/^\/(?!\/)[^\x00-\x20\\]*$/.test(next)) return fallback;
+  return next;
 }
 
 export async function requireCustomer(next: string) {

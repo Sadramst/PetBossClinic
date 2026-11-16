@@ -40,6 +40,18 @@ async function smsir(phone: string, code: string): Promise<SmsResult> {
   return body?.status === 1 ? { ok: true } : { ok: false, error: body?.message || `HTTP ${res.status}` };
 }
 
+/**
+ * True when customers can receive login codes. Until an SMS provider is set up in
+ * production, the shop falls back to ordering by WhatsApp/phone.
+ * SMS_PROVIDER=console prints codes to the server log (local testing / staging only).
+ */
+export function customerLoginEnabled(): boolean {
+  const p = process.env.SMS_PROVIDER;
+  if (p === 'kavenegar') return !!(process.env.KAVENEGAR_API_KEY && process.env.KAVENEGAR_OTP_TEMPLATE);
+  if (p === 'smsir') return !!(process.env.SMSIR_API_KEY && process.env.SMSIR_OTP_TEMPLATE_ID);
+  return p === 'console' || process.env.NODE_ENV !== 'production';
+}
+
 export async function sendOtpSms(phone: string, code: string): Promise<SmsResult> {
   const provider = process.env.SMS_PROVIDER;
   try {
@@ -49,7 +61,7 @@ export async function sendOtpSms(phone: string, code: string): Promise<SmsResult
     console.error('SMS send failed', err);
     return { ok: false, error: 'SMS provider unreachable' };
   }
-  if (process.env.NODE_ENV !== 'production') {
+  if (provider === 'console' || process.env.NODE_ENV !== 'production') {
     console.warn(`[dev-sms] login code for ${phone}: ${code}`);
     return { ok: true };
   }

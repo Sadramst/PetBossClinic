@@ -17,15 +17,17 @@ export function Footer({
   navItems,
   categories = [],
   brands = [],
+  enamad = null,
 }: {
   nap?: ClinicNAP;
   logoUrl?: string;
   navItems?: NavItem[];
   categories?: LinkItem[];
   brands?: LinkItem[];
+  enamad?: { id: string; code: string } | null;
 }) {
-  const clinicLinks =
-    navItems && navItems.length > 0
+  const clinicLinks = [
+    ...(navItems && navItems.length > 0
       ? navItems.filter((i) => i.url !== '/shop').map((i) => ({ href: i.url, label: i.labelFa }))
       : [
           { href: '/', label: 'خانه' },
@@ -33,7 +35,9 @@ export function Footer({
           { href: '/about', label: 'درباره ما' },
           { href: '/faq', label: 'سوالات متداول' },
           { href: '/contact', label: 'تماس با ما' },
-        ];
+        ]),
+    { href: '/blog', label: 'مجله پت‌باس' },
+  ];
 
   return (
     <footer className="bg-surface border-t border-border text-muted-foreground pb-16 lg:pb-0">
@@ -79,7 +83,29 @@ export function Footer({
 
         <FooterLinks title="پت‌شاپ" links={categories.map((c) => ({ href: categoryPath(c.slugFa), label: c.nameFa }))} />
         <FooterLinks title="برندهای محبوب" links={brands.slice(0, 12).map((b) => ({ href: brandPath(b.slugFa), label: b.nameFa }))} />
-        <FooterLinks title="کلینیک پت‌باس" links={clinicLinks} />
+        <div className="space-y-6">
+          <FooterLinks title="کلینیک پت‌باس" links={clinicLinks} />
+          {enamad && (
+            <a
+              referrerPolicy="origin"
+              target="_blank"
+              rel="noopener"
+              href={`https://trustseal.enamad.ir/?id=${enamad.id}&Code=${enamad.code}`}
+              className="inline-block rounded-xl bg-white p-2"
+              aria-label="نماد اعتماد الکترونیکی"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- eNamad requires its own hosted image with the origin referrer */}
+              <img
+                referrerPolicy="origin"
+                src={`https://trustseal.enamad.ir/logo.aspx?id=${enamad.id}&Code=${enamad.code}`}
+                alt="نماد اعتماد الکترونیکی"
+                width={90}
+                height={90}
+                style={{ cursor: 'pointer' }}
+              />
+            </a>
+          )}
+        </div>
       </div>
 
       <div className="border-t border-border">

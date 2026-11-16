@@ -185,6 +185,7 @@ export default async function LocaleLayout({
                 navItems={navItems}
                 categories={navCatalog.categories}
                 brands={navCatalog.brands}
+                enamad={seo.enamad}
               />
             </HideOnAdmin>
             <MobileBottomNav phone={nap.phone} />

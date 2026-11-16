@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { updateSeoSettingsAction } from '@/app/actions/seo'
 
 interface Props {
-  initial: { gscVerification: string | null; bingId: string | null; ga4Id: string | null } | null
+  initial: { gscVerification: string | null; bingId: string | null; ga4Id: string | null; enamadCode: string | null } | null
 }
 
 export function SeoSettingsForm({ initial }: Props) {
@@ -59,6 +59,22 @@ export function SeoSettingsForm({ initial }: Props) {
           defaultValue={initial?.bingId ?? ''}
           placeholder='<meta name="msvalidate.01" content="..." />'
           className="w-full rounded-xl border border-border bg-input px-3 py-2.5 text-sm"
+        />
+      </label>
+
+      <label className="block text-sm space-y-1.5">
+        <span>نماد اعتماد الکترونیکی (اینماد) — کد HTML که اینماد داده است را بچسبانید</span>
+        <textarea
+          name="enamad"
+          dir="ltr"
+          rows={2}
+          defaultValue={
+            initial?.enamadCode
+              ? `https://trustseal.enamad.ir/?id=${initial.enamadCode.split('|')[0]}&Code=${initial.enamadCode.split('|')[1]}`
+              : ''
+          }
+          placeholder="<a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=...&Code=...'>..."
+          className="w-full rounded-xl border border-border bg-input px-3 py-2.5 text-xs"
         />
       </label>
 

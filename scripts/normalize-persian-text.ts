@@ -18,6 +18,7 @@ async function main() {
     select: { id: true, nameFa: true, shortDescFa: true, descriptionFa: true, slugFa: true, sortOrder: true },
   })
   const taken = new Set(products.map((p) => p.slugFa))
+  const updates: ReturnType<typeof prisma.product.update>[] = []
   let productChanges = 0
 
   for (const p of products) {
@@ -30,7 +31,8 @@ async function main() {
     const cleanedSlug = slugifyFa(p.slugFa)
     if (cleanedSlug && cleanedSlug !== p.slugFa) {
       slugFa = cleanedSlug
-      if (taken.has(slugFa)) slugFa = `${cleanedSlug}-${p.sortOrder}`
+      // Guarantee uniqueness (the unique index would otherwise abort the run).
+      for (let n = 2; taken.has(slugFa); n++) slugFa = `${cleanedSlug}-${n}`
       taken.delete(p.slugFa)
       taken.add(slugFa)
     }
@@ -40,10 +42,10 @@ async function main() {
     if (!changed) continue
     productChanges++
     if (productChanges <= 5) console.log(`  ${p.slugFa}  ->  ${slugFa}`)
-    if (APPLY) {
-      await prisma.product.update({ where: { id: p.id }, data: { nameFa, shortDescFa, descriptionFa, slugFa } })
-    }
+    updates.push(prisma.product.update({ where: { id: p.id }, data: { nameFa, shortDescFa, descriptionFa, slugFa } }))
   }
+  // All or nothing: a failure leaves the catalogue exactly as it was.
+  if (APPLY && updates.length) await prisma.$transaction(updates)
 
   const categories = await prisma.productCategory.findMany({ select: { id: true, nameFa: true, descriptionFa: true } })
   let categoryChanges = 0

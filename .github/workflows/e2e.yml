@@ -49,8 +49,12 @@ jobs:
         INITIAL_ADMIN_PASSWORD: "Admin@PetBoss2026!Ci"
         AUTH_SECRET: "ci-secret-token-key-for-testing-32-chars!!"
         NEXTAUTH_SECRET: "ci-secret-token-key-for-testing-32-chars!!"
+        # Shop tests run against `next start` (production mode): print login codes to the log.
+        SMS_PROVIDER: "console"
       run: |
         npx prisma db push
         npx prisma db seed
+        node scripts/import-october-inventory.js
+        npx tsx scripts/assign-brands.ts --apply
         npm run build
         npm run test:e2e

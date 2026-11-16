@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { absoluteUrl } from '@/lib/seo/site';
 import { brandPath, categoryPath, productPath } from '@/lib/shop/urls';
 import { visibleProduct } from '@/lib/shop/catalog';
+import { postPath, publishedWhere } from '@/lib/blog/posts';
 
 export const revalidate = 3600;
 
@@ -13,6 +14,7 @@ const STATIC_PAGES: Array<{ path: string; priority: number; changeFrequency: 'da
   { path: '/contact', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/about', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/faq', priority: 0.7, changeFrequency: 'weekly' },
+  { path: '/blog', priority: 0.8, changeFrequency: 'weekly' },
 ];
 
 function imageUrl(src: string | null | undefined): string[] {
@@ -28,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   try {
-    const [categories, brands, products] = await Promise.all([
+    const [categories, brands, products, posts] = await Promise.all([
       db.productCategory.findMany({
         where: { isActive: true, deletedAt: null, noindex: false, products: { some: visibleProduct } },
         select: { slugFa: true, updatedAt: true, imageId: true },
@@ -48,7 +50,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         },
         orderBy: { sortOrder: 'asc' },
       }),
+      db.post.findMany({
+        where: { ...publishedWhere(), noindex: false },
+        select: { slugFa: true, updatedAt: true, imageId: true },
+        orderBy: { publishedAt: 'desc' },
+      }),
     ]);
+
+    for (const p of posts) {
+      entries.push({
+        url: absoluteUrl(postPath(p.slugFa)),
+        lastModified: p.updatedAt,
+        changeFrequency: 'monthly',
+        priority: 0.7,
+        images: imageUrl(p.imageId),
+      });
+    }
 
     for (const c of categories) {
       entries.push({

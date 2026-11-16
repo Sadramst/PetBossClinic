@@ -81,6 +81,20 @@ describe('customer session token', () => {
     expect(safeNext('https://evil.com')).toBe('/account')
     expect(safeNext('/\\evil.com')).toBe('/account')
     expect(safeNext(undefined)).toBe('/account')
+    // Browsers strip tab/newline while parsing: "/\t/evil.com" would become "//evil.com"
+    expect(safeNext('/\t/evil.com')).toBe('/account')
+    expect(safeNext('/\n/evil.com')).toBe('/account')
+    expect(safeNext('/account/orders/PB-1405-000001?payment=success')).toBe('/account/orders/PB-1405-000001?payment=success')
+  })
+})
+
+describe('JSON-LD embedding', () => {
+  it('cannot break out of the script tag', async () => {
+    const { safeJsonLd } = await import('@/lib/seo/json-ld')
+    const out = safeJsonLd({ name: '</script><script>alert(1)</script>' })
+    expect(out).not.toContain('</script>')
+    expect(out).not.toContain('<')
+    expect(JSON.parse(out).name).toBe('</script><script>alert(1)</script>')
   })
 })
 

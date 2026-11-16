@@ -15,6 +15,9 @@ test.describe('Indexable shop pages', () => {
     await expect(page).toHaveURL(/\/product\//)
     await expect(page.locator('h1')).toBeVisible()
 
+    // Check head tags on a fresh load (during client-side navigation Next.js briefly
+    // keeps the previous page's tags, which is not what crawlers receive).
+    await page.goto(page.url())
     const schemas = await page.locator('script[type="application/ld+json"]').allTextContents()
     const product = schemas.map((s) => JSON.parse(s)).find((j) => j['@type'] === 'Product')
     expect(product).toBeTruthy()

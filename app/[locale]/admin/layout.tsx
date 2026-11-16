@@ -33,6 +33,7 @@ const sidebarSections = [
       { key: 'orders', href: '/admin/orders', icon: '🧾' },
       { key: 'inventory', href: '/admin/inventory', icon: '⏳' },
       { key: 'customers', href: '/admin/customers', icon: '👥' },
+      { key: 'posts', href: '/admin/posts', icon: '📰' },
     ],
   },
   {

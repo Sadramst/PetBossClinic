@@ -53,6 +53,11 @@ export default async function OrderPage({
           پرداخت انجام نشد. اگر مبلغی از حساب شما کسر شده، طی ۷۲ ساعت به‌صورت خودکار بازمی‌گردد. می‌توانید دوباره پرداخت کنید.
         </div>
       )}
+      {sp.payment === 'review' && (
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
+          پرداخت شما دریافت شد اما این سفارش قبلاً پرداخت یا لغو شده بود. همکاران ما برای بازگرداندن وجه با شما تماس می‌گیرند.
+        </div>
+      )}
 
       <div className="rounded-2xl border border-border bg-surface-card p-5 space-y-4">
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">

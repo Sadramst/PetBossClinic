@@ -4,7 +4,7 @@ import { headers } from 'next/headers'
 import { db } from '@/lib/db'
 import { issueOtp, verifyOtp } from '@/lib/customer/otp'
 import { clearCustomerCookie, getCustomer, safeNext, setCustomerCookie } from '@/lib/customer/session'
-import { sendOtpSms } from '@/lib/sms'
+import { customerLoginEnabled, sendOtpSms } from '@/lib/sms'
 import { normalizeMobile } from '@/lib/text/iran'
 import { normalizeFa } from '@/lib/text/persian'
 import { checkRateLimit } from '@/lib/utils/rate-limit'
@@ -25,6 +25,9 @@ async function clientIp(): Promise<string> {
 }
 
 export async function requestOtpAction(rawPhone: string): Promise<CustomerAuthState> {
+  if (!customerLoginEnabled()) {
+    return { error: 'ورود با پیامک به‌زودی فعال می‌شود. فعلاً سفارش را از سبد خرید در واتس‌اپ یا تلفنی ثبت کنید.' }
+  }
   const phone = normalizeMobile(rawPhone)
   if (!phone) return { error: 'شماره موبایل معتبر نیست. نمونه: ۰۹۱۲۱۲۳۴۵۶۷' }
 

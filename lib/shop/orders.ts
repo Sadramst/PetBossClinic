@@ -86,33 +86,63 @@ export async function nextOrderNumber(tx: Prisma.TransactionClient, now = new Da
 
 /**
  * Takes ordered units out of dated stock batches, earliest expiry first (FEFO),
- * skipping expired batches. Idempotent per order via Order.stockAllocated.
+ * skipping expired batches.
+ *
+ * Concurrency-safe: the order is claimed with a conditional update (so two callers
+ * can never allocate the same order twice), and each batch is decremented only if
+ * it still holds enough units (so two orders can never drive a batch below zero).
+ * Units that could not be covered are written to the order's admin note.
  */
 export async function allocateOrderStock(orderId: string, now = new Date()): Promise<void> {
   const touched = await db.$transaction(async (tx) => {
-    const order = await tx.order.findUnique({
+    const claim = await tx.order.updateMany({ where: { id: orderId, stockAllocated: false }, data: { stockAllocated: true } });
+    if (claim.count === 0) return [];
+    const order = await tx.order.findUniqueOrThrow({
       where: { id: orderId },
-      select: { stockAllocated: true, items: { select: { productId: true, quantity: true } } },
+      select: { adminNote: true, items: { select: { productId: true, nameFa: true, quantity: true } } },
     });
-    if (!order || order.stockAllocated) return [];
 
     const productIds: string[] = [];
+    const shortages: string[] = [];
     for (const item of order.items) {
       if (!item.productId) continue;
       let remaining = item.quantity;
       const batches = await tx.inventory.findMany({
         where: { productId: item.productId, quantity: { gt: 0 }, OR: [{ expiryDate: null }, { expiryDate: { gte: now } }] },
         orderBy: [{ expiryDate: { sort: 'asc', nulls: 'last' } }, { receivedAt: 'asc' }],
+        select: { id: true },
       });
       for (const b of batches) {
+        // Retry a few times if another order took units from this batch meanwhile.
+        for (let attempt = 0; attempt < 3 && remaining > 0; attempt++) {
+          const fresh = await tx.inventory.findUnique({ where: { id: b.id }, select: { quantity: true } });
+          const take = Math.min(fresh?.quantity ?? 0, remaining);
+          if (take <= 0) break;
+          const res = await tx.inventory.updateMany({
+            where: { id: b.id, quantity: { gte: take } },
+            data: { quantity: { decrement: take } },
+          });
+          if (res.count === 1) {
+            remaining -= take;
+            break;
+          }
+        }
         if (remaining <= 0) break;
-        const take = Math.min(b.quantity, remaining);
-        await tx.inventory.update({ where: { id: b.id }, data: { quantity: { decrement: take } } });
-        remaining -= take;
       }
-      if (batches.length) productIds.push(item.productId);
+      // Products with no batch rows at all are not stock-tracked (manual status only).
+      const tracked = batches.length > 0 || (await tx.inventory.count({ where: { productId: item.productId } })) > 0;
+      if (tracked) {
+        productIds.push(item.productId);
+        if (remaining > 0) shortages.push(`${item.nameFa}: ${remaining}`);
+      }
     }
-    await tx.order.update({ where: { id: orderId }, data: { stockAllocated: true } });
+    if (shortages.length) {
+      const note = `⚠ کسری موجودی هنگام ثبت: ${shortages.join('، ')}`;
+      await tx.order.update({
+        where: { id: orderId },
+        data: { adminNote: order.adminNote ? `${order.adminNote}\n${note}` : note },
+      });
+    }
     return productIds;
   });
   for (const id of touched) await syncProductStock(id);
@@ -125,11 +155,13 @@ export async function allocateOrderStock(orderId: string, now = new Date()): Pro
  */
 export async function releaseOrderStock(orderId: string, now = new Date()): Promise<void> {
   const touched = await db.$transaction(async (tx) => {
-    const order = await tx.order.findUnique({
+    // Claim the release so a double "cancel" click cannot return stock twice.
+    const claim = await tx.order.updateMany({ where: { id: orderId, stockAllocated: true }, data: { stockAllocated: false } });
+    if (claim.count === 0) return [];
+    const order = await tx.order.findUniqueOrThrow({
       where: { id: orderId },
-      select: { stockAllocated: true, items: { select: { productId: true, quantity: true } } },
+      select: { items: { select: { productId: true, quantity: true } } },
     });
-    if (!order?.stockAllocated) return [];
     const ids: string[] = [];
     for (const item of order.items) {
       if (!item.productId) continue;
@@ -142,7 +174,6 @@ export async function releaseOrderStock(orderId: string, now = new Date()): Prom
       await tx.inventory.update({ where: { id: batch.id }, data: { quantity: { increment: item.quantity } } });
       ids.push(item.productId);
     }
-    await tx.order.update({ where: { id: orderId }, data: { stockAllocated: false } });
     return ids;
   });
   for (const id of touched) await syncProductStock(id);
