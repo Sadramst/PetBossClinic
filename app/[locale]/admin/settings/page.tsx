@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { SettingsForm } from "@/components/admin/settings-form";
 import { requireAdmin } from "@/lib/auth/guard";
+import { SeoSettingsForm } from "@/components/admin/seo-settings-form";
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ export default async function AdminSettingsPage({
   await requireAdmin('ADMIN', locale);
   const isEn = locale === 'en';
 
-  const siteSetting = await db.siteSetting.findFirst();
+  const [siteSetting, seoSetting] = await Promise.all([db.siteSetting.findFirst(), db.seoSetting.findFirst()]);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -27,6 +28,8 @@ export default async function AdminSettingsPage({
             : 'اطلاعات تماس، نشانی پستی، مختصات جغرافیایی و ساعات کاری کلینیک پت‌باس'}
         </p>
       </div>
+
+      <SeoSettingsForm initial={seoSetting} />
 
       <SettingsForm
         initialSettings={siteSetting}

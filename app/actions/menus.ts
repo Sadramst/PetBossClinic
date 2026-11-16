@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { getSessionWithRole } from '@/lib/auth'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { logAdminChange } from '@/lib/audit'
 
@@ -12,7 +12,7 @@ export interface MenuActionState {
 }
 
 export async function upsertMenuItemAction(formData: FormData): Promise<MenuActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   const id = formData.get('id')?.toString().trim() || null
@@ -84,7 +84,7 @@ export async function upsertMenuItemAction(formData: FormData): Promise<MenuActi
 }
 
 export async function toggleMenuItemAction(id: string, isActive: boolean): Promise<MenuActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
@@ -111,7 +111,7 @@ export async function toggleMenuItemAction(id: string, isActive: boolean): Promi
 }
 
 export async function deleteMenuItemAction(id: string): Promise<MenuActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
@@ -137,7 +137,7 @@ export async function deleteMenuItemAction(id: string): Promise<MenuActionState>
 }
 
 export async function reorderMenuItemsAction(items: { id: string; sortOrder: number }[]): Promise<MenuActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {

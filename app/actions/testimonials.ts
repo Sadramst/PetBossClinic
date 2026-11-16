@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { getSessionWithRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { logAdminChange } from '@/lib/audit'
 
@@ -12,7 +12,7 @@ export interface TestimonialActionState {
 }
 
 export async function upsertTestimonialAction(formData: FormData): Promise<TestimonialActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   const id = formData.get('id')?.toString().trim() || null
@@ -78,7 +78,7 @@ export async function upsertTestimonialAction(formData: FormData): Promise<Testi
 }
 
 export async function toggleTestimonialAction(id: string, isActive: boolean): Promise<TestimonialActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
@@ -105,7 +105,7 @@ export async function toggleTestimonialAction(id: string, isActive: boolean): Pr
 }
 
 export async function deleteTestimonialAction(id: string): Promise<TestimonialActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {

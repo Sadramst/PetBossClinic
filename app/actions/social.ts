@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { getSessionWithRole } from '@/lib/auth'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { SocialPlatform } from '@prisma/client'
 import { logAdminChange } from '@/lib/audit'
@@ -13,7 +13,7 @@ export interface SocialActionState {
 }
 
 export async function upsertSocialLinkAction(formData: FormData): Promise<SocialActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   const id = formData.get('id')?.toString().trim() || null
@@ -77,7 +77,7 @@ export async function upsertSocialLinkAction(formData: FormData): Promise<Social
 }
 
 export async function toggleSocialLinkAction(id: string, isActive: boolean): Promise<SocialActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
@@ -104,7 +104,7 @@ export async function toggleSocialLinkAction(id: string, isActive: boolean): Pro
 }
 
 export async function deleteSocialLinkAction(id: string): Promise<SocialActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {

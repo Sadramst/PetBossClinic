@@ -91,17 +91,8 @@ export function Header({
           })}
         </nav>
 
-        {/* Right side: Language + Emergency CTA */}
+        {/* Right side: Emergency CTA */}
         <div className="flex items-center gap-3">
-          {/* Language Switcher */}
-          <Link
-            href={pathname}
-            locale={isEnglish ? 'fa' : 'en'}
-            className="text-xs font-semibold px-3 py-1.5 rounded-full border border-border-gold bg-surface-card/60 text-foreground hover:border-primary hover:text-primary transition-all"
-            title="Switch Language"
-          >
-            {isEnglish ? 'فارسی' : 'English'}
-          </Link>
 
           {/* Luxury CTA Button */}
           <Button

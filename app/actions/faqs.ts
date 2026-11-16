@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { getSessionWithRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { logAdminChange } from '@/lib/audit'
 
@@ -12,7 +12,7 @@ export interface FaqActionState {
 }
 
 export async function createFaqAction(formData: FormData): Promise<FaqActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   const questionFa = formData.get('questionFa')?.toString().trim()
@@ -56,7 +56,7 @@ export async function createFaqAction(formData: FormData): Promise<FaqActionStat
 }
 
 export async function updateFaqAction(faqId: string, formData: FormData): Promise<FaqActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   const questionFa = formData.get('questionFa')?.toString().trim()
@@ -104,7 +104,7 @@ export async function updateFaqAction(faqId: string, formData: FormData): Promis
 }
 
 export async function deleteFaqAction(faqId: string): Promise<FaqActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {

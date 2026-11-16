@@ -6,9 +6,9 @@ test.describe('Pet Boss End-to-End Navigation & Simulation Tests', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     await expect(page).toHaveURL(/\/(fa)?$/)
 
-    // Switch language or browse English
+    // Retired English URLs permanently redirect to the Farsi site
     await page.goto('/en', { waitUntil: 'domcontentloaded' })
-    await expect(page).toHaveURL(/\/en$/)
+    await expect(page).toHaveURL(/\/$/)
 
     // Browse Services
     await page.goto('/services', { waitUntil: 'domcontentloaded' })

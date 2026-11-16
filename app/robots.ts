@@ -1,15 +1,17 @@
 import { MetadataRoute } from 'next';
+import { SITE_URL } from '@/lib/seo/site';
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
-        disallow: ['/admin', '/admin/', '/api/', '/_next/'],
+        // Product images are served from /api/media and must stay crawlable for Google Images.
+        // /_next/ is NOT blocked: Google needs our JS/CSS to render pages.
+        allow: ['/', '/api/media/'],
+        disallow: ['/admin', '/api/'],
       },
     ],
-    sitemap: 'https://www.petbossclinic.com/sitemap.xml',
-    host: 'https://www.petbossclinic.com',
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

@@ -14,6 +14,8 @@ import { getClinicNAP } from '@/lib/clinic/nap';
 import { getSitePictures } from '@/lib/media';
 import { getNavigationMenu } from '@/lib/navigation/menu';
 import { OrganizationJsonLd, WebSiteJsonLd } from '@/lib/seo/json-ld';
+import { getSeoConfig, isValidGa4Id } from '@/lib/seo/settings';
+import Script from 'next/script';
 
 const outfit = Outfit({
   subsets: ['latin'],
@@ -28,7 +30,7 @@ const vazirmatn = Vazirmatn({
 });
 
 export function generateStaticParams() {
-  return [{ locale: 'fa' }, { locale: 'en' }];
+  return [{ locale: 'fa' }];
 }
 
 export async function generateMetadata({
@@ -39,7 +41,7 @@ export async function generateMetadata({
   const { locale } = await params;
   setRequestLocale(locale);
   const isEn = locale === 'en';
-  const nap = await getClinicNAP();
+  const [nap, seo] = await Promise.all([getClinicNAP(), getSeoConfig()]);
 
   const title = isEn
     ? 'Pet Boss Clinic & Pet Shop | Premier Veterinary & Pet Boutique in Tehran'
@@ -63,18 +65,12 @@ export async function generateMetadata({
     creator: 'Pet Boss Clinic',
     publisher: 'Pet Boss Clinic',
     alternates: {
-      canonical: isEn ? 'https://www.petbossclinic.com/en' : 'https://www.petbossclinic.com',
-      languages: {
-        'fa-IR': 'https://www.petbossclinic.com',
-        en: 'https://www.petbossclinic.com/en',
-        'x-default': 'https://www.petbossclinic.com',
-      },
+      canonical: 'https://www.petbossclinic.com',
     },
     openGraph: {
       type: 'website',
       locale: isEn ? 'en_US' : 'fa_IR',
-      alternateLocale: isEn ? 'fa_IR' : 'en_US',
-      url: isEn ? 'https://www.petbossclinic.com/en' : 'https://www.petbossclinic.com',
+      url: 'https://www.petbossclinic.com',
       siteName: isEn ? 'Pet Boss Clinic & Pet Shop' : 'کلینیک و پت شاپ پت باس',
       title,
       description,
@@ -115,8 +111,8 @@ export async function generateMetadata({
       shortcut: '/favicon.ico',
     },
     verification: {
-      // Add your Google Search Console verification code here after setup
-      // google: 'YOUR_GOOGLE_VERIFICATION_CODE',
+      ...(seo.gscVerification && { google: seo.gscVerification }),
+      ...(seo.bingVerification && { other: { 'msvalidate.01': seo.bingVerification } }),
     },
   };
 }
@@ -141,7 +137,8 @@ export default async function LocaleLayout({
   const initialTheme = await getActiveClinicTheme();
 
   const fontClass = locale === 'fa' ? vazirmatn.className : outfit.className;
-  const [nap, sitePictures, navItems] = await Promise.all([
+  const [seo, nap, sitePictures, navItems] = await Promise.all([
+    getSeoConfig(),
     getClinicNAP(),
     getSitePictures(),
     getNavigationMenu('main-header'),
@@ -160,6 +157,14 @@ export default async function LocaleLayout({
       <body
         className={`${fontClass} antialiased bg-background text-foreground min-h-screen flex flex-col selection:bg-primary selection:text-primary-foreground`}
       >
+        {seo.ga4Id && isValidGa4Id(seo.ga4Id) && (
+          <>
+            <Script src={`https://www.googletagmanager.com/gtag/js?id=${seo.ga4Id}`} strategy="afterInteractive" />
+            <Script id="ga4-init" strategy="afterInteractive">
+              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${seo.ga4Id}');`}
+            </Script>
+          </>
+        )}
         <ThemeProvider initialTheme={initialTheme}>
           <NextIntlClientProvider messages={messages}>
             <Header logoUrl={sitePictures.site_logo} navItems={navItems} phone={nap.phone} />

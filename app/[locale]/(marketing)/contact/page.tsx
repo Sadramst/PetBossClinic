@@ -8,7 +8,7 @@ import { BreadcrumbJsonLd, VeterinaryCareJsonLd } from "@/lib/seo/json-ld";
 export const revalidate = 60;
 
 export function generateStaticParams() {
-  return [{ locale: 'fa' }, { locale: 'en' }];
+  return [{ locale: 'fa' }];
 }
 
 export async function generateMetadata({
@@ -36,16 +36,12 @@ export async function generateMetadata({
       ? ['contact Pet Boss Clinic', 'veterinary phone Tehran', 'vet clinic address Gheitariyeh', 'Pet Boss appointment']
       : ['تماس با دامپزشکی پت باس', 'شماره تلفن دامپزشکی قیطریه', 'آدرس کلینیک پت باس شریعتی', 'رزرو نوبت دامپزشکی تهران'],
     alternates: {
-      canonical: isEn ? 'https://www.petbossclinic.com/en/contact' : 'https://www.petbossclinic.com/contact',
-      languages: {
-        'fa-IR': 'https://www.petbossclinic.com/contact',
-        en: 'https://www.petbossclinic.com/en/contact',
-      },
+      canonical: 'https://www.petbossclinic.com/contact',
     },
     openGraph: {
       title,
       description,
-      url: isEn ? 'https://www.petbossclinic.com/en/contact' : 'https://www.petbossclinic.com/contact',
+      url: 'https://www.petbossclinic.com/contact',
       images: [{ url: '/images/petboss-sign.jpg', width: 1200, height: 630 }],
     },
   };

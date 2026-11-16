@@ -80,7 +80,6 @@ export async function setGlobalThemeAction(themeId: ThemePreset): Promise<ThemeA
     revalidatePath('/', 'layout');
     revalidatePath('/[locale]', 'layout');
     revalidatePath('/fa', 'layout');
-    revalidatePath('/en', 'layout');
 
     return { success: true, theme: themeId };
   } catch (err: unknown) {

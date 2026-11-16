@@ -1,50 +1,71 @@
 import { MetadataRoute } from 'next';
+import { db } from '@/lib/db';
+import { absoluteUrl } from '@/lib/seo/site';
+import { categoryPath, productPath } from '@/lib/shop/urls';
+import { visibleProduct } from '@/lib/shop/catalog';
 
-const BASE_URL = 'https://www.petbossclinic.com';
+export const revalidate = 3600;
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date().toISOString();
+const STATIC_PAGES: Array<{ path: string; priority: number; changeFrequency: 'daily' | 'weekly' | 'monthly' }> = [
+  { path: '/', priority: 1.0, changeFrequency: 'weekly' },
+  { path: '/shop', priority: 0.95, changeFrequency: 'daily' },
+  { path: '/services', priority: 0.9, changeFrequency: 'weekly' },
+  { path: '/contact', priority: 0.8, changeFrequency: 'monthly' },
+  { path: '/about', priority: 0.7, changeFrequency: 'monthly' },
+  { path: '/faq', priority: 0.7, changeFrequency: 'weekly' },
+];
 
-  // Static pages for both locales
-  const staticPages = [
-    { path: '', priority: 1.0, changeFrequency: 'weekly' as const },
-    { path: '/services', priority: 0.9, changeFrequency: 'weekly' as const },
-    { path: '/shop', priority: 0.9, changeFrequency: 'daily' as const },
-    { path: '/about', priority: 0.7, changeFrequency: 'monthly' as const },
-    { path: '/contact', priority: 0.8, changeFrequency: 'monthly' as const },
-    { path: '/faq', priority: 0.7, changeFrequency: 'weekly' as const },
-  ];
+function imageUrl(src: string | null | undefined): string[] {
+  if (!src || src.startsWith('data:')) return [];
+  return [absoluteUrl(src)];
+}
 
-  const entries: MetadataRoute.Sitemap = [];
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const entries: MetadataRoute.Sitemap = STATIC_PAGES.map((p) => ({
+    url: absoluteUrl(p.path),
+    changeFrequency: p.changeFrequency,
+    priority: p.priority,
+  }));
 
-  for (const page of staticPages) {
-    // Persian (default locale — no prefix)
-    entries.push({
-      url: `${BASE_URL}${page.path || '/'}`,
-      lastModified: now,
-      changeFrequency: page.changeFrequency,
-      priority: page.priority,
-      alternates: {
-        languages: {
-          'fa-IR': `${BASE_URL}${page.path || '/'}`,
-          en: `${BASE_URL}/en${page.path || '/'}`,
+  try {
+    const [categories, products] = await Promise.all([
+      db.productCategory.findMany({
+        where: { isActive: true, deletedAt: null, noindex: false, products: { some: visibleProduct } },
+        select: { slugFa: true, updatedAt: true, imageId: true },
+        orderBy: { sortOrder: 'asc' },
+      }),
+      db.product.findMany({
+        where: { ...visibleProduct, noindex: false },
+        select: {
+          slugFa: true,
+          updatedAt: true,
+          images: { orderBy: { sortOrder: 'asc' }, take: 1, select: { imageId: true } },
         },
-      },
-    });
+        orderBy: { sortOrder: 'asc' },
+      }),
+    ]);
 
-    // English
-    entries.push({
-      url: `${BASE_URL}/en${page.path || '/'}`,
-      lastModified: now,
-      changeFrequency: page.changeFrequency,
-      priority: page.priority * 0.9,
-      alternates: {
-        languages: {
-          'fa-IR': `${BASE_URL}${page.path || '/'}`,
-          en: `${BASE_URL}/en${page.path || '/'}`,
-        },
-      },
-    });
+    for (const c of categories) {
+      entries.push({
+        url: absoluteUrl(categoryPath(c.slugFa)),
+        lastModified: c.updatedAt,
+        changeFrequency: 'daily',
+        priority: 0.85,
+        images: imageUrl(c.imageId),
+      });
+    }
+    for (const p of products) {
+      entries.push({
+        url: absoluteUrl(productPath(p.slugFa)),
+        lastModified: p.updatedAt,
+        changeFrequency: 'weekly',
+        priority: 0.7,
+        images: imageUrl(p.images[0]?.imageId),
+      });
+    }
+  } catch (err) {
+    // Never fail the whole sitemap because the DB is briefly unreachable.
+    console.error('sitemap: catalog query failed', err);
   }
 
   return entries;

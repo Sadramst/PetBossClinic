@@ -3,7 +3,20 @@ import { cookies } from 'next/headers'
 import { Role } from '@prisma/client'
 
 const SESSION_COOKIE_NAME = 'petboss_session'
-const SESSION_SECRET = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || 'petboss-super-secure-secret-key-2026-v1'
+const DEV_ONLY_SECRET = 'petboss-local-development-secret-not-for-production'
+
+/**
+ * HMAC secret for admin session cookies. Production MUST set AUTH_SECRET:
+ * a hard-coded fallback would let anyone who reads the source forge an admin session.
+ */
+function sessionSecret(): string {
+  const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET
+  if (secret) return secret
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('AUTH_SECRET is not set. Refusing to sign or verify admin sessions.')
+  }
+  return DEV_ONLY_SECRET
+}
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7 // 7 days
 
 export interface SessionPayload {
@@ -57,7 +70,7 @@ export function createSessionToken(user: {
 
   const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url')
   const signature = crypto
-    .createHmac('sha256', SESSION_SECRET)
+    .createHmac('sha256', sessionSecret())
     .update(encodedPayload)
     .digest('base64url')
 
@@ -73,7 +86,7 @@ export function verifySessionToken(token: string): SessionPayload | null {
     if (parts.length !== 2) return null
     const [encodedPayload, signature] = parts
     const expectedSignature = crypto
-      .createHmac('sha256', SESSION_SECRET)
+      .createHmac('sha256', sessionSecret())
       .update(encodedPayload)
       .digest('base64url')
 
@@ -144,4 +157,14 @@ export function hasRoleAccess(userRole: Role, requiredRole: Role): boolean {
   }
 
   return (roleHierarchy[userRole] ?? 0) >= (roleHierarchy[requiredRole] ?? 0)
+}
+
+/**
+ * Session of a signed-in admin with at least `minRole`, or null.
+ * Every mutating server action must use this instead of a bare getSession().
+ */
+export async function getSessionWithRole(minRole: Role): Promise<SessionPayload | null> {
+  const session = await getSession()
+  if (!session || !hasRoleAccess(session.role, minRole)) return null
+  return session
 }

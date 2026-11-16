@@ -7,6 +7,7 @@ import { Link } from '@/i18n/routing'
 import { StockStatus } from '@prisma/client'
 import { formatPrice } from '@/lib/format/price'
 import { toPersianDigits } from '@/lib/utils/phone'
+import { productPath } from '@/lib/shop/urls'
 import {
   parseAIQueryIntent,
   scoreProductAIRelevance,
@@ -35,6 +36,7 @@ export interface ShopProduct {
   id: string
   categoryId: string
   sku: string | null
+  slugFa: string
   nameFa: string
   nameEn: string | null
   shortDescFa: string | null
@@ -1531,7 +1533,9 @@ export function ShopCatalogClient({
                         </span>
 
                         <h3 className="text-sm font-bold text-foreground leading-snug mb-1.5 group-hover:text-primary transition-colors line-clamp-2">
-                          {pName}
+                          <Link href={productPath(product.slugFa)} className="hover:underline underline-offset-4">
+                            {pName}
+                          </Link>
                         </h3>
 
                         {pDesc && (
@@ -1559,13 +1563,12 @@ export function ShopCatalogClient({
                           </div>
 
                           <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setActiveModalProduct(product)}
-                              className="w-full py-2 px-2 rounded-xl bg-surface-elevated border border-border text-foreground hover:border-primary text-xs font-semibold text-center transition-colors cursor-pointer"
+                            <Link
+                              href={productPath(product.slugFa)}
+                              className="w-full py-2 px-2 rounded-xl bg-surface-elevated border border-border text-foreground hover:border-primary text-xs font-semibold text-center transition-colors"
                             >
-                              {isEn ? 'Details' : 'جزئیات'}
-                            </button>
+                              جزئیات
+                            </Link>
 
                             {whatsappUrl ? (
                               <a
@@ -1668,13 +1671,12 @@ export function ShopCatalogClient({
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setActiveModalProduct(product)}
-                            className="px-3 py-1.5 rounded-xl bg-surface border border-border text-foreground hover:border-primary text-xs font-semibold cursor-pointer"
+                          <Link
+                            href={productPath(product.slugFa)}
+                            className="px-3 py-1.5 rounded-xl bg-surface border border-border text-foreground hover:border-primary text-xs font-semibold"
                           >
-                            {isEn ? 'Details' : 'جزئیات'}
-                          </button>
+                            جزئیات
+                          </Link>
                           {whatsappUrl ? (
                             <a
                               href={whatsappUrl}
@@ -2133,8 +2135,14 @@ export function ShopCatalogClient({
                 onClick={() => setActiveModalProduct(null)}
                 className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-surface border border-border text-foreground hover:bg-surface-card text-xs font-bold cursor-pointer"
               >
-                {isEn ? 'Close' : 'بستن'}
+                بستن
               </button>
+              <Link
+                href={productPath(activeModalProduct.slugFa)}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-surface border border-primary text-primary hover:bg-primary hover:text-charcoal-950 text-xs font-bold text-center"
+              >
+                صفحه کامل محصول
+              </Link>
 
               {whatsappNumber && (
                 <a

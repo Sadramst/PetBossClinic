@@ -642,6 +642,10 @@ model Product {
   categoryId         String
   brandId            String?
   sku                String?   @unique
+  /// EAN/UPC barcode (GTIN). Used in Product structured data and shopping feeds.
+  barcode            String?
+  /// True for food, treats, medicines etc. Admin is warned when such a product has no dated batch.
+  tracksExpiry       Boolean   @default(false)
   slugFa             String    @unique
   slugEn             String?   @unique
   nameFa             String
@@ -738,16 +742,28 @@ model ProductAttribute {
   @@index([productId])
 }
 
+/// A stock batch (lot) of a product. Each delivery is one row so that every
+/// unit on the shelf has a known expiry date. The storefront shows the nearest
+/// non-expired batch; expired batches are never sold (FEFO: first-expiry-first-out).
 model Inventory {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   productId   String
-  quantity    Int      @default(0)
+  quantity    Int       @default(0)
   location    String?
-  updatedAt   DateTime @updatedAt
+  batchNumber String?
+  /// Manufacture date printed on the package (optional).
+  manufactureDate DateTime?
+  /// Expiry date printed on the package. Null for non-perishables (toys, bowls...).
+  expiryDate  DateTime?
+  receivedAt  DateTime  @default(now())
+  note        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
+  @@index([expiryDate])
 }
 
 model Wishlist {

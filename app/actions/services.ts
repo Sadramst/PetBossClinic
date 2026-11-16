@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { getSessionWithRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { PriceDisplayMode } from '@prisma/client'
 import { logAdminChange } from '@/lib/audit'
@@ -22,7 +22,7 @@ function generateSlug(text: string): string {
 }
 
 export async function createServiceAction(formData: FormData): Promise<ServiceActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) {
     return { error: 'دسترسی غیرمجاز. لطفاً وارد حساب خود شوید.' }
   }
@@ -102,7 +102,7 @@ export async function createServiceAction(formData: FormData): Promise<ServiceAc
 }
 
 export async function updateServiceAction(serviceId: string, formData: FormData): Promise<ServiceActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) {
     return { error: 'دسترسی غیرمجاز.' }
   }
@@ -170,7 +170,7 @@ export async function updateServiceAction(serviceId: string, formData: FormData)
 }
 
 export async function toggleServiceActiveAction(serviceId: string): Promise<ServiceActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
@@ -204,7 +204,7 @@ export async function toggleServiceActiveAction(serviceId: string): Promise<Serv
 }
 
 export async function deleteServiceAction(serviceId: string): Promise<ServiceActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {

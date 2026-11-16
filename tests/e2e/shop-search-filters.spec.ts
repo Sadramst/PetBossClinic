@@ -66,18 +66,9 @@ test.describe('Pet Boss Shop Professional Search, Filter & AI Assistant E2E Test
     }
   })
 
-  test('browses English shop catalog in LTR', async ({ page }) => {
+  test('legacy English shop URL redirects to the Farsi shop', async ({ page }) => {
     await page.goto('/en/shop', { waitUntil: 'domcontentloaded' })
-    await expect(page).toHaveURL(/\/en\/shop$/)
-
-    // Heading should be in English
-    const heading = page.locator('h1')
-    await expect(heading).toContainText(/Nutrition|Pet Supplies/i)
-
-    // Filter by Pet tabs
-    const catTab = page.locator('button:has-text("Cats")')
-    if (await catTab.isVisible()) {
-      await catTab.click()
-    }
+    await expect(page).toHaveURL(/\/shop$/)
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl')
   })
 })

@@ -1,10 +1,12 @@
 import { defineRouting } from 'next-intl/routing';
 import { createNavigation } from 'next-intl/navigation';
 
+// The site is Farsi-only. English was removed for SEO focus; every legacy
+// /en/* URL is 301-redirected to its Farsi equivalent in middleware.ts.
 export const routing = defineRouting({
-  locales: ['fa', 'en'],
+  locales: ['fa'],
   defaultLocale: 'fa',
-  localePrefix: 'as-needed',
+  localePrefix: 'never',
   localeDetection: false,
 });
 

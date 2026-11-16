@@ -11,6 +11,7 @@ import { getSitePictures } from "@/lib/media";
 import { getClinicNAP } from "@/lib/clinic/nap";
 import { formatPrice, formatServicePrice } from "@/lib/format/price";
 import { toPersianDigits } from "@/lib/utils/phone";
+import { productPath } from "@/lib/shop/urls";
 import {
   VeterinaryCareJsonLd,
   FAQPageJsonLd,
@@ -20,7 +21,7 @@ import {
 export const revalidate = 60;
 
 export function generateStaticParams() {
-  return [{ locale: 'fa' }, { locale: 'en' }];
+  return [{ locale: 'fa' }];
 }
 
 export async function generateMetadata({
@@ -47,16 +48,12 @@ export async function generateMetadata({
       ? ['veterinary clinic Tehran', 'pet shop Gheitariyeh', 'dog cat surgery Tehran', 'pet dental clinic Tehran', 'dog grooming Tehran', 'Pet Boss Clinic']
       : ['کلینیک دامپزشکی تهران', 'دامپزشکی قیطریه', 'دامپزشکی شریعتی', 'پت شاپ قیطریه', 'واکسیناسیون سگ و گربه', 'جراحی حیوانات خانگی تهران', 'دندانپزشکی سگ و گربه', 'گرومینگ سگ تهران'],
     alternates: {
-      canonical: isEn ? 'https://www.petbossclinic.com/en' : 'https://www.petbossclinic.com',
-      languages: {
-        'fa-IR': 'https://www.petbossclinic.com',
-        en: 'https://www.petbossclinic.com/en',
-      },
+      canonical: 'https://www.petbossclinic.com',
     },
     openGraph: {
       title,
       description,
-      url: isEn ? 'https://www.petbossclinic.com/en' : 'https://www.petbossclinic.com',
+      url: 'https://www.petbossclinic.com',
       images: [{ url: '/images/petboss-sign.jpg', width: 1200, height: 630, alt: title }],
     },
   };
@@ -442,7 +439,7 @@ export default async function HomePage({
                           {catName}
                         </span>
                         <h3 className="text-sm font-bold text-foreground leading-snug mb-2 group-hover:text-primary transition-colors line-clamp-2">
-                          {pName}
+                          <Link href={productPath(p.slugFa)}>{pName}</Link>
                         </h3>
                         {p.shortDescFa && (
                           <p className="text-xs text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
@@ -463,7 +460,7 @@ export default async function HomePage({
 
                         <div className="grid grid-cols-2 gap-2">
                           <Button asChild size="sm" variant="outline" className="text-xs rounded-xl border-border hover:border-primary">
-                            <Link href="/shop">{isEn ? 'View in Shop' : 'مشاهده جزئیات'}</Link>
+                            <Link href={productPath(p.slugFa)}>مشاهده جزئیات</Link>
                           </Button>
                           <Button asChild size="sm" className="bg-gradient-gold text-charcoal-950 font-bold text-xs rounded-xl shadow-gold hover:opacity-95">
                             <a href={nap.telLink || "#"}>{isEn ? 'Call Clinic' : 'تماس و سفارش'}</a>

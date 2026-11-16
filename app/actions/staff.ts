@@ -1,7 +1,7 @@
 'use server'
 
 import { db } from '@/lib/db'
-import { getSession } from '@/lib/auth'
+import { getSessionWithRole } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { logAdminChange } from '@/lib/audit'
 import fs from 'fs'
@@ -74,7 +74,7 @@ async function saveStaffPhoto(file: File): Promise<string> {
 }
 
 export async function createStaffAction(formData: FormData): Promise<StaffActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   const nameFa = formData.get('nameFa')?.toString().trim()
@@ -142,7 +142,7 @@ export async function createStaffAction(formData: FormData): Promise<StaffAction
 }
 
 export async function updateStaffAction(staffId: string, formData: FormData): Promise<StaffActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   const nameFa = formData.get('nameFa')?.toString().trim()
@@ -214,7 +214,7 @@ export async function updateStaffAction(staffId: string, formData: FormData): Pr
 }
 
 export async function toggleStaffActiveAction(staffId: string): Promise<StaffActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {
@@ -248,7 +248,7 @@ export async function toggleStaffActiveAction(staffId: string): Promise<StaffAct
 }
 
 export async function deleteStaffAction(staffId: string): Promise<StaffActionState> {
-  const session = await getSession()
+  const session = await getSessionWithRole('EDITOR')
   if (!session) return { error: 'دسترسی غیرمجاز.' }
 
   try {

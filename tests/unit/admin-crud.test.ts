@@ -25,14 +25,14 @@ describe('Admin Authentication & CRUD Server Actions Unit Tests', () => {
       expect(result.error).toBe('لطفاً ایمیل و کلمه عبور را وارد نمایید.')
     })
 
-    it('returns error when email or password is missing in English', async () => {
+    it('answers in Farsi even when a legacy English locale is posted', async () => {
       const formData = new FormData()
       formData.append('email', 'admin@petboss.com')
       formData.append('password', '')
       formData.append('locale', 'en')
 
       const result = await loginAction(undefined, formData)
-      expect(result.error).toBe('Please enter both email and password.')
+      expect(result.error).toBe('لطفاً ایمیل و کلمه عبور را وارد نمایید.')
     })
   })
 

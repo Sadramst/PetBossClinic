@@ -4,11 +4,13 @@ import { ShopCatalogClient } from '@/components/shop'
 import { BreadcrumbJsonLd } from '@/lib/seo/json-ld'
 import { getClinicNAP } from '@/lib/clinic/nap'
 import { setRequestLocale } from 'next-intl/server'
+import { Link } from '@/i18n/routing'
+import { categoryPath } from '@/lib/shop/urls'
 
 export const revalidate = 60;
 
 export function generateStaticParams() {
-  return [{ locale: 'fa' }, { locale: 'en' }];
+  return [{ locale: 'fa' }];
 }
 
 export async function generateMetadata({
@@ -35,16 +37,12 @@ export async function generateMetadata({
       ? ['pet shop Tehran', 'veterinary boutique Gheytariyeh', 'Royal Canin Tehran', 'Josera cat food', 'cat litter Tehran']
       : ['پت شاپ تهران', 'پت شاپ قیطریه', 'پت شاپ شریعتی', 'خرید غذای خشک سگ تهران', 'غذای گربه رویال کنین', 'خاک گربه قیطریه', 'لوازم حیوانات خانگی'],
     alternates: {
-      canonical: isEn ? 'https://www.petbossclinic.com/en/shop' : 'https://www.petbossclinic.com/shop',
-      languages: {
-        'fa-IR': 'https://www.petbossclinic.com/shop',
-        en: 'https://www.petbossclinic.com/en/shop',
-      },
+      canonical: 'https://www.petbossclinic.com/shop',
     },
     openGraph: {
       title,
       description,
-      url: isEn ? 'https://www.petbossclinic.com/en/shop' : 'https://www.petbossclinic.com/shop',
+      url: 'https://www.petbossclinic.com/shop',
       images: [
         {
           url: '/images/categories/cat-dry-food.jpg',
@@ -96,6 +94,7 @@ export default async function ShopPage({
         id: true,
         categoryId: true,
         sku: true,
+        slugFa: true,
         nameFa: true,
         nameEn: true,
         shortDescFa: true,
@@ -141,7 +140,7 @@ export default async function ShopPage({
     description: isEn
       ? 'Premier super-premium pet food, prescription veterinary diets, and luxury pet accessories.'
       : 'عرضه تخصصی غذاهای سوپرپرمیوم، مکمل‌های درمانی و ملزومات لوکس سگ و گربه.',
-    url: `https://www.petbossclinic.com/${locale}/shop`,
+    url: 'https://www.petbossclinic.com/shop',
     telephone: nap.phone,
     address: {
       '@type': 'PostalAddress',
@@ -184,6 +183,24 @@ export default async function ShopPage({
         whatsappNumber={nap.whatsappNumber}
         phone={nap.phone}
       />
+      <nav aria-label="دسته‌بندی‌های پت‌شاپ" className="container mx-auto px-4 pb-16 max-w-7xl">
+        <h2 className="text-lg font-bold mb-4">خرید بر اساس دسته‌بندی</h2>
+        <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 text-sm">
+          {categories
+            .filter((c) => c._count.products > 0)
+            .map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={categoryPath(c.slugFa)}
+                  className="flex justify-between rounded-xl border border-border bg-surface-card px-4 py-3 hover:border-primary hover:text-primary transition-colors"
+                >
+                  <span>خرید {c.nameFa}</span>
+                  <span className="text-xs text-muted-foreground">{c._count.products.toLocaleString('fa-IR')}</span>
+                </Link>
+              </li>
+            ))}
+        </ul>
+      </nav>
     </>
   )
 }
