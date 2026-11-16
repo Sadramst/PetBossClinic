@@ -1,7 +1,9 @@
 import { absoluteUrl } from '@/lib/seo/site';
 import { feedProducts, toGoogleItem } from '@/lib/shop/feeds';
 
-export const revalidate = 3600;
+// Rendered on request and cached at the CDN for an hour. Not prerendered at build
+// time, so builds never depend on the database shape (e.g. preview deployments).
+export const dynamic = 'force-dynamic';
 
 /** Full product catalogue as a Google Merchant style RSS feed (Emalls and others accept it). */
 export async function GET() {
@@ -20,5 +22,10 @@ export async function GET() {
 ${rows.map(toGoogleItem).join('\n')}
 </channel>
 </rss>`;
-  return new Response(body, { headers: { 'Content-Type': 'application/xml; charset=utf-8' } });
+  return new Response(body, {
+    headers: {
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+    },
+  });
 }
