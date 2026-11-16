@@ -136,6 +136,31 @@ test.describe('technical SEO across the Farsi site', () => {
     expect(nodes.map((n) => n['@type'])).toContain('BreadcrumbList');
   });
 
+  test('service detail pages expose Service, FAQ and Breadcrumb schema', async ({ page, request }) => {
+    const listing = await (await request.get('/services')).text();
+    const href = /href="(\/services\/[^"?]+)"/.exec(listing)?.[1];
+    expect(href, 'a service detail link should exist on /services').toBeTruthy();
+
+    await page.goto(href!, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('h1')).toBeVisible();
+    expect((await page.title()).length).toBeLessThanOrEqual(75);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `${CANON}${href}`);
+    expect(await robotsContent(page)).not.toContain('noindex');
+
+    const nodes = schemaNodes(await page.locator('script[type="application/ld+json"]').allTextContents());
+    const types = nodes.map((n) => n['@type']);
+    expect(types).toContain('Service');
+    expect(types).toContain('FAQPage');
+    expect(types).toContain('BreadcrumbList');
+
+    const service = nodes.find((n) => n['@type'] === 'Service') as {
+      url?: string;
+      offers?: { priceCurrency?: string };
+    };
+    expect(service.url).toBe(`${CANON}${href}`);
+    if (service.offers) expect(service.offers.priceCurrency).toBe('IRR');
+  });
+
   test('brand pages are indexable and canonical', async ({ page }) => {
     await page.goto('/shop', { waitUntil: 'domcontentloaded' });
     const brandLink = page.locator('a[href^="/brand/"]').first();
@@ -171,6 +196,7 @@ test.describe('technical SEO across the Farsi site', () => {
     expect(sitemap).toContain('https://www.petbossclinic.com/product/');
     expect(sitemap).toContain('https://www.petbossclinic.com/shop/');
     expect(sitemap).toContain('https://www.petbossclinic.com/brand/');
+    expect(sitemap).toContain('https://www.petbossclinic.com/services/');
     expect(sitemap).not.toContain('/en/');
     expect(sitemap).not.toContain('/admin');
   });

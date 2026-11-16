@@ -84,15 +84,22 @@ export function VeterinaryCareJsonLd({ nap, locale }: VeterinaryCareSchemaProps)
       },
     ],
     sameAs: sameAs(nap),
-    areaServed: {
-      '@type': 'GeoCircle',
-      geoMidpoint: {
-        '@type': 'GeoCoordinates',
-        latitude: nap.geo.lat,
-        longitude: nap.geo.lng,
+    areaServed: [
+      {
+        '@type': 'GeoCircle',
+        geoMidpoint: {
+          '@type': 'GeoCoordinates',
+          latitude: nap.geo.lat,
+          longitude: nap.geo.lng,
+        },
+        geoRadius: '15000',
       },
-      geoRadius: '15000',
-    },
+      { '@type': 'Place', name: 'قیطریه' },
+      { '@type': 'Place', name: 'الهیه' },
+      { '@type': 'Place', name: 'ونک' },
+      { '@type': 'Place', name: 'جردن' },
+      { '@type': 'Place', name: 'شریعتی' },
+    ],
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
       name: isEn ? 'Veterinary Services' : 'خدمات دامپزشکی',

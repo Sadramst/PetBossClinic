@@ -93,6 +93,24 @@ brand suffix protected from truncation.
 to lead `?sort=price-asc`, so the first page showed only “تماس بگیرید”. Price and
 discount sorts now exclude unpriced items from the query and pagination.
 
+### 9. Service landing pages (new)
+The 10 services already had `slugFa`, meta fields, prices, duration and a FAQ
+relation, but no pages. Added `/services/<slug>` with:
+
+- unique title/description/canonical derived from the service record;
+- visible benefits, preparation notes, price, duration and related services;
+- `Service` (with IRR `AggregateOffer`), `FAQPage` and `BreadcrumbList` schema;
+- links from every card on `/services`;
+- sitemap entries and internal links to `/contact` and related services.
+
+This targets long-tail queries such as «واکسیناسیون سگ و گربه در تهران»,
+«قیمت جراحی بافت نرم سگ» and «گرومینگ گربه قیطریه» instead of one generic page.
+
+### 10. IndexNow (Bing, Yandex, Seznam, Naver)
+Added a public key file, `npm run seo:indexnow`, and a protected
+`GET /api/indexnow` endpoint. Google does not use IndexNow; Search Console is
+still required for Google (`docs/search-visibility-playbook.md`).
+
 ## Files changed
 
 - `lib/seo/metadata.ts` (new), `lib/seo/site.ts`, `lib/seo/json-ld.tsx`
@@ -107,8 +125,13 @@ discount sorts now exclude unpriced items from the query and pagination.
 - `app/sitemap.ts`, `app/robots.ts`, `app/manifest.ts`, `middleware.ts`
 - `lib/shop/listing-meta.ts`, `lib/shop/filters.ts`, `lib/shop/feeds.ts`,
   `app/feeds/products.xml/route.ts`
+- `app/[locale]/(clinic)/services/[slug]/page.tsx` (new),
+  `lib/clinic/services.ts`, `lib/clinic/service-urls.ts`
+- `lib/seo/indexnow.ts`, `scripts/indexnow.mjs`, `app/api/indexnow/route.ts`,
+  `public/<indexnow-key>.txt`
 - `tests/unit/seo-metadata.test.tsx` (new), `tests/e2e/seo.spec.ts` (new),
   `tests/e2e/shop-search-filters.spec.ts` (hydration fix)
+- `docs/search-visibility-playbook.md` (new)
 
 ## Verification
 
@@ -125,12 +148,13 @@ Results at the time of writing:
 - TypeScript: clean
 - ESLint: clean
 - Unit tests: 113 passed (18 files), including 15 new SEO tests
-- SEO e2e: 36 passed (9 tests × desktop/mobile × LTR/RTL)
-- Full read-only e2e: 92 passed across 4 Playwright projects
+- SEO e2e: 40 passed (10 tests × desktop/mobile × LTR/RTL)
+- Full read-only e2e: 96 passed across 4 Playwright projects
 - Production build: succeeded (44 static pages; sitemap and robots generated)
-- Server audit: sitemap 767 URLs (723 products, 21 brands, 16 categories,
-  7 static), Google feed 546 priced items, 0 invalid `0 IRR` entries, Torob 723,
-  `/en/*` 301, private areas `noindex`, `Content-Language: fa-IR`
+- Server audit: sitemap 777 URLs (723 products, 21 brands, 16 categories,
+  10 services, 7 static), Google feed 546 priced items, 0 invalid `0 IRR`
+  entries, Torob 723, `/en/*` 301, private areas `noindex`,
+  `Content-Language: fa-IR`
 
 ## Manual steps that need account access
 
@@ -155,6 +179,9 @@ These cannot be done from the codebase:
    single biggest remaining SEO/commercial gap: without a price there is no Google
    product rich result and no shopping-feed listing.
 8. **eNamad and SMS/payment** — as described in `docs/shop-redesign-operations.md`.
+
+The complete Google/Bing/Iranian-platform submission checklist, the copy-paste
+NAP block and the weekly routine are in `docs/search-visibility-playbook.md`.
 
 ## Suggested next content work
 

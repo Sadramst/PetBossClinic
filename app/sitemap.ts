@@ -4,6 +4,8 @@ import { absoluteUrl } from '@/lib/seo/site';
 import { brandPath, categoryPath, productPath } from '@/lib/shop/urls';
 import { visibleProduct } from '@/lib/shop/catalog';
 import { postPath, publishedWhere } from '@/lib/blog/posts';
+import { getPublicServicesForSitemap } from '@/lib/clinic/services';
+import { servicePath } from '@/lib/clinic/service-urls';
 
 export const revalidate = 3600;
 
@@ -31,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   try {
-    const [categories, brands, products, posts] = await Promise.all([
+    const [categories, brands, products, posts, services] = await Promise.all([
       db.productCategory.findMany({
         where: { isActive: true, deletedAt: null, noindex: false, products: { some: visibleProduct } },
         select: { slugFa: true, updatedAt: true, imageId: true },
@@ -56,7 +58,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         select: { slugFa: true, updatedAt: true, imageId: true },
         orderBy: { publishedAt: 'desc' },
       }),
+      getPublicServicesForSitemap(),
     ]);
+
+    for (const s of services) {
+      entries.push({
+        url: absoluteUrl(servicePath(s.slugFa)),
+        lastModified: s.updatedAt,
+        changeFrequency: 'monthly',
+        priority: Math.min(1, Math.max(0.5, typeof s.priority === 'number' ? s.priority : 0.8)),
+      });
+    }
 
     for (const p of posts) {
       entries.push({

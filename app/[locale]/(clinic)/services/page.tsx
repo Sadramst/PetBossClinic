@@ -4,10 +4,12 @@ import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Link } from '@/i18n/routing';
 import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { getSitePictures } from "@/lib/media";
 import { BreadcrumbJsonLd, ServiceJsonLd } from '@/lib/seo/json-ld';
 import { pageMetadata } from '@/lib/seo/metadata';
+import { servicePath } from '@/lib/clinic/service-urls';
 import { formatServicePrice } from "@/lib/format/price";
 import { getClinicNAP } from "@/lib/clinic/nap";
 
@@ -152,11 +154,19 @@ export default async function ServicesPage({
                             )}
                           </div>
                           <CardTitle className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
-                            {sName}
+                            <Link href={servicePath(service.slugFa)} className="hover:text-primary">
+                              {sName}
+                            </Link>
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <p className="text-sm text-muted-foreground line-clamp-3 mb-4 leading-relaxed">{sDesc}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-3 mb-2 leading-relaxed">{sDesc}</p>
+                          <Link
+                            href={servicePath(service.slugFa)}
+                            className="inline-block text-xs font-bold text-primary hover:underline mb-3"
+                          >
+                            جزئیات خدمت و قیمت
+                          </Link>
                           <div className="pt-3 border-t border-border flex items-center justify-between">
                             <div>
                               <div className="text-sm font-bold text-primary">
