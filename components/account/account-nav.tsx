@@ -5,6 +5,7 @@ import { customerLogoutAction } from '@/app/actions/customer-auth';
 
 const LINKS = [
   { href: '/account', label: 'سفارش‌های من' },
+  { href: '/account/coupons', label: 'کدهای تخفیف من' },
   { href: '/account/addresses', label: 'نشانی‌ها' },
   { href: '/account/profile', label: 'اطلاعات حساب' },
 ];

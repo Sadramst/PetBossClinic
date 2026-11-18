@@ -2,6 +2,14 @@ import { test, expect, type Page } from '@playwright/test'
 import crypto from 'crypto'
 import { PrismaClient } from '@prisma/client'
 
+// The welcome popup (8 s after load) would cover the page during long tests: these tests are not about it.
+test.beforeEach(async ({ context }) => {
+  await context.addInitScript(() => {
+    try { localStorage.setItem('pb_welcome_popup_v1', String(Date.now() + 365 * 86400000)) } catch {}
+  })
+})
+
+
 /**
  * Phone-width layout guard. A page wider than the screen (even by a few pixels) makes
  * mobile browsers zoom out or allow sideways dragging, and shifts fixed bars such as the

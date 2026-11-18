@@ -13,6 +13,7 @@ import { normalizeMobile } from '@/lib/text/iran'
 import { normalizeFa } from '@/lib/text/persian'
 import { checkRateLimit } from '@/lib/utils/rate-limit'
 import { toLatinDigits } from '@/lib/date/jalali'
+import { captureContactSafe } from '@/lib/marketing/contacts'
 
 export interface CustomerAuthState {
   error?: string
@@ -120,6 +121,9 @@ export async function verifyOtpAction(rawPhone: string, rawCode: string, next?: 
     create: { phone, lastLoginAt: now, phoneVerifiedAt: now },
   })
   if (customer.isBlocked) return { error: BLOCKED_MESSAGE }
+
+  // First SMS sign-in of a new number: give them their welcome coupon (never blocks login).
+  if (!prior) await captureContactSafe({ phone, source: 'signup', customerId: customer.id })
 
   await setCustomerCookie(customer.id, customer.sessionVersion)
   return { ok: true, needsProfile: !customer.firstName, redirectTo: afterLogin(next) }
@@ -232,6 +236,8 @@ export async function registerWithPasswordAction(formData: FormData): Promise<Cu
     const created = await db.customer.create({
       data: { phone, email, firstName, lastName, passwordHash: await hashPassword(password), lastLoginAt: new Date() },
     })
+    // Attach the welcome coupon; a failure here must never break sign-up.
+    await captureContactSafe({ phone, email, name: `${firstName} ${lastName}`, source: 'signup', customerId: created.id })
     await setCustomerCookie(created.id, created.sessionVersion)
     return { ok: true, redirectTo: afterLogin(formData.get('next')?.toString()) }
   } catch (err) {

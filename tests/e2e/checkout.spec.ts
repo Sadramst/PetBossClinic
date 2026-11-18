@@ -2,6 +2,14 @@ import { test, expect } from '@playwright/test'
 import crypto from 'crypto'
 import { PrismaClient } from '@prisma/client'
 
+// The welcome popup (8 s after load) would cover the page during long tests: these tests are not about it.
+test.beforeEach(async ({ context }) => {
+  await context.addInitScript(() => {
+    try { localStorage.setItem('pb_welcome_popup_v1', String(Date.now() + 365 * 86400000)) } catch {}
+  })
+})
+
+
 /**
  * Full purchase flow against the local database: add to cart as a guest,
  * sign in (session cookie minted the same way the server does), add an Iranian

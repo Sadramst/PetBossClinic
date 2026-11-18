@@ -88,6 +88,20 @@ const MIGRATIONS = [
     dir: '20261120_customer_email',
     applied: async () => await indexExists('Customer_email_key'),
   },
+  {
+    dir: '20261121_marketing',
+    applied: async () =>
+      (await tableExists('Coupon')) &&
+      (await tableExists('CouponRedemption')) &&
+      (await tableExists('CustomerGroup')) &&
+      (await tableExists('CustomerGroupMember')) &&
+      (await tableExists('MarketingContact')) &&
+      (await tableExists('MarketingConfig')) &&
+      (await columnExists('Order', 'couponId')) &&
+      (await columnExists('Order', 'couponCode')) &&
+      (await columnExists('Order', 'shippingDiscount')) &&
+      (await indexExists('Coupon_code_key')),
+  },
 ];
 
 try {

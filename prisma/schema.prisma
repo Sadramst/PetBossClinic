@@ -808,6 +808,10 @@ model Customer {
 
   addresses Address[]
   orders    Order[]
+  coupons   Coupon[]
+  couponRedemptions CouponRedemption[]
+  groupMemberships  CustomerGroupMember[]
+  marketingContacts MarketingContact[]
 
   @@index([createdAt])
 }
@@ -879,6 +883,10 @@ model Order {
   subtotal      Int
   shippingFee   Int
   discount      Int           @default(0)
+  /// Shipping fee waived by a free-shipping coupon (shippingFee is stored after this discount).
+  shippingDiscount Int        @default(0)
+  couponId      String?
+  couponCode    String?
   total         Int
   /// Address snapshot at order time (addresses can be edited/deleted later)
   shipName      String
@@ -900,8 +908,11 @@ model Order {
   customer Customer    @relation(fields: [customerId], references: [id])
   items    OrderItem[]
   payments Payment[]
+  coupon   Coupon?           @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  redemption CouponRedemption?
 
   @@index([customerId, createdAt])
+  @@index([couponId])
   @@index([status, createdAt])
 }
 
@@ -1396,4 +1407,133 @@ model Media {
   folder    MediaFolder? @relation(fields: [folderId], references: [id])
 
   @@index([folderId])
+}
+
+
+// ─── Marketing: coupons, groups, leads ──────────────────────────────────────
+
+enum CouponType {
+  PERCENT
+  FIXED
+  FREE_SHIPPING
+}
+
+model Coupon {
+  id              String     @id @default(cuid())
+  /// UPPERCASE, characters A-Z 0-9 and "-"
+  code            String     @unique
+  title           String
+  description     String?
+  type            CouponType
+  /// Percent (1-100) or Toman, depending on type
+  value           Int        @default(0)
+  maxDiscount     Int?
+  minSubtotal     Int        @default(0)
+  startsAt        DateTime?
+  endsAt          DateTime?
+  isActive        Boolean    @default(true)
+  autoApply       Boolean    @default(false)
+  usageLimit      Int?
+  usedCount       Int        @default(0)
+  perCustomerLimit Int?      @default(1)
+  firstOrderOnly  Boolean    @default(false)
+  customerId      String?
+  groupId         String?
+  categoryIds     String[]
+  brandIds        String[]
+  productIds      String[]
+  /// manual | welcome | bulk
+  source          String     @default("manual")
+  batchId         String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  redemptions CouponRedemption[]
+  orders      Order[]
+  group       CustomerGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  customer    Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([isActive, endsAt])
+  @@index([batchId])
+  @@index([customerId])
+  @@index([groupId])
+}
+
+model CouponRedemption {
+  id         String   @id @default(cuid())
+  couponId   String
+  orderId    String   @unique
+  customerId String
+  /// Item discount + shipping discount
+  amount     Int
+  createdAt  DateTime @default(now())
+
+  coupon   Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([couponId, customerId])
+}
+
+model CustomerGroup {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  members CustomerGroupMember[]
+  coupons Coupon[]
+}
+
+model CustomerGroupMember {
+  groupId    String
+  customerId String
+  createdAt  DateTime @default(now())
+
+  group    CustomerGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  customer Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, customerId])
+  @@index([customerId])
+}
+
+model MarketingContact {
+  id              String    @id @default(cuid())
+  /// Lower-case
+  email           String?   @unique
+  /// Normalised 09xxxxxxxxx
+  phone           String?   @unique
+  name            String?
+  /// popup | footer | signup | checkout | admin
+  source          String
+  consentAt       DateTime
+  customerId      String?
+  welcomeCouponId String?
+  unsubscribedAt  DateTime?
+  createdAt       DateTime  @default(now())
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([customerId])
+}
+
+model MarketingConfig {
+  id                 String     @id @default("main")
+  popupEnabled       Boolean    @default(true)
+  popupTitle         String     @default("۱۰٪ تخفیف اولین خرید شما")
+  popupText          String     @default("شماره موبایل یا ایمیل خود را وارد کنید تا کد تخفیف شخصی‌تان همین حالا ساخته شود.")
+  popupDelaySeconds  Int        @default(8)
+  welcomeEnabled     Boolean    @default(true)
+  welcomeType        CouponType @default(PERCENT)
+  welcomeValue       Int        @default(10)
+  welcomeMaxDiscount Int?
+  welcomeMinSubtotal Int        @default(0)
+  welcomeValidDays   Int        @default(14)
+  bannerEnabled      Boolean    @default(false)
+  bannerText         String?
+  bannerLink         String?
+  bannerEndsAt       DateTime?
+  bannerCouponCode   String?
+  updatedAt          DateTime   @updatedAt
 }

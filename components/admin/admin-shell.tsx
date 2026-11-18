@@ -34,6 +34,7 @@ const ICON = {
   products: 'm21 8-9-5-9 5m18 0-9 5m9-5v8l-9 5m0-8L3 8m9 5v8M3 8v8l9 5',
   inventory: 'M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
   customers: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M15 3.13a4 4 0 0 1 0 7.75M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
+  marketing: 'M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1zm13.5-2.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12',
   posts: 'M4 5a1 1 0 0 1 1-1h11l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5zm4 5h8m-8 4h8m-8 4h5',
   home: 'm3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9z',
   menus: 'M4 6h16M4 12h16M4 18h10',
@@ -61,6 +62,7 @@ const SECTIONS: { label?: string; items: NavItem[] }[] = [
       { href: '/admin/products', label: 'محصولات', icon: ICON.products },
       { href: '/admin/inventory', label: 'موجودی و انقضا', icon: ICON.inventory },
       { href: '/admin/customers', label: 'مشتریان', icon: ICON.customers },
+      { href: '/admin/marketing', label: 'بازاریابی', icon: ICON.marketing, minRole: 'EDITOR' },
     ],
   },
   {

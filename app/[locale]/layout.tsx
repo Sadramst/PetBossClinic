@@ -26,6 +26,9 @@ import {
   SITE_URL,
 } from '@/lib/seo/site';
 import Script from 'next/script';
+import { getPublicMarketingAction } from '@/app/actions/marketing';
+import { WelcomePopup } from '@/components/marketing/welcome-popup';
+import { PromoBanner } from '@/components/marketing/promo-banner';
 
 const vazirmatn = Vazirmatn({
   subsets: ['arabic'],
@@ -148,6 +151,9 @@ export default async function LocaleLayout({
     getNavCatalog(),
   ]);
 
+  // Campaign settings must never take the whole site down (e.g. before the migration ran).
+  const marketing = await getPublicMarketingAction().catch(() => null);
+
   return (
     <html lang="fa-IR" dir="rtl" data-theme={initialTheme} suppressHydrationWarning>
       <head>
@@ -174,6 +180,7 @@ export default async function LocaleLayout({
         <ThemeProvider initialTheme={initialTheme}>
           <NextIntlClientProvider messages={messages}>
             <CartProvider>
+            {marketing?.banner && <PromoBanner banner={marketing.banner} />}
             <Header
               logoUrl={sitePictures.site_logo}
               navItems={navItems}
@@ -193,9 +200,11 @@ export default async function LocaleLayout({
                 categories={navCatalog.categories}
                 brands={navCatalog.brands}
                 enamad={seo.enamad}
+                welcomeLabel={marketing?.welcome.label}
               />
             </HideOnAdmin>
             <MobileBottomNav phone={nap.phone} />
+            {marketing?.popup.enabled && <WelcomePopup config={marketing.popup} />}
             <Toaster />
             </CartProvider>
           </NextIntlClientProvider>

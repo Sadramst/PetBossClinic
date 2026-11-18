@@ -19,6 +19,9 @@ export interface PricedLine {
   /** Units available (null = not tracked by batches) */
   available: number | null;
   problem?: string;
+  /** Needed by coupon restrictions (category / brand). */
+  categoryId?: string | null;
+  brandId?: string | null;
 }
 
 /**
@@ -30,6 +33,8 @@ export async function priceCart(items: { productId: string; quantity: number }[]
     where: { id: { in: items.map((i) => i.productId) } },
     select: {
       id: true,
+      categoryId: true,
+      brandId: true,
       nameFa: true,
       slugFa: true,
       sku: true,
@@ -66,6 +71,8 @@ export async function priceCart(items: { productId: string; quantity: number }[]
       lineTotal: p.price * item.quantity,
       available,
       problem,
+      categoryId: p.categoryId,
+      brandId: p.brandId,
     });
   }
   const subtotal = lines.filter((l) => !l.problem).reduce((s, l) => s + l.lineTotal, 0);

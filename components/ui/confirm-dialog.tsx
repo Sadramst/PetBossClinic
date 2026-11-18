@@ -110,12 +110,17 @@ export function confirmDialog(options: ConfirmOptions | string): Promise<boolean
   const opts: ConfirmOptions = typeof options === "string" ? { title: options } : options
   return new Promise<boolean>((resolve) => {
     const req: Request = { ...opts, resolve }
-    if (pushRequest) {
-      pushRequest(req)
-    } else {
-      backlog.push(req)
-      mountOnce("confirm", <ConfirmHost />)
-    }
+    // Deferred on purpose: callers often run inside an async startTransition (useTransition), and a React update
+    // scheduled in that scope is held back until the action settles. The action is awaiting this very dialog,
+    // so rendering it synchronously would deadlock (the dialog never appears and the button stays disabled).
+    setTimeout(() => {
+      if (pushRequest) {
+        pushRequest(req)
+      } else {
+        backlog.push(req)
+        mountOnce("confirm", <ConfirmHost />)
+      }
+    }, 0)
   })
 }
 

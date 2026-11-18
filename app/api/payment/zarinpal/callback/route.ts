@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { verifyPayment } from '@/lib/payments/zarinpal';
 import { allocateOrderStock } from '@/lib/shop/orders';
+import { releaseCouponForOrderId, reinstateCouponForOrderId } from '@/lib/marketing/coupons';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,9 @@ export async function GET(req: NextRequest) {
       }),
       db.order.updateMany({ where: { id: payment.orderId, status: 'PENDING_PAYMENT' }, data: { status: 'PAYMENT_FAILED' } }),
     ]);
+    // A lost payment gives the discount code use back; retrying the payment takes it again.
+    const o = await db.order.findUnique({ where: { id: payment.orderId }, select: { status: true } });
+    if (o?.status === 'PAYMENT_FAILED') await releaseCouponForOrderId(payment.orderId);
     return back(`${orderPage}?payment=failed`);
   };
 
@@ -80,6 +84,8 @@ export async function GET(req: NextRequest) {
     return back(`${orderPage}?payment=review`);
   }
 
+  // Paid after the code use was released (failed attempt): count it again.
+  await reinstateCouponForOrderId(payment.orderId);
   await allocateOrderStock(payment.orderId);
   return back(`${orderPage}?payment=success`);
 }

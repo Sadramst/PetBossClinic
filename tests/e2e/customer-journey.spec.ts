@@ -2,6 +2,14 @@ import { test, expect, type Page } from '@playwright/test'
 import crypto from 'crypto'
 import { PrismaClient } from '@prisma/client'
 
+// The welcome popup (8 s after load) would cover the page during long tests: these tests are not about it.
+test.beforeEach(async ({ context }) => {
+  await context.addInitScript(() => {
+    try { localStorage.setItem('pb_welcome_popup_v1', String(Date.now() + 365 * 86400000)) } catch {}
+  })
+})
+
+
 /**
  * The whole customer journey in a real browser against the local database:
  * sign up with an email address, see the profile, confirm the mobile number by SMS code,
