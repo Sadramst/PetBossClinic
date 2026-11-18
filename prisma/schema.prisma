@@ -788,7 +788,8 @@ model Customer {
   phone       String    @unique
   firstName   String?
   lastName    String?
-  email       String?
+  /// Lower-case, unique. A second way to sign in besides the mobile number.
+  email       String?   @unique
   isBlocked   Boolean   @default(false)
   /// Bumped on logout / password change: tokens signed with an older version stop working.
   sessionVersion Int    @default(0)

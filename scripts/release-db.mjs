@@ -84,6 +84,10 @@ const MIGRATIONS = [
       (await columnExists('Customer', 'failedLogins')) &&
       (await columnExists('Customer', 'lastFailedAt')),
   },
+  {
+    dir: '20261120_customer_email',
+    applied: async () => await indexExists('Customer_email_key'),
+  },
 ];
 
 try {

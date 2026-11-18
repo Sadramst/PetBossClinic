@@ -45,5 +45,7 @@ export default defineConfig({
     // test:all (E2E_PROD) always starts its own server, so a stale or dev server on the port can never be tested by mistake.
     reuseExistingServer: !process.env.CI && !process.env.E2E_PROD,
     timeout: 120000,
+    // The production server has no SMS provider locally; "console" prints codes to its log so phone confirmation can be tested.
+    env: { SMS_PROVIDER: 'console' },
   },
 });

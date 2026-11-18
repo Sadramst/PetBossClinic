@@ -8,6 +8,7 @@ import { issueOtp, verifyOtp } from '@/lib/customer/otp'
 import { burnPasswordCheck, hashPassword, PASSWORD_MAX, validatePassword, verifyPassword } from '@/lib/customer/password'
 import { clearCustomerCookie, getCustomer, safeNext, setCustomerCookie } from '@/lib/customer/session'
 import { customerLoginEnabled, sendOtpSms } from '@/lib/sms'
+import { normalizeEmail } from '@/lib/customer/email'
 import { normalizeMobile } from '@/lib/text/iran'
 import { normalizeFa } from '@/lib/text/persian'
 import { checkRateLimit } from '@/lib/utils/rate-limit'
@@ -114,7 +115,7 @@ export async function verifyOtpAction(rawPhone: string, rawCode: string, next?: 
       phoneVerifiedAt: prior?.phoneVerifiedAt ?? now,
       failedLogins: 0,
       lastFailedAt: null,
-      ...(takeOver ? { passwordHash: null, sessionVersion: { increment: 1 } } : {}),
+      ...(takeOver ? { passwordHash: null, email: null, sessionVersion: { increment: 1 } } : {}),
     },
     create: { phone, lastLoginAt: now, phoneVerifiedAt: now },
   })
@@ -128,9 +129,10 @@ export async function verifyOtpAction(rawPhone: string, rawCode: string, next?: 
 
 const MAX_FAILED_LOGINS = 5
 const LOCK_MS = 15 * 60 * 1000
-const BAD_CREDENTIALS = 'شماره موبایل یا رمز عبور نادرست است. اگر هنوز رمز عبور ندارید، ثبت‌نام کنید یا با کد پیامکی وارد شوید.'
+const BAD_CREDENTIALS = 'شماره موبایل (یا ایمیل) یا رمز عبور نادرست است. اگر هنوز رمز عبور ندارید، ثبت‌نام کنید یا با کد پیامکی وارد شوید.'
 const LOCKED_MESSAGE = 'به‌دلیل چند تلاش ناموفق، ورود با رمز عبور تا ۱۵ دقیقه دیگر مسدود است. می‌توانید با کد پیامکی وارد شوید یا بعداً دوباره امتحان کنید.'
-const ALREADY_REGISTERED = 'این شماره قبلاً ثبت‌نام کرده است. وارد شوید؛ اگر رمز عبور را فراموش کرده‌اید با کد پیامکی وارد شوید.'
+const EMAIL_TAKEN = 'این ایمیل برای حساب دیگری ثبت شده است. ایمیل دیگری وارد کنید یا آن را خالی بگذارید (ایمیل اختیاری است).'
+const ALREADY_REGISTERED = 'این شماره یا ایمیل قبلاً ثبت‌نام کرده است. وارد شوید؛ اگر رمز عبور را فراموش کرده‌اید با کد پیامکی وارد شوید.'
 
 /** Phones registered with a password but never verified by SMS, per hour, before registration pauses. */
 const UNVERIFIED_SIGNUPS_PER_HOUR = 40
@@ -158,9 +160,13 @@ async function checkPasswordWithLock(customerId: string, hash: string, password:
 }
 
 export async function loginWithPasswordAction(formData: FormData): Promise<CustomerAuthState> {
-  const phone = normalizeMobile(formData.get('phone')?.toString() ?? '')
+  // One field: a mobile number or an email address.
+  const identifier = (formData.get('identifier') ?? formData.get('phone'))?.toString().trim() ?? ''
   const password = formData.get('password')?.toString() ?? ''
-  if (!phone) return { error: 'شماره موبایل معتبر نیست. نمونه: ۰۹۱۲۱۲۳۴۵۶۷' }
+  const byEmail = identifier.includes('@')
+  const email = byEmail ? normalizeEmail(identifier) : null
+  const phone = byEmail ? null : normalizeMobile(identifier)
+  if (!email && !phone) return { error: byEmail ? 'ایمیل معتبر نیست.' : 'شماره موبایل یا ایمیل معتبر نیست. نمونه: ۰۹۱۲۱۲۳۴۵۶۷' }
   if (!password || password.length > PASSWORD_MAX * 2) return { error: 'رمز عبور را وارد کنید.' }
 
   const ip = await clientIp()
@@ -170,7 +176,7 @@ export async function loginWithPasswordAction(formData: FormData): Promise<Custo
     return { error: 'تلاش‌های زیادی از این شبکه انجام شده است. کمی بعد دوباره امتحان کنید.' }
   }
 
-  const customer = await db.customer.findUnique({ where: { phone } })
+  const customer = email ? await db.customer.findUnique({ where: { email } }) : await db.customer.findUnique({ where: { phone: phone! } })
   if (!customer?.passwordHash) {
     // Same time and same message as a wrong password: no way to tell which numbers have accounts.
     await burnPasswordCheck(password)
@@ -194,12 +200,15 @@ export async function registerWithPasswordAction(formData: FormData): Promise<Cu
   const firstName = normalizeFa(formData.get('firstName')?.toString() ?? '').slice(0, 60)
   const lastName = normalizeFa(formData.get('lastName')?.toString() ?? '').slice(0, 60)
   const phone = normalizeMobile(formData.get('phone')?.toString() ?? '')
+  const rawEmail = formData.get('email')?.toString() ?? ''
+  const email = rawEmail.trim() ? normalizeEmail(rawEmail) : null
   const password = formData.get('password')?.toString() ?? ''
 
   if (firstName.length < 2 || lastName.length < 2 || !isPersonName(firstName) || !isPersonName(lastName)) {
     return { error: 'نام و نام خانوادگی را با حروف و کامل وارد کنید.' }
   }
   if (!phone) return { error: 'شماره موبایل معتبر نیست. نمونه: ۰۹۱۲۱۲۳۴۵۶۷' }
+  if (rawEmail.trim() && !email) return { error: 'ایمیل معتبر نیست.' }
   const passwordProblem = validatePassword(password, phone)
   if (passwordProblem) return { error: passwordProblem }
 
@@ -216,17 +225,21 @@ export async function registerWithPasswordAction(formData: FormData): Promise<Cu
     return { error: 'ثبت‌نام موقتاً با ترافیک بالا روبه‌رو است. کمی بعد دوباره تلاش کنید یا با کد پیامکی وارد شوید.' }
   }
 
-  if (await db.customer.findUnique({ where: { phone }, select: { id: true } })) return { error: ALREADY_REGISTERED }
+  const clash = await db.customer.findFirst({ where: { OR: [{ phone }, ...(email ? [{ email }] : [])] }, select: { phone: true } })
+  if (clash) return { error: clash.phone === phone ? ALREADY_REGISTERED : EMAIL_TAKEN }
 
   try {
     const created = await db.customer.create({
-      data: { phone, firstName, lastName, passwordHash: await hashPassword(password), lastLoginAt: new Date() },
+      data: { phone, email, firstName, lastName, passwordHash: await hashPassword(password), lastLoginAt: new Date() },
     })
     await setCustomerCookie(created.id, created.sessionVersion)
     return { ok: true, redirectTo: afterLogin(formData.get('next')?.toString()) }
   } catch (err) {
     // Another sign-up for the same number won the race.
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') return { error: ALREADY_REGISTERED }
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      const target = String((err.meta as { target?: unknown } | undefined)?.target ?? '')
+      return { error: target.includes('email') ? EMAIL_TAKEN : ALREADY_REGISTERED }
+    }
     throw err
   }
 }
@@ -271,15 +284,48 @@ export async function updateProfileAction(formData: FormData): Promise<CustomerA
 
   const firstName = normalizeFa(formData.get('firstName')?.toString() ?? '').slice(0, 60)
   const lastName = normalizeFa(formData.get('lastName')?.toString() ?? '').slice(0, 60)
-  const email = (formData.get('email')?.toString() ?? '').trim().toLowerCase().slice(0, 120)
+  const rawEmail = formData.get('email')?.toString() ?? ''
+  const email = rawEmail.trim() ? normalizeEmail(rawEmail) : null
   if (firstName.length < 2 || lastName.length < 2) return { error: 'نام و نام خانوادگی را کامل وارد کنید.' }
   if (!isPersonName(firstName) || !isPersonName(lastName)) return { error: 'نام و نام خانوادگی را با حروف وارد کنید.' }
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'ایمیل معتبر نیست.' }
+  if (rawEmail.trim() && !email) return { error: 'ایمیل معتبر نیست.' }
 
-  await db.customer.update({ where: { id: customer.id }, data: { firstName, lastName, email: email || null } })
+  try {
+    await db.customer.update({ where: { id: customer.id }, data: { firstName, lastName, email } })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') return { error: EMAIL_TAKEN }
+    throw err
+  }
   // The name is shown in the account sidebar on every account page.
   revalidatePath('/account', 'layout')
   return { ok: true, redirectTo: afterLogin(formData.get('next')?.toString()) }
+}
+
+/** Sends a confirmation code to the signed-in customer's own number. */
+export async function requestPhoneConfirmationAction(): Promise<CustomerAuthState> {
+  const customer = await getCustomer()
+  if (!customer) return { error: 'نشست شما به پایان رسیده است. دوباره وارد شوید.', needsLogin: true }
+  if (customer.phoneVerifiedAt) return { ok: true }
+  return requestOtpAction(customer.phone)
+}
+
+/** Confirms the signed-in customer's number with the code that was sent to it. */
+export async function confirmPhoneAction(rawCode: string): Promise<CustomerAuthState> {
+  const customer = await getCustomer()
+  if (!customer) return { error: 'نشست شما به پایان رسیده است. دوباره وارد شوید.', needsLogin: true }
+  if (customer.phoneVerifiedAt) return { ok: true }
+  const code = toLatinDigits(rawCode ?? '').replace(/\D/g, '')
+  if (code.length !== 5) return { error: 'کد ۵ رقمی ارسال‌شده را وارد کنید.' }
+  const ip = await clientIp()
+  if (!checkRateLimit(`otp-verify:${ip}`, 30, 3600_000).allowed) {
+    return { error: 'تلاش‌های زیادی از این شبکه انجام شده است. کمی بعد دوباره امتحان کنید.' }
+  }
+  if (!(await verifyOtp(customer.phone, code))) {
+    return { error: 'کد واردشده نادرست یا منقضی شده است. در صورت نیاز کد جدید بگیرید.' }
+  }
+  await db.customer.update({ where: { id: customer.id }, data: { phoneVerifiedAt: new Date() } })
+  revalidatePath('/account', 'layout')
+  return { ok: true }
 }
 
 export async function customerLogoutAction(): Promise<CustomerAuthState> {

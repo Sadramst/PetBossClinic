@@ -10,6 +10,7 @@ export function ProfileForm({ firstName, lastName, email }: { firstName: string;
   const [pending, start] = useTransition();
   return (
     <form
+      noValidate
       className="space-y-3 max-w-lg"
       onSubmit={(e) => {
         e.preventDefault();
@@ -25,7 +26,7 @@ export function ProfileForm({ firstName, lastName, email }: { firstName: string;
         <input name="firstName" defaultValue={firstName} placeholder="نام" className={field} required />
         <input name="lastName" defaultValue={lastName} placeholder="نام خانوادگی" className={field} required />
       </div>
-      <input name="email" type="email" dir="ltr" defaultValue={email} placeholder="ایمیل (اختیاری)" className={field} />
+      <input name="email" type="email" dir="ltr" defaultValue={email} aria-label="ایمیل (اختیاری)" placeholder="ایمیل (اختیاری)" className={field} />
       <div className="flex items-center gap-3">
         <button disabled={pending} className="h-11 px-6 rounded-xl bg-gradient-gold text-charcoal-950 font-bold text-sm disabled:opacity-60">
           ذخیره

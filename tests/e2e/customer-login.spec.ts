@@ -31,7 +31,7 @@ async function logout(page: Page) {
 }
 
 async function fillLogin(page: Page, phone: string, password: string) {
-  await page.locator('input[name="phone"]').fill(phone)
+  await page.locator('input[name="identifier"]').fill(phone)
   await page.locator('input[name="password"]').fill(password)
   await page.getByRole('button', { name: 'ورود', exact: true }).click()
 }

@@ -142,7 +142,7 @@ export function LoginForm({
   const heading =
     mode === 'profile' ? 'تکمیل اطلاعات' : mode === 'register' ? 'ثبت‌نام در پت‌باس' : 'ورود به حساب کاربری';
   const subheading = {
-    password: 'با شماره موبایل و رمز عبور وارد شوید.',
+    password: 'با شماره موبایل یا ایمیل و رمز عبور وارد شوید.',
     sms: smsStep === 'phone' ? 'شماره موبایل خود را وارد کنید تا کد ورود برایتان پیامک شود.' : `کد ۵ رقمی ارسال‌شده به ${phone} را وارد کنید.`,
     register: 'با چند اطلاعات ساده حساب بسازید و سفارش‌هایتان را پیگیری کنید.',
     profile: 'برای ارسال سفارش، نام و نام خانوادگی خود را وارد کنید.',
@@ -183,8 +183,8 @@ export function LoginForm({
       <div id="login-panel" role={mode === 'profile' ? undefined : 'tabpanel'} aria-labelledby={mode === 'profile' ? undefined : `login-tab-${mode}`}>
         {mode === 'password' && (
           <form method="post" onSubmit={submit(loginWithPasswordAction)} className="space-y-4">
-            <Field label="شماره موبایل" required>
-              <Input name="phone" inputMode="tel" autoComplete="username" dir="ltr" className="text-start" placeholder="09121234567" maxLength={16} required autoFocus />
+            <Field label="شماره موبایل یا ایمیل" required>
+              <Input name="identifier" autoComplete="username" dir="ltr" className="text-start" placeholder="09121234567 یا name@example.com" maxLength={120} required autoFocus />
             </Field>
             <PasswordField label="رمز عبور" name="password" autoComplete="current-password" />
             <Button type="submit" variant="gold" size="lg" block loading={pending} loadingText="در حال ورود…" disabled={notReady}>
@@ -209,7 +209,7 @@ export function LoginForm({
         )}
 
         {mode === 'register' && (
-          <form method="post" onSubmit={submit(registerWithPasswordAction)} className="space-y-4">
+          <form method="post" noValidate onSubmit={submit(registerWithPasswordAction)} className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="نام" required>
                 <Input name="firstName" autoComplete="given-name" maxLength={60} required autoFocus />
@@ -220,6 +220,9 @@ export function LoginForm({
             </div>
             <Field label="شماره موبایل" hint="برای هماهنگی ارسال سفارش با شما تماس گرفته می‌شود." required>
               <Input name="phone" inputMode="tel" autoComplete="username" dir="ltr" className="text-start" placeholder="09121234567" maxLength={16} required />
+            </Field>
+            <Field label="ایمیل" hint="برای ورود با ایمیل. اختیاری است." optional>
+              <Input name="email" type="email" inputMode="email" autoComplete="email" dir="ltr" className="text-start" placeholder="name@example.com" maxLength={120} />
             </Field>
             <PasswordField label="رمز عبور" name="password" autoComplete="new-password" hint={PASSWORD_HINT} />
             <Button type="submit" variant="gold" size="lg" block loading={pending} loadingText="در حال ساخت حساب…" disabled={notReady}>
@@ -283,7 +286,7 @@ export function LoginForm({
         )}
 
         {mode === 'profile' && (
-          <form method="post" onSubmit={submitProfile(start, setError, go, next)} className="space-y-4">
+          <form method="post" noValidate onSubmit={submitProfile(start, setError, go, next)} className="space-y-4">
             <Field label="نام" required>
               <Input name="firstName" autoComplete="given-name" maxLength={60} required autoFocus />
             </Field>

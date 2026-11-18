@@ -52,3 +52,11 @@ describe('customer session token versions', () => {
     expect(parseCustomerToken(`${forged}.${sig}`, now)).toBeNull()
   })
 })
+
+import { normalizeEmail } from '@/lib/customer/email'
+describe('email normalisation', () => {
+  it('lower-cases, trims and rejects junk', () => {
+    expect(normalizeEmail('  Sara.R@Example.COM ')).toBe('sara.r@example.com')
+    for (const bad of ['', 'a', 'a@b', 'a b@c.com', '@x.com', 'x@.com', `${'a'.repeat(120)}@x.com`]) expect(normalizeEmail(bad)).toBeNull()
+  })
+})
