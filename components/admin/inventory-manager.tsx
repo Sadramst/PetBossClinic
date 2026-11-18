@@ -125,7 +125,7 @@ export function InventoryManager({ expiring, recent, undated, products, today }:
       {/* Add batch */}
       <form ref={formRef} onSubmit={onSubmit} className="rounded-2xl border border-border bg-surface-card p-5 space-y-4">
         <h2 className="font-bold">ثبت محموله (بچ) جدید</h2>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           <label className="lg:col-span-3 text-sm space-y-1.5 block">
             <span>محصول (نام یا کد کالا را تایپ کنید)</span>
             <input

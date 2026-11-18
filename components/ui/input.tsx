@@ -2,17 +2,25 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-export type InputProps = React.InputHTMLAttributes<HTMLInputElement>
+type ControlSize = "sm" | "md" | "lg"
 
+const SIZE_CLASS: Record<ControlSize, string> = { sm: "field-sm", md: "", lg: "field-lg" }
+
+export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
+  /** Visual height: sm 36px, md 44px (default), lg 48px. */
+  controlSize?: ControlSize
+  /** Marks the control invalid (red border + aria-invalid). `<Field error>` sets this for you. */
+  invalid?: boolean
+}
+
+/** Text input using the shared `.field` look (44px, rounded-xl, gold focus). */
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, controlSize = "md", invalid, ...props }, ref) => {
     return (
       <input
         type={type}
-        className={cn(
-          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-          className
-        )}
+        className={cn("field", SIZE_CLASS[controlSize], className)}
+        aria-invalid={invalid || undefined}
         ref={ref}
         {...props}
       />
@@ -21,4 +29,53 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 )
 Input.displayName = "Input"
 
-export { Input }
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  invalid?: boolean
+}
+
+/** Multi-line input; grows from 3 rows, vertically resizable. */
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, invalid, rows = 3, ...props }, ref) => {
+    return (
+      <textarea
+        rows={rows}
+        className={cn("field", className)}
+        aria-invalid={invalid || undefined}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Textarea.displayName = "Textarea"
+
+export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size"> {
+  controlSize?: ControlSize
+  invalid?: boolean
+  /** Renders a disabled empty first option, e.g. "انتخاب کنید". */
+  placeholder?: string
+}
+
+/** Native select with the shared `.field` look and a chevron on the inline-end side. */
+const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
+  ({ className, controlSize = "md", invalid, placeholder, children, ...props }, ref) => {
+    return (
+      <select
+        className={cn("field", SIZE_CLASS[controlSize], className)}
+        aria-invalid={invalid || undefined}
+        ref={ref}
+        {...props}
+      >
+        {placeholder !== undefined && (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
+        {children}
+      </select>
+    )
+  }
+)
+Select.displayName = "Select"
+
+export { Input, Textarea, Select }

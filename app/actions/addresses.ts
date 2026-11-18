@@ -11,13 +11,17 @@ export interface AddressActionState {
   error?: string
   ok?: boolean
   addressId?: string
+  /** The session is gone: the form should offer to sign in again. */
+  needsLogin?: boolean
 }
+
+const SESSION_EXPIRED: AddressActionState = { error: 'نشست شما به پایان رسیده است. دوباره وارد شوید.', needsLogin: true }
 
 const MAX_ADDRESSES = 10
 
 export async function saveAddressAction(formData: FormData): Promise<AddressActionState> {
   const customer = await getCustomer()
-  if (!customer) return { error: 'ابتدا وارد حساب کاربری شوید.' }
+  if (!customer) return SESSION_EXPIRED
 
   const get = (k: string) => normalizeFa(formData.get(k)?.toString() ?? '')
   const id = formData.get('id')?.toString() || null
@@ -35,6 +39,7 @@ export async function saveAddressAction(formData: FormData): Promise<AddressActi
 
   if (!isIranProvince(province)) return { error: 'استان را انتخاب کنید.' }
   if (city.length < 2) return { error: 'شهر را وارد کنید.' }
+  if (city === 'تهران' && province !== 'تهران') return { error: 'شهر با استان انتخاب‌شده هم‌خوانی ندارد. نام شهر را اصلاح کنید.' }
   if (addressLine.length < 10) return { error: 'نشانی را کامل‌تر وارد کنید (خیابان، کوچه، نشانه).' }
   if (recipientName.length < 3) return { error: 'نام تحویل‌گیرنده را وارد کنید.' }
   if (!recipientPhone) return { error: 'شماره موبایل تحویل‌گیرنده معتبر نیست.' }
@@ -72,19 +77,34 @@ export async function saveAddressAction(formData: FormData): Promise<AddressActi
 
 export async function deleteAddressAction(id: string): Promise<AddressActionState> {
   const customer = await getCustomer()
-  if (!customer) return { error: 'ابتدا وارد حساب کاربری شوید.' }
-  const res = await db.address.updateMany({
-    where: { id, customerId: customer.id, deletedAt: null },
-    data: { deletedAt: new Date(), isDefault: false },
+  if (!customer) return SESSION_EXPIRED
+  const deleted = await db.$transaction(async (tx) => {
+    const target = await tx.address.findFirst({
+      where: { id, customerId: customer.id, deletedAt: null },
+      select: { isDefault: true },
+    })
+    if (!target) return false
+    await tx.address.update({ where: { id }, data: { deletedAt: new Date(), isDefault: false } })
+    // Never leave the customer without a default: promote the most recent remaining address.
+    if (target.isDefault) {
+      const next = await tx.address.findFirst({
+        where: { customerId: customer.id, deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true },
+      })
+      if (next) await tx.address.update({ where: { id: next.id }, data: { isDefault: true } })
+    }
+    return true
   })
-  if (!res.count) return { error: 'نشانی پیدا نشد.' }
+  if (!deleted) return { error: 'نشانی پیدا نشد.' }
   revalidatePath('/account/addresses')
+  revalidatePath('/checkout')
   return { ok: true }
 }
 
 export async function setDefaultAddressAction(id: string): Promise<AddressActionState> {
   const customer = await getCustomer()
-  if (!customer) return { error: 'ابتدا وارد حساب کاربری شوید.' }
+  if (!customer) return SESSION_EXPIRED
   const owned = await db.address.findFirst({ where: { id, customerId: customer.id, deletedAt: null } })
   if (!owned) return { error: 'نشانی پیدا نشد.' }
   await db.$transaction([
@@ -92,5 +112,6 @@ export async function setDefaultAddressAction(id: string): Promise<AddressAction
     db.address.update({ where: { id }, data: { isDefault: true } }),
   ])
   revalidatePath('/account/addresses')
+  revalidatePath('/checkout')
   return { ok: true }
 }

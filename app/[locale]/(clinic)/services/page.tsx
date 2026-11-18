@@ -2,16 +2,16 @@ import { Metadata } from 'next';
 import { db } from "@/lib/db";
 import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Link } from '@/i18n/routing';
-import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
 import { getSitePictures } from "@/lib/media";
-import { BreadcrumbJsonLd, ServiceJsonLd } from '@/lib/seo/json-ld';
+import { ServiceJsonLd } from '@/lib/seo/json-ld';
 import { pageMetadata } from '@/lib/seo/metadata';
 import { servicePath } from '@/lib/clinic/service-urls';
 import { formatServicePrice } from "@/lib/format/price";
 import { getClinicNAP } from "@/lib/clinic/nap";
+import { PageHero } from '@/components/content/page-hero';
+import { CtaBand } from '@/components/content/cta-band';
+import { BagIcon, ChatIcon, ChevronIcon, ClockIcon, PhoneIcon } from '@/components/content/icons';
 
 export const revalidate = 60;
 
@@ -44,7 +44,6 @@ export default async function ServicesPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isEn = locale === 'en';
   const t = await getTranslations('Services');
 
   const [divisions, sitePictures, nap] = await Promise.all([
@@ -61,144 +60,177 @@ export default async function ServicesPage({
     getSitePictures(),
     getClinicNAP(),
   ]);
+
   // Build service items for JSON-LD
   const allServices = divisions.flatMap((div) =>
     div.services.map((svc) => ({
-      name: isEn ? (svc.nameEn || svc.nameFa) : svc.nameFa,
-      description: isEn ? (svc.descriptionEn || svc.descriptionFa || '') : (svc.descriptionFa || ''),
+      name: svc.nameFa,
+      description: svc.descriptionFa || '',
       priceFrom: svc.priceFrom,
       priceTo: svc.priceTo,
     }))
   );
 
+  const anchorOf = (division: { id: string; slugEn: string | null }) => `division-${division.slugEn || division.id}`;
+
   return (
     <>
-      <BreadcrumbJsonLd
-        items={[
-          { name: isEn ? 'Home' : 'خانه', href: '/' },
-          { name: isEn ? 'Services' : 'خدمات', href: '/services' },
-        ]}
-        locale={locale}
-      />
-      <ServiceJsonLd
-        services={allServices}
-        providerName={isEn ? 'Pet Boss Clinic' : 'کلینیک دامپزشکی پت باس'}
-        locale={locale}
-      />
-    <div className="bg-background">
-      {/* Dynamic Theme Top Page Header */}
-      <section className="relative bg-gradient-hero text-foreground overflow-hidden border-b border-border/60 py-16 md:py-20 mb-12">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.12)_0%,transparent_70%)] rounded-full pointer-events-none" />
-        </div>
-        <div className="container-site relative z-10 text-center">
-          <LuxuryPillBadge variant="outline" className="mb-3">
-            {t('badge')}
-          </LuxuryPillBadge>
-          <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4">{t('title')}</h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed">{t('subtitle')}</p>
-        </div>
-      </section>
+      <ServiceJsonLd services={allServices} providerName="کلینیک دامپزشکی پت باس" locale={locale} />
+      <div className="bg-background">
+        <PageHero
+          crumbs={[
+            { name: 'خانه', href: '/' },
+            { name: 'خدمات', href: '/services' },
+          ]}
+          badge={t('badge')}
+          title={t('title')}
+          subtitle={t('subtitle')}
+        >
+          <a href={nap.telLink} className="btn btn-gold">
+            <PhoneIcon className="h-4 w-4" />
+            تماس و رزرو نوبت
+          </a>
+          {nap.whatsappLink && (
+            <a href={nap.whatsappLink} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+              <ChatIcon className="h-4 w-4" />
+              واتس‌اپ
+            </a>
+          )}
+        </PageHero>
 
-      <div className="container-site pb-20">
-        {/* Services by Division */}
-        <div className="space-y-16">
-          {divisions.map((division, idx) => {
-            const divName = isEn ? (division.nameEn || division.nameFa) : division.nameFa;
-            const divDesc = isEn ? (division.descriptionEn || division.descriptionFa) : division.descriptionFa;
+        <div className="container-site section">
+          {divisions.length > 1 && (
+            <nav aria-label="بخش‌های کلینیک" className="rail rail-bleed mb-6 gap-2 sm:mb-8">
+              {divisions.map((division) => (
+                <a key={division.id} href={`#${anchorOf(division)}`} className="chip min-h-11 px-4">
+                  {division.nameFa}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {division.services.length.toLocaleString('fa-IR')}
+                  </span>
+                </a>
+              ))}
+            </nav>
+          )}
 
-            const divImage = division.slugEn === 'clinical'
-              ? sitePictures.division_veterinary
-              : division.slugEn === 'grooming'
-              ? sitePictures.division_grooming
-              : sitePictures.division_petshop;
+          {divisions.length === 0 && (
+            <p className="rounded-2xl border border-border bg-surface-card p-8 text-center text-sm leading-8 text-muted-foreground">
+              فهرست خدمات در حال به‌روزرسانی است. برای اطلاع از خدمات و تعرفه‌ها با کلینیک تماس بگیرید.
+            </p>
+          )}
 
-            return (
-              <div key={division.id} className="p-8 rounded-2xl bg-surface border border-border/60 overflow-hidden">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8 pb-6 border-b border-border/60">
-                  <div className="max-w-2xl">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-2 h-8 bg-gradient-gold rounded-full" />
-                      <h2 className="text-2xl font-bold text-foreground">{divName}</h2>
+          <div className="space-y-8 sm:space-y-12">
+            {divisions.map((division, idx) => {
+              const divImage = division.slugEn === 'clinical'
+                ? sitePictures.division_veterinary
+                : division.slugEn === 'grooming'
+                ? sitePictures.division_grooming
+                : sitePictures.division_petshop;
+              const isShop = division.slugEn !== 'clinical' && division.slugEn !== 'grooming';
+
+              return (
+                <section
+                  key={division.id}
+                  id={anchorOf(division)}
+                  className="scroll-mt-header rounded-2xl border border-border/60 bg-surface p-4 sm:p-8"
+                >
+                  <div className="mb-5 flex flex-col gap-4 border-b border-border/60 pb-5 sm:mb-8 sm:pb-6 md:flex-row md:items-center md:justify-between md:gap-6">
+                    <div className="max-w-2xl">
+                      <div className="mb-2 flex items-center gap-3">
+                        <span aria-hidden className="h-7 w-1.5 rounded-full bg-gradient-gold" />
+                        <h2 className="text-xl font-black text-foreground sm:text-2xl">{division.nameFa}</h2>
+                      </div>
+                      {division.descriptionFa && (
+                        <p className="text-sm leading-8 text-muted-foreground">{division.descriptionFa}</p>
+                      )}
+                      {isShop && (
+                        <Link href="/shop" className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-primary hover:underline">
+                          <BagIcon className="h-4 w-4" />
+                          خرید آنلاین از پت‌شاپ
+                          <ChevronIcon className="h-4 w-4" />
+                        </Link>
+                      )}
                     </div>
-                    {divDesc && (
-                      <p className="text-muted-foreground text-sm leading-relaxed">{divDesc}</p>
-                    )}
+                    <div className="relative h-36 w-full shrink-0 overflow-hidden rounded-xl border border-border-gold/40 md:h-32 md:w-56">
+                      <Image
+                        src={divImage}
+                        alt={`${division.nameFa} کلینیک پت‌باس`}
+                        fill
+                        priority={idx === 0}
+                        sizes="(max-width: 768px) 100vw, 224px"
+                        className="object-cover"
+                      />
+                    </div>
                   </div>
-                  <div className="w-full md:w-56 h-32 rounded-xl overflow-hidden border border-border-gold/40 shadow-gold shrink-0 relative">
-                    <Image
-                      src={divImage}
-                      alt={divName}
-                      fill
-                      priority={idx === 0}
-                      sizes="(max-width: 768px) 100vw, 224px"
-                      className="object-cover"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {division.services.map((service) => {
-                    const sName = isEn ? (service.nameEn || service.nameFa) : service.nameFa;
-                    const sDesc = isEn ? (service.descriptionEn || service.descriptionFa) : service.descriptionFa;
-                    const sDuration = isEn ? (service.durationEn || service.durationFa) : service.durationFa;
-                    const sPriceNote = isEn ? (service.priceNoteEn || service.priceNoteFa) : service.priceNoteFa;
 
-                    return (
-                      <Card key={service.id} className="card-luxury">
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between mb-2">
-                            {sDuration && (
-                              <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded font-medium">
-                                {sDuration}
-                              </span>
-                            )}
-                          </div>
-                          <CardTitle className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
-                            <Link href={servicePath(service.slugFa)} className="hover:text-primary">
-                              {sName}
+                  <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3">
+                    {division.services.map((service) => {
+                      const onRequest =
+                        service.priceDisplayMode === 'ON_REQUEST' || !service.priceFrom || service.priceFrom <= 0;
+
+                      return (
+                        <article key={service.id} className="card-luxury group relative flex flex-col p-4 sm:p-5">
+                          {service.durationFa && (
+                            <span className="mb-2 inline-flex items-center gap-1 self-start rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                              <ClockIcon className="h-3 w-3" />
+                              {service.durationFa}
+                            </span>
+                          )}
+                          <h3 className="text-base font-bold leading-8 text-foreground sm:text-lg">
+                            <Link
+                              href={servicePath(service.slugFa)}
+                              className="transition-colors after:absolute after:inset-0 after:rounded-[inherit] group-hover:text-primary"
+                            >
+                              {service.nameFa}
+                              <ChevronIcon className="ms-1 inline-block h-4 w-4 text-primary" />
                             </Link>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-sm text-muted-foreground line-clamp-3 mb-2 leading-relaxed">{sDesc}</p>
-                          <Link
-                            href={servicePath(service.slugFa)}
-                            className="inline-block text-xs font-bold text-primary hover:underline mb-3"
-                          >
-                            جزئیات خدمت و قیمت
-                          </Link>
-                          <div className="pt-3 border-t border-border flex items-center justify-between">
-                            <div>
-                              <div className="text-sm font-bold text-primary">
-                                {formatServicePrice(
-                                  service.priceDisplayMode,
-                                  service.priceFrom,
-                                  service.priceTo,
-                                  isEn ? 'en' : 'fa'
-                                )}
-                              </div>
-                              {sPriceNote && (
-                                <p className="text-[11px] text-muted-foreground mt-0.5">{sPriceNote}</p>
+                          </h3>
+                          {service.descriptionFa && (
+                            <p className="mt-1 line-clamp-3 text-sm leading-7 text-muted-foreground">{service.descriptionFa}</p>
+                          )}
+                          <div className="mt-auto flex items-center justify-between gap-3 pt-4">
+                            <div className="min-w-0">
+                              {onRequest ? (
+                                <p className="text-xs text-muted-foreground">قیمت: تماس بگیرید</p>
+                              ) : (
+                                <p className="text-sm font-bold text-primary">
+                                  {formatServicePrice(service.priceDisplayMode, service.priceFrom, service.priceTo, 'fa')}
+                                </p>
+                              )}
+                              {service.priceNoteFa && (
+                                <p className="mt-0.5 text-xs text-muted-foreground">{service.priceNoteFa}</p>
                               )}
                             </div>
-                            <Button asChild size="sm" className="bg-primary/15 text-primary hover:bg-primary hover:text-charcoal-950 font-semibold text-xs rounded-full px-3.5 py-1.5 transition-all shadow-sm">
-                              <a href={nap.telLink || "#"} className="flex items-center gap-1.5">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                                <span>{t('bookNow')}</span>
-                              </a>
-                            </Button>
+                            <a
+                              href={nap.telLink}
+                              aria-label={`رزرو تلفنی ${service.nameFa}`}
+                              className="btn btn-outline btn-sm relative z-10 min-h-11 shrink-0"
+                            >
+                              <PhoneIcon className="h-4 w-4" />
+                              رزرو تلفنی
+                            </a>
                           </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+                        </article>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+
+          <CtaBand
+            className="mt-8 sm:mt-12"
+            title="برای انتخاب خدمت مناسب راهنمایی می‌خواهید؟"
+            text={`با پذیرش کلینیک تماس بگیرید تا با توجه به سن، نژاد و وضعیت حیوان شما راهنمایی شوید. ${nap.workingHoursSummaryFa}.`}
+            nap={nap}
+          >
+            <Link href="/shop" className="btn btn-secondary">
+              <BagIcon className="h-4 w-4" />
+              پت‌شاپ آنلاین
+            </Link>
+          </CtaBand>
         </div>
       </div>
-    </div>
     </>
   );
 }

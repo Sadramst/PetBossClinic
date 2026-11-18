@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { ProductListing } from '@/components/shop/product-listing';
@@ -49,10 +50,32 @@ export default async function BrandPage({ params, searchParams }: { params: Para
   ]);
   if (filters.page > listing.pageCount) notFound();
 
+  // Only local files go through next/image (remote hosts are not whitelisted); otherwise show a monogram.
+  const hasLogo = !!brand.logoId && brand.logoId.startsWith('/');
+  const monogram = Array.from((brand.nameEn || brand.nameFa).trim())[0]?.toUpperCase() ?? '';
+
   return (
     <ProductListing
       title={`محصولات ${brandTitle(brand)}`}
-      intro={brand.descriptionFa}
+      eyebrow="برند"
+      headerMedia={
+        hasLogo && brand.logoId ? (
+          <span className="relative block h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-border bg-white sm:h-20 sm:w-20">
+            <Image src={brand.logoId} alt={`لوگوی ${brand.nameFa}`} fill sizes="80px" className="object-contain p-2" />
+          </span>
+        ) : (
+          <span
+            aria-hidden
+            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-primary/40 bg-primary/10 text-2xl font-black text-gradient-gold sm:h-20 sm:w-20 sm:text-3xl"
+          >
+            {monogram}
+          </span>
+        )
+      }
+      intro={
+        brand.descriptionFa ||
+        `همه محصولات ${brand.nameFa} موجود در پت‌شاپ پت‌باس، با ضمانت اصالت و تاریخ انقضای معتبر.`
+      }
       breadcrumbs={[
         { name: 'خانه', href: '/' },
         { name: 'پت‌شاپ', href: '/shop' },

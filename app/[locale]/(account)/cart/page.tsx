@@ -3,7 +3,6 @@ import { setRequestLocale } from 'next-intl/server';
 import { CartView } from '@/components/shop/cart-view';
 import { getCustomer } from '@/lib/customer/session';
 import { getClinicNAP } from '@/lib/clinic/nap';
-import { customerLoginEnabled } from '@/lib/sms';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'سبد خرید' };
@@ -14,12 +13,8 @@ export default async function CartPage({ params }: { params: Promise<{ locale: s
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-black">سبد خرید</h1>
-      <CartView
-        loggedIn={!!customer}
-        onlineCheckout={customerLoginEnabled()}
-        whatsappNumber={nap.whatsappNumber}
-        phoneLink={nap.telLink}
-      />
+      {/* Customers can always sign in (password, or SMS code when a provider is set up). */}
+      <CartView loggedIn={!!customer} whatsappNumber={nap.whatsappNumber} phoneLink={nap.telLink} />
     </div>
   );
 }

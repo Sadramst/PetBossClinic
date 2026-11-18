@@ -163,8 +163,10 @@ test.describe('technical SEO across the Farsi site', () => {
 
   test('brand pages are indexable and canonical', async ({ page }) => {
     await page.goto('/shop', { waitUntil: 'domcontentloaded' });
+    // Crawlers follow links whether or not a panel is collapsed for people (the brand list
+    // sits in a collapsible filter panel on phones), so presence in the page is what matters.
     const brandLink = page.locator('a[href^="/brand/"]').first();
-    await expect(brandLink).toBeVisible();
+    await expect(brandLink).toBeAttached();
     const href = await brandLink.getAttribute('href');
     await page.goto(href!, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `${CANON}${href}`);

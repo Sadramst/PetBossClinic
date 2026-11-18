@@ -107,7 +107,7 @@ function OrderDetail({ order, onSaved }: { order: AdminOrderRow; onSaved: () => 
   const [pending, start] = useTransition()
 
   return (
-    <div className="px-4 pb-5 grid gap-4 lg:grid-cols-3 text-sm">
+    <div className="px-4 pb-5 grid grid-cols-1 gap-4 lg:grid-cols-3 text-sm">
       <div className="lg:col-span-2 space-y-3">
         <table className="w-full text-xs">
           <thead className="text-muted-foreground">

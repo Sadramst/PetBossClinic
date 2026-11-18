@@ -11,6 +11,7 @@
     "test": "vitest run -c vitest.config.mts",
     "test:watch": "vitest -c vitest.config.mts",
     "test:e2e": "playwright test",
+    "test:all": "node scripts/test-all.mjs",
     "seo:indexnow": "node scripts/indexnow.mjs",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts"

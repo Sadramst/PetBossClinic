@@ -1,8 +1,3 @@
-'use client';
-
-import React from 'react';
-import { useLocale } from 'next-intl';
-
 interface PetBossLogoProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -13,41 +8,39 @@ interface PetBossLogoProps {
   logoUrl?: string;
 }
 
+const SIZE_MAP = {
+  sm: { icon: 32, title: 'text-sm', sub: 'text-[9px]' },
+  md: { icon: 44, title: 'text-lg', sub: 'text-[11px]' },
+  lg: { icon: 72, title: 'text-2xl', sub: 'text-xs' },
+  xl: { icon: 110, title: 'text-4xl', sub: 'text-sm' },
+} as const;
+
+/**
+ * Brand lockup: emblem + "PET BOSS" wordmark + Persian subtitle.
+ * The emblem is decorative next to the wordmark (the wrapping link's
+ * aria-label carries the name). Works in server and client components.
+ */
 export function PetBossLogo({
   className = '',
   size = 'md',
   showText = true,
   variant = 'gold',
-  subtitle,
+  subtitle = 'کلینیک و پت شاپ',
   logoUrl = '/images/logo.png',
 }: PetBossLogoProps) {
-  let locale = 'fa';
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    locale = useLocale();
-  } catch {
-    locale = 'fa';
-  }
+  const currentSize = SIZE_MAP[size];
 
-  const isEn = locale === 'en';
-
-  const sizeMap = {
-    sm: { icon: 32, title: 'text-sm', sub: 'text-[9px]' },
-    md: { icon: 44, title: 'text-lg', sub: 'text-[11px]' },
-    lg: { icon: 72, title: 'text-2xl', sub: 'text-xs' },
-    xl: { icon: 110, title: 'text-4xl', sub: 'text-sm' },
-  };
-
-  const currentSize = sizeMap[size];
-  const defaultSubtitle = subtitle || (isEn ? 'CLINIC & PET SHOP' : 'کلینیک و پت شاپ');
-
-  const effectiveLogoUrl = logoUrl && logoUrl !== '/images/logo.png'
-    ? logoUrl
-    : (showText ? (size === 'sm' || size === 'md' ? '/images/logo-64.png' : '/images/logo-emblem.png') : '/images/logo.png');
+  const effectiveLogoUrl =
+    logoUrl && logoUrl !== '/images/logo.png'
+      ? logoUrl
+      : showText
+        ? size === 'sm' || size === 'md'
+          ? '/images/logo-64.png'
+          : '/images/logo-emblem.png'
+        : '/images/logo.png';
 
   return (
     <div className={`inline-flex items-center gap-3 ${className}`}>
-      {/* Crowned Lion & Animals Authentic Emblem */}
       <svg
         width={currentSize.icon}
         height={currentSize.icon}
@@ -55,30 +48,13 @@ export function PetBossLogo({
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className="shrink-0 transition-transform duration-300 hover:scale-105"
-        aria-label="Pet Boss Clinic Logo"
+        {...(showText
+          ? { 'aria-hidden': true, focusable: false }
+          : { role: 'img', 'aria-label': 'نشان پت‌باس' })}
       >
-        <defs>
-          <linearGradient id="lionGoldGrad" x1="15%" y1="10%" x2="85%" y2="90%">
-            <stop offset="0%" stopColor="#FFF2D1" />
-            <stop offset="25%" stopColor="#E5C158" />
-            <stop offset="55%" stopColor="#C5A059" />
-            <stop offset="85%" stopColor="#9C7730" />
-            <stop offset="100%" stopColor="#755217" />
-          </linearGradient>
-        </defs>
-
-        {/* Authentic Brand Emblem Image */}
-        <image
-          href={effectiveLogoUrl}
-          x="0"
-          y="0"
-          width="120"
-          height="120"
-          preserveAspectRatio="xMidYMid meet"
-        />
+        <image href={effectiveLogoUrl} x="0" y="0" width="120" height="120" preserveAspectRatio="xMidYMid meet" />
       </svg>
 
-      {/* Typography with Golden Foil Gradient */}
       {showText && (
         <div className="flex flex-col">
           <span
@@ -88,11 +64,7 @@ export function PetBossLogo({
           >
             PET BOSS
           </span>
-          <span
-            className={`font-semibold tracking-wider mt-1 text-primary/80 ${currentSize.sub}`}
-          >
-            {defaultSubtitle}
-          </span>
+          <span className={`mt-1 font-semibold tracking-wider text-primary/80 ${currentSize.sub}`}>{subtitle}</span>
         </div>
       )}
     </div>

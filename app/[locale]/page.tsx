@@ -1,3 +1,4 @@
+import type { ComponentType, ReactNode, SVGProps } from 'react';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { setRequestLocale } from 'next-intl/server';
@@ -5,6 +6,22 @@ import { db } from '@/lib/db';
 import { Link } from '@/i18n/routing';
 import { SiteSearch } from '@/components/layout/header';
 import { ProductCard } from '@/components/shop/product-card';
+import { Rating } from '@/components/ui/rating';
+import { SectionHeading } from '@/components/ui/section-heading';
+import {
+  ArrowForwardIcon,
+  BagIcon,
+  CalendarCheckIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  ClockIcon,
+  MapPinIcon,
+  PhoneIcon,
+  ShieldCheckIcon,
+  StethoscopeIcon,
+  TruckIcon,
+} from '@/components/home/icons';
+import { RailScroller } from '@/components/home/rail-scroller';
 import { getClinicNAP } from '@/lib/clinic/nap';
 import { formatServicePrice } from '@/lib/format/price';
 import { VeterinaryCareJsonLd, FAQPageJsonLd, ItemListJsonLd } from '@/lib/seo/json-ld';
@@ -30,12 +47,41 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   });
 }
 
-const TRUST = [
-  { icon: '🛡️', title: 'ضمانت اصالت', text: 'فقط کالای اصل از واردکنندگان معتبر' },
-  { icon: '📅', title: 'تاریخ انقضای معتبر', text: 'تاریخ انقضای هر کالا روی صفحه محصول' },
-  { icon: '🩺', title: 'مشاوره رایگان دامپزشک', text: 'انتخاب غذا و مکمل با نظر دامپزشک' },
-  { icon: '🚚', title: 'ارسال سریع در تهران', text: 'تحویل با پیک در کوتاه‌ترین زمان' },
+/** Same gutter as the site header so section edges line up with it. */
+const WRAP = 'container mx-auto max-w-7xl px-4';
+/** Vertical rhythm between homepage sections. */
+const GAP = 'pt-10 sm:pt-14';
+
+type IconType = ComponentType<SVGProps<SVGSVGElement>>;
+
+const TRUST: { Icon: IconType; title: string; text: string }[] = [
+  { Icon: ShieldCheckIcon, title: 'ضمانت اصالت', text: 'فقط کالای اصل از واردکنندگان معتبر' },
+  { Icon: CalendarCheckIcon, title: 'تاریخ انقضای معتبر', text: 'تاریخ انقضای هر کالا روی صفحه محصول' },
+  { Icon: StethoscopeIcon, title: 'مشاوره رایگان دامپزشک', text: 'انتخاب غذا و مکمل با نظر دامپزشک' },
+  { Icon: TruckIcon, title: 'ارسال سریع در تهران', text: 'تحویل با پیک در کوتاه‌ترین زمان' },
 ];
+
+const PETS = [
+  { pet: 'cat', title: 'همه چیز برای گربه', short: 'گربه', text: 'غذای خشک و پوچ، تشویقی، خاک و اسباب‌بازی', img: '/images/categories/cat-dry-food.jpg' },
+  { pet: 'dog', title: 'همه چیز برای سگ', short: 'سگ', text: 'غذای خشک و کنسرو، تشویقی، قلاده و لوازم', img: '/images/categories/dog-dry-food.jpg' },
+];
+
+const CLINIC_PHOTOS = [
+  { src: '/images/veterinarian.jpg', alt: 'اتاق معاینه دامپزشکی پت‌باس' },
+  { src: '/images/grooming.jpg', alt: 'سالن گرومینگ و آرایش سگ و گربه پت‌باس' },
+  { src: '/images/reception.jpg', alt: 'پذیرش کلینیک و پت‌شاپ پت‌باس' },
+  { src: '/images/petboss-signboard.jpg', alt: 'تابلوی کلینیک دامپزشکی پت‌باس در قیطریه' },
+];
+
+const CLINIC_POINTS = ['معاینه و واکسیناسیون', 'جراحی و دندانپزشکی', 'گرومینگ و آرایش تخصصی', 'مشاوره تغذیه با دامپزشک'];
+
+const BRAND_LIMIT = 16;
+
+/** First letter of the name for the avatar fallback, skipping the «دکتر» title. */
+function initialOf(name: string) {
+  const bare = name.replace(/^\s*دکتر\s+/, '').trim() || name.trim();
+  return bare.charAt(0);
+}
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -77,6 +123,9 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   // If nothing is marked featured yet, fall back to in-stock picks.
   const picks = featured.length >= 4 ? featured : await getProductRail({}, 10);
 
+  const brands = nav.brands.slice(0, BRAND_LIMIT);
+  const moreBrands = nav.brands.length - brands.length;
+
   return (
     <>
       <VeterinaryCareJsonLd nap={nap} locale="fa" />
@@ -88,46 +137,61 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* ═══ HERO ═══ */}
       {visible('hero') && (
-        <section className="relative overflow-hidden border-b border-border bg-gradient-hero">
-          <div className="absolute -top-40 start-1/3 w-[32rem] h-[32rem] rounded-full bg-[radial-gradient(circle,rgba(197,160,89,0.14)_0%,transparent_70%)] pointer-events-none" />
-          <div className="container mx-auto max-w-7xl px-4 py-10 lg:py-16 grid gap-10 lg:grid-cols-[1.15fr_1fr] items-center relative">
-            <div className="space-y-6">
+        <section className="relative isolate overflow-hidden border-b border-border bg-gradient-hero">
+          <div className="absolute -top-40 start-1/3 -z-10 w-[32rem] h-[32rem] rounded-full bg-[radial-gradient(circle,rgba(197,160,89,0.14)_0%,transparent_70%)] pointer-events-none" />
+          <div className={`${WRAP} py-8 sm:py-12 lg:py-16 grid grid-cols-1 gap-10 lg:grid-cols-[1.15fr_1fr] items-center`}>
+            <div className="relative z-10 space-y-4 sm:space-y-6">
               {hero?.badgeFa && (
-                <span className="inline-block text-xs font-bold px-3 py-1 rounded-full border border-primary/40 bg-primary/10 text-primary">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border border-primary/40 bg-primary/10 text-primary">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
                   {hero.badgeFa}
                 </span>
               )}
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black leading-[1.35]">{heroTitle}</h1>
-              <p className="text-base text-muted-foreground leading-8 max-w-xl">{heroSubtitle}</p>
+              <h1 className="text-[1.7rem] sm:text-4xl lg:text-5xl font-black leading-[1.45] lg:leading-[1.35] text-balance">{heroTitle}</h1>
+              <p className="text-sm sm:text-base text-foreground/80 lg:text-muted-foreground leading-7 sm:leading-8 max-w-xl clamp-3 sm:[display:block]">
+                {heroSubtitle}
+              </p>
               <SiteSearch id="hero-search" className="hidden md:block max-w-xl" />
+              <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+                <Link href="/shop" className="btn btn-gold btn-lg px-4 sm:px-7 font-extrabold">
+                  <BagIcon className="hidden min-[380px]:block h-5 w-5 shrink-0" />
+                  {hero?.ctaLabelFa || 'ورود به پت‌شاپ'}
+                </Link>
+                <a href={nap.telLink} className="btn btn-outline btn-lg px-4 sm:px-7 bg-surface/60 backdrop-blur-sm">
+                  <PhoneIcon className="hidden min-[380px]:block h-5 w-5 shrink-0" />
+                  نوبت‌دهی کلینیک
+                </a>
+              </div>
               {popularChips.length > 0 && (
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="text-muted-foreground py-1.5">پرطرفدار:</span>
+                <div className="flex items-center gap-2 -mx-4 px-4 overflow-x-auto scrollbar-none sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible">
+                  <span className="shrink-0 text-xs text-muted-foreground">پرطرفدار:</span>
                   {popularChips.map((c) => (
-                    <Link
-                      key={c.id}
-                      href={categoryPath(c.slugFa)}
-                      className="rounded-full border border-border bg-surface-card px-3 py-1.5 hover:border-primary hover:text-primary"
-                    >
+                    <Link key={c.id} href={categoryPath(c.slugFa)} className="chip shrink-0 text-xs">
                       {c.nameFa}
                     </Link>
                   ))}
                 </div>
               )}
-              <div className="flex flex-wrap gap-3">
-                <Link href="/shop" className="h-12 px-7 inline-flex items-center rounded-2xl bg-gradient-gold text-charcoal-950 font-extrabold shadow-gold hover:opacity-90">
-                  {hero?.ctaLabelFa || 'ورود به پت‌شاپ'}
-                </Link>
-                <a href={nap.telLink} className="h-12 px-7 inline-flex items-center rounded-2xl border border-primary text-primary font-bold hover:bg-primary hover:text-charcoal-950 transition-colors">
-                  نوبت‌دهی کلینیک
-                </a>
-              </div>
             </div>
-            <div className="relative aspect-[4/3] rounded-[2rem] overflow-hidden border border-border-gold shadow-gold-lg">
-              <Image src="/images/petshop.jpg" alt="فروشگاه پت‌شاپ پت‌باس در قیطریه تهران" fill priority sizes="(max-width: 1024px) 100vw, 45vw" className="object-cover" />
-              <div className="absolute inset-x-4 bottom-4 rounded-2xl bg-surface/85 backdrop-blur border border-border p-4 text-sm">
-                <p className="font-bold">پت‌شاپ و کلینیک پت‌باس، قیطریه</p>
-                <p className="text-muted-foreground text-xs mt-1">{nap.workingHoursSummaryFa}</p>
+            {/* Mobile: dimmed backdrop behind the text. Desktop: framed photo beside it. */}
+            <div className="absolute inset-0 -z-10 lg:static lg:z-auto lg:aspect-[4/3]">
+              <div className="relative h-full w-full overflow-hidden lg:rounded-[2rem] lg:border lg:border-border-gold lg:shadow-gold-lg">
+                <Image
+                  src="/images/petshop.jpg"
+                  alt="فروشگاه پت‌شاپ پت‌باس در قیطریه تهران"
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 45vw"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-charcoal-950/80 lg:hidden" aria-hidden />
+                <div className="hidden lg:flex absolute inset-x-4 bottom-4 items-start gap-3 rounded-2xl bg-surface/85 backdrop-blur border border-border p-4 text-sm">
+                  <MapPinIcon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                  <div>
+                    <p className="font-bold">پت‌شاپ و کلینیک پت‌باس، قیطریه</p>
+                    <p className="text-muted-foreground text-xs mt-1">{nap.workingHoursSummaryFa}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -136,13 +200,18 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* ═══ TRUST ═══ */}
       <section aria-label="چرا پت‌باس" className="border-b border-border bg-surface">
-        <ul className="container mx-auto max-w-7xl px-4 py-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {TRUST.map((t) => (
-            <li key={t.title} className="flex items-start gap-3">
-              <span className="text-2xl" aria-hidden>{t.icon}</span>
-              <div>
-                <p className="font-bold text-sm">{t.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{t.text}</p>
+        <ul className={`${WRAP} py-4 sm:py-6 grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4`}>
+          {TRUST.map(({ Icon, title, text }) => (
+            <li
+              key={title}
+              className="flex flex-col sm:flex-row items-start gap-2 sm:gap-3 rounded-2xl border border-border bg-surface-card p-3 sm:p-4"
+            >
+              <span className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+                <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
+              </span>
+              <div className="min-w-0">
+                <p className="font-bold text-[13px] sm:text-sm">{title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{text}</p>
               </div>
             </li>
           ))}
@@ -152,19 +221,33 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       {visible('shop') && (
         <>
           {/* ═══ SHOP BY PET ═══ */}
-          <section className="container mx-auto max-w-7xl px-4 pt-12">
-            <div className="grid sm:grid-cols-2 gap-4">
-              {[
-                { pet: 'cat', title: 'همه چیز برای گربه', text: 'غذای خشک و پوچ، تشویقی، خاک و اسباب‌بازی', img: '/images/categories/cat-dry-food.jpg' },
-                { pet: 'dog', title: 'همه چیز برای سگ', text: 'غذای خشک و کنسرو، تشویقی، قلاده و لوازم', img: '/images/categories/dog-dry-food.jpg' },
-              ].map((p) => (
-                <Link key={p.pet} href={`/shop?pet=${p.pet}`} className="group relative h-44 sm:h-56 rounded-3xl overflow-hidden border border-border hover:border-primary">
-                  <Image src={p.img} alt={p.title} fill sizes="(max-width: 640px) 100vw, 50vw" className="object-cover group-hover:scale-105 transition-transform duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-l from-charcoal-950/90 via-charcoal-950/50 to-transparent" />
-                  <div className="absolute inset-y-0 start-0 p-6 flex flex-col justify-center max-w-xs">
-                    <h2 className="text-xl sm:text-2xl font-black text-white">{p.title}</h2>
-                    <p className="text-sm text-white/80 mt-2">{p.text}</p>
-                    <span className="mt-4 text-sm font-bold text-gold-300">مشاهده محصولات ←</span>
+          <section aria-labelledby="home-pets" className={`${WRAP} ${GAP}`}>
+            <SectionHeading id="home-pets" title="خرید بر اساس حیوان خانگی" />
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {PETS.map((p) => (
+                <Link
+                  key={p.pet}
+                  href={`/shop?pet=${p.pet}`}
+                  className="group relative block h-40 sm:h-56 rounded-2xl sm:rounded-3xl overflow-hidden border border-border hover:border-primary transition-colors"
+                >
+                  <Image
+                    src={p.img}
+                    alt=""
+                    fill
+                    sizes="(max-width: 1280px) 50vw, 620px"
+                    className="object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950 via-charcoal-950/55 to-charcoal-950/10" aria-hidden />
+                  <div className="absolute inset-x-0 bottom-0 p-3 sm:p-6">
+                    <h3 className="text-base sm:text-2xl font-black text-white">
+                      <span className="sm:hidden">{p.short}</span>
+                      <span className="hidden sm:inline">{p.title}</span>
+                    </h3>
+                    <p className="hidden sm:block text-sm text-white/80 mt-1.5">{p.text}</p>
+                    <span className="mt-1 sm:mt-3 inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-gold-300">
+                      مشاهده محصولات
+                      <ArrowForwardIcon className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                    </span>
                   </div>
                 </Link>
               ))}
@@ -172,46 +255,60 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </section>
 
           {/* ═══ CATEGORIES ═══ */}
-          <section className="container mx-auto max-w-7xl px-4 pt-12">
-            <SectionHead
-              title={titleOf('shop', 'دسته‌بندی‌های پت‌شاپ')}
-              subtitle={subtitleOf('shop', 'هر آنچه دوست پشمالوی شما نیاز دارد، دسته‌بندی‌شده و آماده خرید.')}
-              href="/shop"
-            />
-            <ul className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-              {shopCategories.map((c) => (
-                <li key={c.id}>
-                  <Link href={categoryPath(c.slugFa)} className="group flex flex-col items-center gap-2 text-center">
-                    <span className="relative w-full aspect-square rounded-2xl overflow-hidden border border-border group-hover:border-primary transition-colors">
-                      <Image
-                        src={c.imageId && !c.imageId.startsWith('data:') ? c.imageId : '/images/categories/other.jpg'}
-                        alt={c.nameFa}
-                        fill
-                        sizes="(max-width: 640px) 33vw, 12vw"
-                        className="object-cover"
-                      />
-                    </span>
-                    <span className="text-xs leading-5 group-hover:text-primary">{c.nameFa}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
+          {shopCategories.length > 0 && (
+            <section aria-labelledby="home-categories" className={`${WRAP} ${GAP}`}>
+              <SectionHeading
+                id="home-categories"
+                title={titleOf('shop', 'دسته‌بندی‌های پت‌شاپ')}
+                subtitle={subtitleOf('shop', 'هر آنچه دوست پشمالوی شما نیاز دارد، دسته‌بندی‌شده و آماده خرید.')}
+                href="/shop"
+                linkAriaLabel="مشاهده همه محصولات پت‌شاپ"
+              />
+              <ul className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-x-3 gap-y-4">
+                {shopCategories.map((c) => (
+                  <li key={c.id}>
+                    <Link href={categoryPath(c.slugFa)} className="group flex flex-col items-center gap-2 text-center">
+                      <span className="relative w-full aspect-square rounded-2xl overflow-hidden border border-border bg-surface-card group-hover:border-primary transition-colors">
+                        <Image
+                          src={c.imageId && !c.imageId.startsWith('data:') ? c.imageId : '/images/categories/other.jpg'}
+                          alt={c.nameFa}
+                          fill
+                          sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 150px"
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      </span>
+                      <span className="text-xs font-medium clamp-2 group-hover:text-primary transition-colors">{c.nameFa}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-          <ProductRail title="پیشنهاد ویژه پت‌باس" href="/shop" products={picks} />
+          <ProductRail featured title="پیشنهاد ویژه پت‌باس" subtitle="منتخب دامپزشکان و پرفروش‌های این هفته" href="/shop" products={picks} />
           <ProductRail title="غذای گربه" href="/shop?pet=cat" products={catFood} />
           <ProductRail title="غذای سگ" href="/shop?pet=dog" products={dogFood} />
           <ProductRail title="تشویقی سگ و گربه" href={categoryPath('cat-treats')} products={treats} />
 
           {/* ═══ BRANDS ═══ */}
-          {nav.brands.length > 0 && (
-            <section className="container mx-auto max-w-7xl px-4 pt-12">
-              <SectionHead title="برندهای معتبر" subtitle="محصولات اصل از برندهای شناخته‌شده جهانی" />
-              <ul className="flex flex-wrap gap-2">
-                {nav.brands.map((b) => (
+          {brands.length > 0 && (
+            <section aria-labelledby="home-brands" className={`${WRAP} ${GAP}`}>
+              <SectionHeading
+                id="home-brands"
+                title="برندهای معتبر"
+                subtitle="محصولات اصل از برندهای شناخته‌شده جهانی"
+                href={moreBrands > 0 ? '/shop' : undefined}
+                linkLabel="همه برندها"
+                linkAriaLabel="مشاهده همه برندها در پت‌شاپ"
+              />
+              <ul className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 sm:gap-3">
+                {brands.map((b) => (
                   <li key={b.id}>
-                    <Link href={brandPath(b.slugFa)} className="inline-block rounded-xl border border-border bg-surface-card px-4 py-2.5 text-sm hover:border-primary hover:text-primary">
-                      {b.nameFa}
+                    <Link
+                      href={brandPath(b.slugFa)}
+                      className="flex h-14 items-center justify-center rounded-xl border border-border bg-surface-card px-2 text-center text-xs sm:text-sm font-bold hover:border-primary hover:text-primary transition-colors"
+                    >
+                      <span className="clamp-2 leading-5">{b.nameFa}</span>
                     </Link>
                   </li>
                 ))}
@@ -223,12 +320,15 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* ═══ CLINIC ═══ */}
       {(visible('divisions') || visible('services')) && (
-        <section className="mt-16 border-y border-border bg-surface">
-          <div className="container mx-auto max-w-7xl px-4 py-14 space-y-10">
-            <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr] items-center">
-              <div className="space-y-4">
-                <span className="text-xs font-bold text-primary">کلینیک تخصصی دامپزشکی</span>
-                <h2 className="text-2xl sm:text-3xl font-black leading-[1.4]">
+        <section aria-labelledby="home-clinic" className="mt-10 sm:mt-14 border-y border-border bg-surface">
+          <div className={`${WRAP} py-10 sm:py-14 space-y-10`}>
+            <div className="grid grid-cols-1 gap-8 lg:gap-12 lg:grid-cols-[1fr_1.1fr] items-center">
+              <div className="space-y-5">
+                <span className="inline-flex items-center gap-2 text-xs font-bold text-primary">
+                  <StethoscopeIcon className="h-4 w-4" />
+                  کلینیک تخصصی دامپزشکی
+                </span>
+                <h2 id="home-clinic" className="text-2xl sm:text-3xl font-black leading-[1.5] text-balance">
                   {titleOf('divisions', 'درمان، جراحی و گرومینگ زیر یک سقف')}
                 </h2>
                 <p className="text-sm text-muted-foreground leading-8">
@@ -237,30 +337,48 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                     'دامپزشکان پت‌باس همه روزه در قیطریه آماده معاینه، واکسیناسیون، جراحی، دندانپزشکی و گرومینگ سگ و گربه هستند.'
                   )}
                 </p>
-                <div className="flex flex-wrap gap-3">
-                  <Link href="/services" className="h-11 px-6 inline-flex items-center rounded-2xl bg-gradient-gold text-charcoal-950 font-bold">
-                    خدمات و تعرفه‌ها
-                  </Link>
-                  <a href={nap.telLink} className="h-11 px-6 inline-flex items-center rounded-2xl border border-primary text-primary font-bold">
+                <ul className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
+                  {CLINIC_POINTS.map((t) => (
+                    <li key={t} className="flex items-start gap-2">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                        <CheckIcon className="h-3.5 w-3.5" strokeWidth={2.6} />
+                      </span>
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+                <p className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <ClockIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>{nap.workingHoursSummaryFa}</span>
+                </p>
+                <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+                  <a href={nap.telLink} className="btn btn-gold px-4 sm:px-6">
+                    <PhoneIcon className="h-4.5 w-4.5 shrink-0" />
                     رزرو نوبت
                   </a>
+                  <Link href="/services" className="btn btn-outline px-4 sm:px-6">
+                    خدمات و تعرفه‌ها
+                  </Link>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                {['/images/veterinarian.jpg', '/images/grooming.jpg', '/images/reception.jpg', '/images/petboss-signboard.jpg'].map((src, i) => (
-                  <div key={src} className={`relative rounded-2xl overflow-hidden border border-border ${i % 2 ? 'aspect-[4/5] translate-y-6' : 'aspect-[4/5]'}`}>
-                    <Image src={src} alt="کلینیک دامپزشکی پت‌باس" fill sizes="(max-width: 1024px) 50vw, 25vw" className="object-cover" />
+              <div className="grid grid-cols-2 gap-3 pb-6">
+                {CLINIC_PHOTOS.map((photo, i) => (
+                  <div
+                    key={photo.src}
+                    className={`relative aspect-[4/3] sm:aspect-[4/5] rounded-2xl overflow-hidden border border-border ${i % 2 ? 'translate-y-6' : ''}`}
+                  >
+                    <Image src={photo.src} alt={photo.alt} fill sizes="(max-width: 1024px) 50vw, 25vw" className="object-cover" />
                   </div>
                 ))}
               </div>
             </div>
 
             {visible('divisions') && divisions.length > 0 && (
-              <ul className="grid sm:grid-cols-3 gap-4">
+              <ul className="grid sm:grid-cols-3 gap-3 sm:gap-4">
                 {divisions.map((d) => (
-                  <li key={d.id} className="rounded-2xl border border-border bg-surface-card p-5">
+                  <li key={d.id} className="rounded-2xl border border-border bg-surface-card p-5 border-s-2 border-s-primary/60">
                     <h3 className="font-bold">{d.nameFa}</h3>
-                    {d.descriptionFa && <p className="text-sm text-muted-foreground mt-2 leading-7 line-clamp-3">{d.descriptionFa}</p>}
+                    {d.descriptionFa && <p className="text-sm text-muted-foreground mt-2 leading-7 clamp-3">{d.descriptionFa}</p>}
                   </li>
                 ))}
               </ul>
@@ -268,16 +386,27 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
             {visible('services') && services.length > 0 && (
               <div>
-                <SectionHead title={titleOf('services', 'خدمات پرمراجعه کلینیک')} href="/services" />
-                <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <SectionHeading
+                  title={titleOf('services', 'خدمات پرمراجعه کلینیک')}
+                  href="/services"
+                  linkAriaLabel="مشاهده همه خدمات کلینیک"
+                />
+                <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {services.map((s) => (
-                    <li key={s.id} className="rounded-2xl border border-border bg-surface-card p-5 flex flex-col">
+                    <li key={s.id} className="rounded-2xl border border-border bg-surface-card p-5 flex flex-col hover:border-border-gold transition-colors">
                       <span className="text-[11px] font-semibold text-primary">{s.division.nameFa}</span>
                       <h3 className="font-bold mt-1">{s.nameFa}</h3>
-                      {s.descriptionFa && <p className="text-sm text-muted-foreground mt-2 leading-7 line-clamp-2">{s.descriptionFa}</p>}
-                      <div className="mt-auto pt-4 flex items-center justify-between text-sm">
+                      {s.descriptionFa && <p className="text-sm text-muted-foreground mt-2 leading-7 clamp-2">{s.descriptionFa}</p>}
+                      <div className="mt-auto pt-4 flex items-center justify-between gap-3 text-sm">
                         <span className="font-bold text-primary">{formatServicePrice(s.priceDisplayMode, s.priceFrom, s.priceTo, 'fa')}</span>
-                        <a href={nap.telLink} className="text-xs text-primary hover:underline">نوبت بگیرید</a>
+                        <a
+                          href={nap.telLink}
+                          aria-label={`نوبت بگیرید: ${s.nameFa}`}
+                          className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg border border-border-gold px-3 text-xs font-bold text-primary hover:bg-primary/10 transition-colors"
+                        >
+                          <PhoneIcon className="h-3.5 w-3.5" />
+                          نوبت بگیرید
+                        </a>
                       </div>
                     </li>
                   ))}
@@ -290,16 +419,22 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* ═══ TEAM ═══ */}
       {visible('staff') && staff.length > 0 && (
-        <section className="container mx-auto max-w-7xl px-4 pt-14">
-          <SectionHead title={titleOf('staff', 'کادر دامپزشکی')} subtitle={sec.get('staff')?.subtitleFa ?? undefined} />
-          <ul className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <section aria-labelledby="home-staff" className={`${WRAP} ${GAP}`}>
+          <SectionHeading id="home-staff" title={titleOf('staff', 'کادر دامپزشکی')} subtitle={sec.get('staff')?.subtitleFa ?? undefined} />
+          <ul className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {staff.map((v) => (
-              <li key={v.id} className="rounded-2xl border border-border bg-surface-card p-5 text-center">
+              <li key={v.id} className="rounded-2xl border border-border bg-surface-card p-4 sm:p-5 text-center">
                 <div className="relative w-20 h-20 mx-auto rounded-full overflow-hidden border-2 border-border-gold bg-surface">
-                  {v.photoId && <Image src={v.photoId} alt={v.nameFa} fill sizes="80px" className="object-cover" />}
+                  {v.photoId ? (
+                    <Image src={v.photoId} alt={v.nameFa} fill sizes="80px" className="object-cover" />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center bg-primary/10 text-2xl font-black text-primary" aria-hidden>
+                      {initialOf(v.nameFa)}
+                    </span>
+                  )}
                 </div>
-                <h3 className="font-bold mt-3">{v.nameFa}</h3>
-                <p className="text-xs text-primary mt-1">{v.titleFa}</p>
+                <h3 className="font-bold mt-3 text-sm sm:text-base">{v.nameFa}</h3>
+                {v.titleFa && <p className="text-xs text-primary mt-1">{v.titleFa}</p>}
                 {v.specialtyFa && <p className="text-xs text-muted-foreground mt-1">{v.specialtyFa}</p>}
               </li>
             ))}
@@ -309,14 +444,22 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* ═══ TESTIMONIALS ═══ */}
       {visible('testimonials') && testimonials.length > 0 && (
-        <section className="container mx-auto max-w-7xl px-4 pt-14">
-          <SectionHead title={titleOf('testimonials', 'نظر مشتریان پت‌باس')} />
-          <ul className="grid md:grid-cols-3 gap-4">
+        <section aria-labelledby="home-testimonials" className={`${WRAP} ${GAP}`}>
+          <SectionHeading id="home-testimonials" title={titleOf('testimonials', 'نظر مشتریان پت‌باس')} />
+          <ul className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-px-4 scrollbar-none -mx-4 px-4 pb-1 md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible">
             {testimonials.map((t) => (
-              <li key={t.id} className="rounded-2xl border border-border bg-surface-card p-5 flex flex-col">
-                <p className="text-primary" aria-label={`امتیاز ${t.rating || 5} از ۵`}>{'★'.repeat(t.rating || 5)}</p>
+              <li
+                key={t.id}
+                className="snap-start shrink-0 w-[84%] sm:w-[46%] md:w-auto rounded-2xl border border-border bg-surface-card p-5 flex flex-col"
+              >
+                <Rating value={t.rating || 5} size="sm" className="self-start" />
                 <blockquote className="text-sm leading-7 mt-3 flex-1">«{t.contentFa}»</blockquote>
-                <p className="text-xs font-bold mt-4">{t.nameFa}</p>
+                <p className="mt-4 flex items-center gap-2 text-xs font-bold">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary" aria-hidden>
+                    {t.nameFa.trim().charAt(0)}
+                  </span>
+                  {t.nameFa}
+                </p>
               </li>
             ))}
           </ul>
@@ -325,14 +468,14 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* ═══ FAQ ═══ */}
       {visible('faq') && faqs.length > 0 && (
-        <section className="container mx-auto max-w-4xl px-4 pt-14">
-          <SectionHead title={titleOf('faq', 'سوالات متداول')} href="/faq" />
+        <section aria-labelledby="home-faq" className={`container mx-auto max-w-4xl px-4 ${GAP}`}>
+          <SectionHeading id="home-faq" title={titleOf('faq', 'سوالات متداول')} href="/faq" linkAriaLabel="مشاهده همه سوالات متداول" />
           <div className="space-y-2">
             {faqs.map((f) => (
-              <details key={f.id} className="group rounded-2xl border border-border bg-surface-card">
-                <summary className="cursor-pointer list-none p-4 font-semibold flex justify-between gap-3">
+              <details key={f.id} className="group rounded-2xl border border-border bg-surface-card open:border-border-gold transition-colors">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm sm:text-base font-semibold hover:text-primary transition-colors [&::-webkit-details-marker]:hidden">
                   {f.questionFa}
-                  <span className="text-primary group-open:rotate-45 transition-transform" aria-hidden>＋</span>
+                  <ChevronDownIcon className="h-5 w-5 shrink-0 text-primary transition-transform group-open:rotate-180" strokeWidth={2.2} />
                 </summary>
                 <p className="px-4 pb-4 text-sm text-muted-foreground leading-7">{f.answerFa}</p>
               </details>
@@ -343,26 +486,30 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* ═══ LOCATION ═══ */}
       {visible('contact') && (
-        <section className="container mx-auto max-w-7xl px-4 py-14">
-          <div className="grid gap-6 lg:grid-cols-2 rounded-3xl border border-border bg-surface-card overflow-hidden">
-            <div className="p-6 sm:p-8 space-y-4">
-              <h2 className="text-2xl font-black">{titleOf('contact', 'مراجعه حضوری به پت‌باس')}</h2>
-              <p className="text-sm text-muted-foreground leading-7">{nap.addressFa}</p>
-              <p className="text-sm">ساعات کاری: {nap.workingHoursSummaryFa}</p>
-              <p className="text-sm">
-                تلفن:{' '}
-                <a href={nap.telLink} className="text-primary font-bold" dir="ltr">
-                  {nap.phoneDisplayFa}
-                </a>
-              </p>
+        <section aria-labelledby="home-contact" className={`${WRAP} py-10 sm:py-14`}>
+          <div className="grid lg:grid-cols-2 rounded-3xl border border-border bg-surface-card overflow-hidden">
+            <div className="p-5 sm:p-8 space-y-4">
+              <h2 id="home-contact" className="text-xl sm:text-2xl font-black">{titleOf('contact', 'مراجعه حضوری به پت‌باس')}</h2>
+              <ul className="space-y-3 text-sm">
+                <InfoRow icon={<MapPinIcon className="h-5 w-5" />}>
+                  <span className="text-muted-foreground leading-7">{nap.addressFa}</span>
+                </InfoRow>
+                <InfoRow icon={<ClockIcon className="h-5 w-5" />}>ساعات کاری: {nap.workingHoursSummaryFa}</InfoRow>
+                <InfoRow icon={<PhoneIcon className="h-5 w-5" />}>
+                  تلفن:{' '}
+                  <a href={nap.telLink} className="text-primary font-bold hover:underline" dir="ltr">
+                    {nap.phoneDisplayFa}
+                  </a>
+                </InfoRow>
+              </ul>
               <div className="flex flex-wrap gap-2 pt-2">
-                <a href={`https://maps.google.com/?q=${nap.geo.lat},${nap.geo.lng}`} target="_blank" rel="noopener" className="rounded-xl border border-border px-4 py-2 text-sm hover:border-primary">
+                <a href={`https://maps.google.com/?q=${nap.geo.lat},${nap.geo.lng}`} target="_blank" rel="noopener" className="btn btn-secondary btn-sm min-h-10">
                   مسیریابی گوگل مپ
                 </a>
-                <a href={`https://neshan.org/maps/@${nap.geo.lat},${nap.geo.lng},16z`} target="_blank" rel="noopener" className="rounded-xl border border-border px-4 py-2 text-sm hover:border-primary">
+                <a href={`https://neshan.org/maps/@${nap.geo.lat},${nap.geo.lng},16z`} target="_blank" rel="noopener" className="btn btn-secondary btn-sm min-h-10">
                   مسیریابی نشان
                 </a>
-                <a href={`https://waze.com/ul?ll=${nap.geo.lat},${nap.geo.lng}&navigate=yes`} target="_blank" rel="noopener" className="rounded-xl border border-border px-4 py-2 text-sm hover:border-primary">
+                <a href={`https://waze.com/ul?ll=${nap.geo.lat},${nap.geo.lng}&navigate=yes`} target="_blank" rel="noopener" className="btn btn-secondary btn-sm min-h-10">
                   ویز
                 </a>
               </div>
@@ -381,34 +528,79 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   );
 }
 
-function SectionHead({ title, subtitle, href }: { title: string; subtitle?: string; href?: string }) {
+function InfoRow({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex items-end justify-between gap-4 mb-5">
-      <div>
-        <h2 className="text-xl sm:text-2xl font-black">{title}</h2>
-        {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
-      </div>
-      {href && (
-        <Link href={href} className="shrink-0 text-sm text-primary hover:underline">
-          مشاهده همه
-        </Link>
-      )}
-    </div>
+    <li className="flex items-start gap-3">
+      <span className="mt-0.5 shrink-0 text-primary">{icon}</span>
+      <span className="min-w-0">{children}</span>
+    </li>
   );
 }
 
-function ProductRail({ title, href, products }: { title: string; href: string; products: ProductCardData[] }) {
+function ProductRail({
+  title,
+  subtitle,
+  href,
+  products,
+  featured = false,
+}: {
+  title: string;
+  subtitle?: string;
+  href: string;
+  products: ProductCardData[];
+  /** Gold-framed panel for the lead rail so the rails do not all look alike. */
+  featured?: boolean;
+}) {
   if (products.length === 0) return null;
+
+  // 2 cards + a peek on phones, 3 on tablets, exactly 5 per view on desktop (gap is 0.75rem).
+  const item = 'flex w-[44%] sm:w-[30%] lg:w-[calc((100%-3rem)/5)] [&>article]:w-full';
+
+  const rail = (
+    <RailScroller label={title} className="rail rail-bleed sm:scroll-px-0! pb-1">
+      {products.map((p) => (
+        <li key={p.id} className={item}>
+          <ProductCard product={p} />
+        </li>
+      ))}
+      <li className={item}>
+        <Link
+          href={href}
+          aria-label={`مشاهده همه: ${title}`}
+          className="group flex w-full min-h-40 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border-gold bg-surface-card p-4 text-center text-sm font-bold text-primary hover:bg-primary/5 transition-colors"
+        >
+          <span className="flex h-12 w-12 items-center justify-center rounded-full border border-border-gold bg-primary/10 transition-transform group-hover:-translate-x-1">
+            <ArrowForwardIcon className="h-5 w-5" />
+          </span>
+          مشاهده همه
+        </Link>
+      </li>
+    </RailScroller>
+  );
+
+  const heading = (
+    <SectionHeading
+      title={title}
+      subtitle={subtitle}
+      eyebrow={featured ? 'منتخب پت‌باس' : undefined}
+      href={href}
+      linkAriaLabel={`مشاهده همه ${title}`}
+    />
+  );
+
   return (
-    <section className="container mx-auto max-w-7xl px-4 pt-12">
-      <SectionHead title={title} href={href} />
-      <ul className="flex gap-3 sm:gap-4 overflow-x-auto snap-x pb-3 -mx-4 px-4">
-        {products.map((p) => (
-          <li key={p.id} className="snap-start shrink-0 w-[46%] sm:w-[31%] lg:w-[19%]">
-            <ProductCard product={p} />
-          </li>
-        ))}
-      </ul>
+    <section aria-label={title} className={`${WRAP} ${GAP}`}>
+      {featured ? (
+        <div className="rounded-3xl border border-border-gold bg-surface p-4 sm:p-6 shadow-gold overflow-hidden lg:overflow-visible">
+          {heading}
+          {rail}
+        </div>
+      ) : (
+        <>
+          {heading}
+          {rail}
+        </>
+      )}
     </section>
   );
 }

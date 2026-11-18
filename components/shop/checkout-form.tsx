@@ -70,7 +70,7 @@ export function CheckoutForm({ addresses, recipient }: { addresses: AddressData[
   const canPay = !!address && !!quote && problems.length === 0 && (method === 'COD' ? quote.codAllowed : quote.onlineAvailable);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
       <div className="space-y-5">
         {/* Address */}
         <section className="rounded-2xl border border-border bg-surface-card p-5 space-y-4">

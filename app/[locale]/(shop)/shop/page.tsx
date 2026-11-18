@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
 import { ProductListing } from '@/components/shop/product-listing';
@@ -40,6 +41,8 @@ export default async function ShopPage({ params, searchParams }: { params: Param
     getActiveBrands(),
     getClinicNAP(),
   ]);
+  // Out-of-range pages (e.g. ?page=999) are a 404, same as category and brand listings.
+  if (filters.page > 1 && filters.page > listing.pageCount) notFound();
   const visibleCategories = categories.filter((c) => c._count.products > 0);
 
   const storeJsonLd = {
@@ -76,21 +79,26 @@ export default async function ShopPage({ params, searchParams }: { params: Param
 
       {showCategoryStrip && (
         <section aria-label="دسته‌بندی‌های پت‌شاپ" className="border-b border-border bg-surface">
-          <div className="container mx-auto px-4 py-6 max-w-7xl">
-            <ul className="flex gap-3 overflow-x-auto pb-2 snap-x">
+          <div className="container mx-auto max-w-7xl px-4 py-4 sm:py-6">
+            <ul className="rail rail-bleed gap-2 pb-1 sm:gap-3">
               {visibleCategories.map((c) => (
-                <li key={c.id} className="snap-start shrink-0">
-                  <Link href={categoryPath(c.slugFa)} className="group flex flex-col items-center gap-2 w-24 text-center">
-                    <span className="relative w-20 h-20 rounded-2xl overflow-hidden border border-border group-hover:border-primary transition-colors">
+                <li key={c.id}>
+                  <Link
+                    href={categoryPath(c.slugFa)}
+                    className="group flex w-[5.5rem] flex-col items-center gap-2 rounded-2xl p-1 text-center sm:w-28"
+                  >
+                    <span className="relative h-[4.5rem] w-[4.5rem] overflow-hidden rounded-2xl border border-border transition-colors group-hover:border-primary sm:h-24 sm:w-24">
                       <Image
                         src={c.imageId && !c.imageId.startsWith('data:') ? c.imageId : '/images/categories/other.jpg'}
-                        alt={c.nameFa}
+                        alt=""
                         fill
-                        sizes="80px"
-                        className="object-cover"
+                        sizes="96px"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     </span>
-                    <span className="text-xs leading-5 group-hover:text-primary">{c.nameFa}</span>
+                    <span className="line-clamp-2 text-xs font-semibold leading-5 transition-colors group-hover:text-primary">
+                      {c.nameFa}
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -107,6 +115,7 @@ export default async function ShopPage({ params, searchParams }: { params: Param
           { name: 'پت‌شاپ', href: '/shop' },
         ]}
         basePath="/shop"
+        showCategoryChips={!showCategoryStrip}
         filters={filters}
         {...listing}
         categories={visibleCategories.map((c) => ({ ...c, count: c._count.products }))}

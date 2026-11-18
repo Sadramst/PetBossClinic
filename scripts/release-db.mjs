@@ -45,6 +45,9 @@ const columnExists = async (t, c) =>
     await client.query(`select 1 from information_schema.columns where table_schema='public' and table_name=$1 and column_name=$2`, [t, c])
   ).rowCount > 0;
 
+const indexExists = async (name) =>
+  (await client.query(`select 1 from pg_indexes where schemaname='public' and indexname=$1`, [name])).rowCount > 0;
+
 /** Each migration declares how to tell whether it is already applied. */
 const MIGRATIONS = [
   {
@@ -63,6 +66,23 @@ const MIGRATIONS = [
       }
       return false;
     },
+  },
+  {
+    dir: '20261118_order_integrity',
+    applied: async () =>
+      (await columnExists('OrderItem', 'allocations')) &&
+      (await columnExists('Order', 'idempotencyKey')) &&
+      (await columnExists('Customer', 'sessionVersion')) &&
+      (await indexExists('Order_idempotencyKey_key')) &&
+      (await indexExists('OtpCode_ip_createdAt_idx')),
+  },
+  {
+    dir: '20261119_customer_password',
+    applied: async () =>
+      (await columnExists('Customer', 'passwordHash')) &&
+      (await columnExists('Customer', 'phoneVerifiedAt')) &&
+      (await columnExists('Customer', 'failedLogins')) &&
+      (await columnExists('Customer', 'lastFailedAt')),
   },
 ];
 

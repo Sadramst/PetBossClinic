@@ -41,7 +41,12 @@ export default async function OrderPage({
 
   return (
     <AccountShell customer={customer} title={`سفارش ${order.number}`}>
-      {success && <ClearCartOnSuccess />}
+      {success && (
+        <ClearCartOnSuccess
+          orderNumber={order.number}
+          productIds={order.items.flatMap((i) => (i.productId ? [i.productId] : []))}
+        />
+      )}
       {success && (
         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
           سفارش شما با موفقیت ثبت شد{order.payments[0]?.refId ? ` · کد پیگیری پرداخت: ${order.payments[0].refId}` : ''}. همکاران ما
