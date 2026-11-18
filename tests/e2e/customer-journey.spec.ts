@@ -155,7 +155,7 @@ test.describe('customer journey', () => {
     expect(order.paymentMethod).toBe('COD')
     expect(order.items[0].unitPrice).toBe(product.price)
     expect(order.shipPostal).toBe('1938973111')
-    await page.goto('/account')
+    await page.goto('/account/orders')
     await expect(page.getByText(order.number).first()).toBeVisible()
   })
 

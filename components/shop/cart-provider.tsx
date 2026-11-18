@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { syncCartAction } from '@/app/actions/pets';
 import { MAX_LINES, MAX_QTY_PER_LINE, type CartLine } from '@/lib/shop/cart-types';
 
 const STORAGE_KEY = 'pb_cart_v1';
@@ -15,6 +16,9 @@ interface CartContextValue {
   remove: (productId: string) => void;
   clear: () => void;
 }
+
+/** Until when to skip server syncs (set after a signed-out response). */
+let guestUntil = 0;
 
 const CartContext = createContext<CartContextValue | null>(null);
 
@@ -35,6 +39,7 @@ function load(): CartLine[] {
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [ready, setReady] = useState(false);
+  const hadItems = useRef(false);
 
   useEffect(() => {
     setLines(load());
@@ -44,6 +49,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
+
+  // Mirror the cart to the server for signed-in customers (powers cart reminders). Debounced and silent:
+  // guests get {ok:false} once and are then left alone for a minute, and a failure never disturbs shopping.
+  useEffect(() => {
+    if (!ready || Date.now() < guestUntil) return;
+    // An untouched empty cart has nothing to mirror; an emptied one does.
+    if (lines.length === 0 && !hadItems.current) return;
+    if (lines.length > 0) hadItems.current = true;
+    const items = lines.map((l) => ({ productId: l.productId, quantity: l.quantity }));
+    const t = setTimeout(() => {
+      syncCartAction(items)
+        .then((r) => {
+          if (!r.ok) guestUntil = Date.now() + 60_000;
+        })
+        .catch(() => {});
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [lines, ready]);
 
   const persist = useCallback((next: CartLine[]) => {
     setLines(next);

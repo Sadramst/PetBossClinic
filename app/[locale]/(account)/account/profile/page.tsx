@@ -4,6 +4,7 @@ import { AccountShell } from '@/components/account/account-shell';
 import { PasswordForm } from '@/components/account/password-form';
 import { PhoneConfirm } from '@/components/account/phone-confirm';
 import { ProfileForm } from '@/components/account/profile-form';
+import { ConsentToggle } from '@/components/account/consent-toggle';
 import { requireCustomer } from '@/lib/customer/session';
 import { customerLoginEnabled } from '@/lib/sms';
 import { formatJalaliDate } from '@/lib/shop/expiry';
@@ -41,8 +42,14 @@ export default async function ProfilePage({ params }: { params: Promise<{ locale
           ) : (
             <p className="text-xs leading-6 text-muted-foreground">تأیید شماره با پیامک به‌زودی فعال می‌شود. تا آن زمان می‌توانید بدون تأیید خرید کنید.</p>
           ))}
-        <ProfileForm firstName={customer.firstName ?? ''} lastName={customer.lastName ?? ''} email={customer.email ?? ''} />
+        <ProfileForm firstName={customer.firstName ?? ''} lastName={customer.lastName ?? ''} email={customer.email ?? ''}
+          extras={{ birthDate: customer.birthDate ? customer.birthDate.toISOString().slice(0, 10) : '', city: customer.city ?? '', gender: customer.gender ?? '' }} />
       </div>
+
+      <section aria-labelledby="consent-heading" className="space-y-3 rounded-2xl border border-border bg-surface-card p-5">
+        <h2 id="consent-heading" className="font-bold">پیام‌ها و پیشنهادهای ویژه</h2>
+        <ConsentToggle initial={customer.marketingSmsConsent} since={customer.marketingConsentAt ? formatJalaliDate(customer.marketingConsentAt) : null} />
+      </section>
 
       <section aria-labelledby="password-heading" className="rounded-2xl border border-border bg-surface-card p-5 space-y-4">
         <div>

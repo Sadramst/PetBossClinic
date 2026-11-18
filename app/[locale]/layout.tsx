@@ -165,7 +165,7 @@ export default async function LocaleLayout({
       >
         <a
           href="#main-content"
-          className="sr-only rounded-xl bg-gradient-gold px-4 py-2 font-bold text-charcoal-950 focus:not-sr-only focus:fixed focus:start-2 focus:top-2 focus:z-[100]"
+          className="sr-only rounded-xl bg-gradient-gold font-bold text-charcoal-950 focus:not-sr-only focus:fixed focus:px-4 focus:py-2 focus:start-2 focus:top-2 focus:z-[100]"
         >
           پرش به محتوای اصلی
         </a>

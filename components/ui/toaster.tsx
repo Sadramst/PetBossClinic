@@ -98,7 +98,10 @@ function ToastCard({ item }: { item: ToastItem }) {
   return (
     <div
       role={item.tone === "error" ? "alert" : "status"}
-      onMouseEnter={() => setPaused(true)}
+      onMouseEnter={() => {
+        // Touch screens fire a synthetic mouseenter on tap and never a leave: only pause for a real hovering pointer.
+        if (window.matchMedia?.("(hover: hover)").matches !== false) setPaused(true)
+      }}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}

@@ -19,6 +19,7 @@ import { getClinicNAP } from '@/lib/clinic/nap';
 import { formatPrice } from '@/lib/format/price';
 import { getProductBySlug, getRelatedProducts, productImage } from '@/lib/shop/catalog';
 import { brandPath, categoryPath, decodeSlug, productPath } from '@/lib/shop/urls';
+import { PetFit } from '@/components/shop/pet-fit';
 import { SHIPPING } from '@/lib/shop/shipping';
 import { zarinpalConfigured } from '@/lib/payments/zarinpal';
 import { expiryState, formatJalaliDate, nextShippingExpiry, sellableQuantity } from '@/lib/shop/expiry';
@@ -208,6 +209,7 @@ export default async function ProductPage({ params }: { params: Params }) {
                 </span>
               )}
             </div>
+            <PetFit forSpecies={product.forSpecies} speciesNames={product.speciesCompatibility.map((s) => s.nameFa)} brandName={product.brand?.nameFa} />
           </div>
 
           <div className="space-y-4 rounded-2xl border border-border bg-surface-card p-4 sm:p-5">

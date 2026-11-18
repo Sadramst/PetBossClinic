@@ -1,5 +1,6 @@
 'use server'
 
+import { clearCartSnapshotSafe } from '@/lib/club/cart'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { Prisma, type PaymentMethod } from '@prisma/client'
@@ -214,6 +215,8 @@ export async function placeOrderAction(input: {
     }
   }
   if (!order) return { error: 'ثبت سفارش با خطا مواجه شد. دوباره تلاش کنید.' }
+  // The saved cart snapshot is no longer pending (club abandoned-cart reminders); never blocks checkout.
+  await clearCartSnapshotSafe(customer.id, order.id)
 
   if (method === 'COD') {
     await allocateOrderStock(order.id)

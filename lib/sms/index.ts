@@ -67,3 +67,66 @@ export async function sendOtpSms(phone: string, code: string): Promise<SmsResult
   }
   return { ok: false, error: 'No SMS provider configured' };
 }
+
+// ── Marketing / free-text SMS (campaigns, reminders, one-to-one messages) ────
+
+export interface MarketingSmsResult extends SmsResult {
+  /** Provider message id, kept for support questions. */
+  ref?: string;
+}
+
+export interface MarketingSmsStatus {
+  /** True when a message handed to sendMarketingSms really goes somewhere (or is logged in dev). */
+  configured: boolean;
+  provider: 'kavenegar' | 'smsir' | 'console' | 'none';
+  /** Environment variables still missing for the selected provider. */
+  missing: string[];
+}
+
+export function marketingSmsStatus(): MarketingSmsStatus {
+  const p = process.env.SMS_PROVIDER;
+  if (p === 'kavenegar') {
+    const missing = ['KAVENEGAR_API_KEY', 'KAVENEGAR_SENDER'].filter((k) => !process.env[k]);
+    return { configured: missing.length === 0, provider: 'kavenegar', missing };
+  }
+  if (p === 'smsir') {
+    const missing = ['SMSIR_API_KEY', 'SMSIR_LINE_NUMBER'].filter((k) => !process.env[k]);
+    return { configured: missing.length === 0, provider: 'smsir', missing };
+  }
+  if (p === 'console' || process.env.NODE_ENV !== 'production') return { configured: true, provider: 'console', missing: [] };
+  return { configured: false, provider: 'none', missing: ['SMS_PROVIDER'] };
+}
+
+/** Free-text SMS through the configured provider (Kavenegar /sms/send, SMS.ir bulk). Never throws. */
+export async function sendMarketingSms(phone: string, text: string): Promise<MarketingSmsResult> {
+  const status = marketingSmsStatus();
+  if (!status.configured) return { ok: false, error: 'No SMS provider configured' };
+  try {
+    if (status.provider === 'kavenegar') {
+      const url = new URL(`https://api.kavenegar.com/v1/${encodeURIComponent(process.env.KAVENEGAR_API_KEY!)}/sms/send.json`);
+      url.searchParams.set('receptor', phone);
+      url.searchParams.set('sender', process.env.KAVENEGAR_SENDER!);
+      url.searchParams.set('message', text);
+      const res = await fetch(url, { method: 'POST', signal: AbortSignal.timeout(15000) });
+      const body = (await res.json().catch(() => null)) as { return?: { status?: number; message?: string }; entries?: Array<{ messageid?: number }> } | null;
+      if (body?.return?.status === 200) return { ok: true, ref: body.entries?.[0]?.messageid ? String(body.entries[0].messageid) : undefined };
+      return { ok: false, error: body?.return?.message || `HTTP ${res.status}` };
+    }
+    if (status.provider === 'smsir') {
+      const res = await fetch('https://api.sms.ir/v1/send/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.SMSIR_API_KEY! },
+        body: JSON.stringify({ lineNumber: Number(process.env.SMSIR_LINE_NUMBER), messageText: text, mobiles: [phone] }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const body = (await res.json().catch(() => null)) as { status?: number; message?: string; data?: { packId?: string } } | null;
+      if (body?.status === 1) return { ok: true, ref: body.data?.packId ? String(body.data.packId) : undefined };
+      return { ok: false, error: body?.message || `HTTP ${res.status}` };
+    }
+    console.warn(`[dev-sms] marketing message to ${phone}: ${text}`);
+    return { ok: true, ref: 'console' };
+  } catch (err) {
+    console.error('Marketing SMS failed', err);
+    return { ok: false, error: 'SMS provider unreachable' };
+  }
+}

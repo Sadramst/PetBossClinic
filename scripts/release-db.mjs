@@ -102,6 +102,23 @@ const MIGRATIONS = [
       (await columnExists('Order', 'shippingDiscount')) &&
       (await indexExists('Coupon_code_key')),
   },
+  {
+    dir: '20261122_customer_club',
+    applied: async () => {
+      const tables = ['ClubPet', 'PetRecord', 'ServiceVisit', 'PointsTransaction', 'LoyaltyConfig', 'Reward', 'RewardRedemption', 'Segment', 'MessageCampaign', 'MessageOutbox', 'AutomationRule', 'CartSnapshot', 'AdminCustomerNote'];
+      for (const t of tables) if (!(await tableExists(t))) return false;
+      return (
+        (await columnExists('Customer', 'pointsBalance')) &&
+        (await columnExists('Customer', 'referralCode')) &&
+        (await columnExists('Customer', 'marketingSmsConsent')) &&
+        (await columnExists('Product', 'consumeDays')) &&
+        (await columnExists('Product', 'forSpecies')) &&
+        (await indexExists('Customer_referralCode_key')) &&
+        (await indexExists('PointsTransaction_customerId_kind_refId_key')) &&
+        (await indexExists('MessageOutbox_dedupeKey_key'))
+      );
+    },
+  },
 ];
 
 try {

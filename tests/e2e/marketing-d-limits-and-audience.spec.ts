@@ -402,7 +402,7 @@ test.describe('discount codes: limits and audience', () => {
     await expect(page.getByText(`${order.total.toLocaleString('fa-IR')} تومان`).first()).toBeVisible()
 
     // Account list shows the same discounted total (not the full price)
-    await page.goto('/account')
+    await page.goto('/account/orders')
     const row = page.locator(`a[href$="/account/orders/${number}"]`)
     await expect(row).toContainText(`${order.total.toLocaleString('fa-IR')} تومان`)
 

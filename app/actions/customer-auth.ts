@@ -1,6 +1,6 @@
 'use server'
 
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { Prisma } from '@prisma/client'
@@ -14,6 +14,9 @@ import { normalizeFa } from '@/lib/text/persian'
 import { checkRateLimit } from '@/lib/utils/rate-limit'
 import { toLatinDigits } from '@/lib/date/jalali'
 import { captureContactSafe } from '@/lib/marketing/contacts'
+import { onCustomerCreated } from '@/lib/club/hooks'
+import { REFERRAL_COOKIE } from '@/lib/club/referrals'
+import { dateField } from '@/lib/club/input'
 
 export interface CustomerAuthState {
   error?: string
@@ -40,6 +43,15 @@ function isPersonName(value: string): boolean {
 function afterLogin(next: string | null | undefined): string {
   const target = safeNext(next)
   return target.startsWith('/account/login') ? '/account' : target
+}
+
+/** Invite code remembered by the /r/<code> landing page (validated later, server-side). */
+async function referralCookie(): Promise<string | null> {
+  try {
+    return (await cookies()).get(REFERRAL_COOKIE)?.value ?? null
+  } catch {
+    return null
+  }
 }
 
 async function clientIp(): Promise<string> {
@@ -105,7 +117,7 @@ export async function verifyOtpAction(rawPhone: string, rawCode: string, next?: 
 
   // The SMS code proves the customer owns this number.
   const now = new Date()
-  const prior = await db.customer.findUnique({ where: { phone }, select: { phoneVerifiedAt: true, passwordHash: true } })
+  const prior = await db.customer.findUnique({ where: { phone }, select: { phoneVerifiedAt: true, passwordHash: true, createdByAdmin: true, lastLoginAt: true } })
   // A password on a number nobody verified was set by whoever registered it first, not
   // necessarily by the owner: drop it, and end any session that was started with it.
   const takeOver = !!prior && !prior.phoneVerifiedAt && !!prior.passwordHash
@@ -123,7 +135,13 @@ export async function verifyOtpAction(rawPhone: string, rawCode: string, next?: 
   if (customer.isBlocked) return { error: BLOCKED_MESSAGE }
 
   // First SMS sign-in of a new number: give them their welcome coupon (never blocks login).
-  if (!prior) await captureContactSafe({ phone, source: 'signup', customerId: customer.id })
+  if (!prior) {
+    await captureContactSafe({ phone, source: 'signup', customerId: customer.id })
+    await onCustomerCreated(customer.id, { referralCode: await referralCookie() })
+  } else if (prior.createdByAdmin && !prior.lastLoginAt) {
+    // A profile the clinic created: first sign-in by its owner earns the signup gift (once).
+    await onCustomerCreated(customer.id, { referralCode: null })
+  }
 
   await setCustomerCookie(customer.id, customer.sessionVersion)
   return { ok: true, needsProfile: !customer.firstName, redirectTo: afterLogin(next) }
@@ -136,6 +154,7 @@ const LOCK_MS = 15 * 60 * 1000
 const BAD_CREDENTIALS = 'شماره موبایل (یا ایمیل) یا رمز عبور نادرست است. اگر هنوز رمز عبور ندارید، ثبت‌نام کنید یا با کد پیامکی وارد شوید.'
 const LOCKED_MESSAGE = 'به‌دلیل چند تلاش ناموفق، ورود با رمز عبور تا ۱۵ دقیقه دیگر مسدود است. می‌توانید با کد پیامکی وارد شوید یا بعداً دوباره امتحان کنید.'
 const EMAIL_TAKEN = 'این ایمیل برای حساب دیگری ثبت شده است. ایمیل دیگری وارد کنید یا آن را خالی بگذارید (ایمیل اختیاری است).'
+const ADMIN_CREATED = 'پروفایل شما قبلاً در کلینیک ساخته شده است. با کد پیامکی وارد شوید تا به حساب و امتیازهای خود برسید.'
 const ALREADY_REGISTERED = 'این شماره یا ایمیل قبلاً ثبت‌نام کرده است. وارد شوید؛ اگر رمز عبور را فراموش کرده‌اید با کد پیامکی وارد شوید.'
 
 /** Phones registered with a password but never verified by SMS, per hour, before registration pauses. */
@@ -223,21 +242,30 @@ export async function registerWithPasswordAction(formData: FormData): Promise<Cu
   }
   // Circuit breaker against scripted sign-ups (the limit above is per server instance).
   const recentUnverified = await db.customer.count({
-    where: { phoneVerifiedAt: null, createdAt: { gt: new Date(Date.now() - 3600_000) } },
+    where: { phoneVerifiedAt: null, createdByAdmin: false, createdAt: { gt: new Date(Date.now() - 3600_000) } },
   })
   if (recentUnverified >= UNVERIFIED_SIGNUPS_PER_HOUR) {
     return { error: 'ثبت‌نام موقتاً با ترافیک بالا روبه‌رو است. کمی بعد دوباره تلاش کنید یا با کد پیامکی وارد شوید.' }
   }
 
-  const clash = await db.customer.findFirst({ where: { OR: [{ phone }, ...(email ? [{ email }] : [])] }, select: { phone: true } })
-  if (clash) return { error: clash.phone === phone ? ALREADY_REGISTERED : EMAIL_TAKEN }
+  const clash = await db.customer.findFirst({ where: { OR: [{ phone }, ...(email ? [{ email }] : [])] }, select: { phone: true, createdByAdmin: true, passwordHash: true } })
+  if (clash) {
+    if (clash.phone === phone && clash.createdByAdmin && !clash.passwordHash) return { error: ADMIN_CREATED }
+    return { error: clash.phone === phone ? ALREADY_REGISTERED : EMAIL_TAKEN }
+  }
 
   try {
     const created = await db.customer.create({
-      data: { phone, email, firstName, lastName, passwordHash: await hashPassword(password), lastLoginAt: new Date() },
+      data: {
+        phone, email, firstName, lastName, passwordHash: await hashPassword(password), lastLoginAt: new Date(),
+        // Only an explicit, unticked-by-default checkbox counts as consent.
+        ...(formData.get('marketingSmsConsent')?.toString() === 'on' ? { marketingSmsConsent: true, marketingConsentAt: new Date() } : {}),
+      },
     })
     // Attach the welcome coupon; a failure here must never break sign-up.
     await captureContactSafe({ phone, email, name: `${firstName} ${lastName}`, source: 'signup', customerId: created.id })
+    // Signup points, invite code and (if they came through an invite link) the referral; never blocks sign-up.
+    await onCustomerCreated(created.id, { referralCode: await referralCookie() })
     await setCustomerCookie(created.id, created.sessionVersion)
     return { ok: true, redirectTo: afterLogin(formData.get('next')?.toString()) }
   } catch (err) {
@@ -296,8 +324,25 @@ export async function updateProfileAction(formData: FormData): Promise<CustomerA
   if (!isPersonName(firstName) || !isPersonName(lastName)) return { error: 'نام و نام خانوادگی را با حروف وارد کنید.' }
   if (rawEmail.trim() && !email) return { error: 'ایمیل معتبر نیست.' }
 
+  // Club fields are optional: only fields present in the form are touched.
+  const extra: Prisma.CustomerUpdateInput = {}
+  if (formData.has('birthDate')) {
+    const parsed = dateField({ maxYearsAgo: 110 }).safeParse(formData.get('birthDate')?.toString() ?? '')
+    if (!parsed.success) return { error: 'تاریخ تولد معتبر نیست. نمونه: ۱۳۷۵/۰۵/۱۵' }
+    extra.birthDate = parsed.data
+  }
+  if (formData.has('city')) extra.city = normalizeFa(formData.get('city')?.toString() ?? '').slice(0, 40) || null
+  if (formData.has('gender')) {
+    const g = formData.get('gender')?.toString() ?? ''
+    extra.gender = g === 'MALE' || g === 'FEMALE' || g === 'OTHER' ? g : null
+  }
+  const consentRaw = formData.get('marketingSmsConsent')?.toString()
+  if ((consentRaw === 'true' || consentRaw === 'false') && (consentRaw === 'true') !== customer.marketingSmsConsent) {
+    extra.marketingSmsConsent = consentRaw === 'true'
+    extra.marketingConsentAt = new Date()
+  }
   try {
-    await db.customer.update({ where: { id: customer.id }, data: { firstName, lastName, email } })
+    await db.customer.update({ where: { id: customer.id }, data: { firstName, lastName, email, ...extra } })
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') return { error: EMAIL_TAKEN }
     throw err
