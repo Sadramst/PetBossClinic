@@ -139,13 +139,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <section className="iran-hero" aria-labelledby="hero-title">
           <div className="iran-hero-grid">
             <div className="iran-hero-copy">
-              <span className="iran-eyebrow">پت‌باس • پت‌شاپ و کلینیک قیطریه</span>
-              <h1 id="hero-title">یک دنیا عشق،<br/><em>برای دنیای کوچک او.</em></h1>
-              <p>از غذای هر روز تا مراقبت‌های تخصصی؛ با خیال راحت برای دوست کوچکت خرید کن.</p>
-              <div className="iran-hero-actions"><Link href="/shop" className="btn btn-gold btn-lg">شروع خرید <ArrowForwardIcon className="h-5 w-5"/></Link><Link href="/services" className="iran-clinic-link">خدمات و نوبت کلینیک ←</Link></div>
+              <span className="iran-eyebrow">{hero?.eyebrowFa || 'پت‌باس؛ برای آن‌ها که عضوی از خانواده‌اند'}</span>
+              <h1 id="hero-title">{heroTitle}<span className="iran-hero-signature" aria-hidden="true">با عشق، برای رفیقت.</span></h1>
+              <p>{heroSubtitle}</p>
+              <div className="iran-hero-actions"><Link href={hero?.ctaHref || '/shop'} className="btn btn-gold btn-lg">{hero?.ctaLabelFa || 'کشف فروشگاه'} <ArrowForwardIcon className="h-5 w-5"/></Link><Link href="/services" className="iran-clinic-link">خدمات و نوبت کلینیک ←</Link></div>
               <div className="iran-hero-notes"><span><CalendarCheckIcon className="h-4 w-4"/>بررسی تاریخ انقضا</span><span><MapPinIcon className="h-4 w-4"/>خرید از کلینیک قیطریه</span></div>
             </div>
-            <Link href="/shop?pet=cat" className="iran-hero-picture"><Image src="/images/categories/cat-dry-food.jpg" alt="غذا و ملزومات گربه در فروشگاه پت‌باس" fill priority sizes="(max-width:768px) 100vw,50vw" className="object-cover"/><span className="iran-picture-label"><span>برای گربه‌های خوش‌سلیقه</span><strong>دنیای گربه‌ها <ArrowForwardIcon className="h-5 w-5"/></strong></span></Link>
+            <Link href="/shop?pet=cat" className="iran-hero-picture"><Image src="/images/editorial/pet-family.webp" alt="تصویر هنری سگ و گربه، همراهان دوست‌داشتنی خانواده" fill priority sizes="(max-width:768px) 100vw,50vw" className="object-cover"/><span className="iran-picture-label"><span>کوچک‌ترین عضو خانواده،<br/>بزرگ‌ترین عشق زندگی.</span><strong>از انتخاب تا مراقبت <ArrowForwardIcon className="h-5 w-5"/></strong></span><span className="iran-photo-stamp" aria-hidden="true">PET BOSS<br/><small>WITH LOVE, ALWAYS</small></span></Link>
           </div>
           <div className="iran-quick-paths"><span>دنبال چی می‌گردی؟</span><Link href="/shop?pet=cat">غذا و لوازم گربه</Link><Link href="/shop?pet=dog">غذا و لوازم سگ</Link><Link href="/shop/cat-litter-hygiene">خاک و بهداشت</Link><Link href="/shop/pet-toys">بازی و سرگرمی</Link><Link href="/services">کلینیک و گرومینگ</Link></div>
         </section>
@@ -174,21 +174,21 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       {visible('shop') && (
         <>
           {/* ═══ SHOP BY PET ═══ */}
-          <section aria-labelledby="home-pets" className={`${WRAP} ${GAP}`}>
+          <section aria-labelledby="home-pets" className={`iran-home-section ${WRAP} ${GAP}`}>
             <SectionHeading id="home-pets" title="خرید بر اساس حیوان خانگی" />
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {PETS.map((p) => (
                 <Link
                   key={p.pet}
                   href={`/shop?pet=${p.pet}`}
-                  className="group relative block h-40 sm:h-56 rounded-2xl sm:rounded-3xl overflow-hidden border border-border hover:border-primary transition-colors"
+                  className={`iran-pet-tile iran-pet-${p.pet} group relative block h-40 sm:h-56 rounded-2xl sm:rounded-3xl overflow-hidden border border-border hover:border-primary transition-colors`}
                 >
                   <Image
-                    src={p.img}
+                    src="/images/editorial/pet-family.webp"
                     alt=""
                     fill
                     sizes="(max-width: 1280px) 50vw, 620px"
-                    className="object-cover group-hover:scale-105 transition-transform duration-700"
+                    className={`object-cover group-hover:scale-105 transition-transform duration-700 ${p.pet === 'cat' ? 'object-right' : 'object-left'}`}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950 via-charcoal-950/55 to-charcoal-950/10" aria-hidden />
                   <div className="absolute inset-x-0 bottom-0 p-3 sm:p-6">
@@ -209,7 +209,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
           {/* ═══ CATEGORIES ═══ */}
           {shopCategories.length > 0 && (
-            <section aria-labelledby="home-categories" className={`${WRAP} ${GAP}`}>
+            <section aria-labelledby="home-categories" className={`iran-home-section ${WRAP} ${GAP}`}>
               <SectionHeading
                 id="home-categories"
                 title={titleOf('shop', 'دسته‌بندی‌های پت‌شاپ')}
@@ -245,7 +245,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
           {/* ═══ BRANDS ═══ */}
           {brands.length > 0 && (
-            <section aria-labelledby="home-brands" className={`${WRAP} ${GAP}`}>
+            <section aria-labelledby="home-brands" className={`iran-home-section ${WRAP} ${GAP}`}>
               <SectionHeading
                 id="home-brands"
                 title="برندهای معتبر"
@@ -372,7 +372,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* ═══ TEAM ═══ */}
       {visible('staff') && staff.length > 0 && (
-        <section aria-labelledby="home-staff" className={`${WRAP} ${GAP}`}>
+        <section aria-labelledby="home-staff" className={`iran-home-section ${WRAP} ${GAP}`}>
           <SectionHeading id="home-staff" title={titleOf('staff', 'کادر دامپزشکی')} subtitle={sec.get('staff')?.subtitleFa ?? undefined} />
           <ul className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {staff.map((v) => (
@@ -397,7 +397,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* ═══ TESTIMONIALS ═══ */}
       {visible('testimonials') && testimonials.length > 0 && (
-        <section aria-labelledby="home-testimonials" className={`${WRAP} ${GAP}`}>
+        <section aria-labelledby="home-testimonials" className={`iran-home-section ${WRAP} ${GAP}`}>
           <SectionHeading id="home-testimonials" title={titleOf('testimonials', 'نظر مشتریان پت‌باس')} />
           <ul className="flex gap-3 overflow-x-auto snap-x snap-mandatory scroll-px-4 scrollbar-none -mx-4 px-4 pb-1 md:mx-0 md:px-0 md:pb-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible">
             {testimonials.map((t) => (
@@ -542,7 +542,7 @@ function ProductRail({
   );
 
   return (
-    <section aria-label={title} className={`${WRAP} ${GAP}`}>
+    <section aria-label={title} className={`iran-home-section ${WRAP} ${GAP}`}>
       {featured ? (
         <div className="rounded-3xl border border-border-gold bg-surface p-4 sm:p-6 shadow-gold overflow-hidden lg:overflow-visible">
           {heading}

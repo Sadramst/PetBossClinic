@@ -1,5 +1,6 @@
 /* Persian shopping surfaces: charcoal identity, warm paper, restrained gold. */
-body[data-design='iran-storefront']:not(:has([href='/admin/orders'])) {
+html[data-theme='petboss-luxury-dark']
+  body[data-design='iran-storefront']:not(:has([href='/admin/orders'])) {
   --background: #f7f6f2;
   --foreground: #252a2e;
   --surface: #fff;
@@ -494,4 +495,443 @@ body[data-design='iran-storefront'] footer {
   --color-input: var(--input);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+}
+/* Editorial v2 — a pet-first campaign, with a quieter commerce system below. */
+.iran-hero {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  background: #202729;
+  color: #fff7e7;
+  overflow: hidden;
+  position: relative;
+}
+.iran-hero-grid {
+  max-width: 1440px;
+  margin: auto;
+  min-height: 620px;
+  grid-template-columns: 1fr 1.04fr;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+  gap: 0;
+}
+.iran-hero-copy {
+  padding: 70px 60px 75px 35px;
+  background: none;
+  position: relative;
+  z-index: 2;
+}
+.iran-eyebrow {
+  color: #ddc38d;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.iran-eyebrow:before {
+  content: '';
+  width: 30px;
+  height: 1px;
+  background: #d4b172;
+}
+.iran-hero h1 {
+  color: #fff8e8;
+  font-size: clamp(36px, 4vw, 60px);
+  line-height: 1.6;
+  font-weight: 900;
+  letter-spacing: -1.8px;
+  max-width: 640px;
+}
+.iran-hero-signature {
+  display: block;
+  color: #e1bd70;
+  font-size: 0.58em;
+  font-weight: 500;
+  letter-spacing: -0.8px;
+  margin-top: 8px;
+}
+.iran-hero-copy > p {
+  color: #bcc5c1;
+  font-size: 13px;
+  line-height: 2.3;
+  max-width: 440px;
+  margin-top: 22px;
+}
+.iran-hero-actions {
+  gap: 30px;
+  margin-top: 32px;
+}
+.iran-hero-actions .btn {
+  min-height: 52px;
+  border-radius: 8px !important;
+  padding-inline: 30px !important;
+}
+.iran-clinic-link {
+  color: #eee1c3;
+  font-size: 12px;
+  border: 0;
+}
+.iran-hero-notes {
+  color: #aab8b1;
+  margin-top: 38px;
+  gap: 26px;
+}
+.iran-hero-picture {
+  min-height: 620px;
+  margin: 34px 0 34px 34px;
+  border-radius: 240px 240px 12px 12px;
+  overflow: hidden;
+  background: #d3ad58;
+  box-shadow:
+    0 0 0 1px #ead29945,
+    0 0 0 12px #ead29905;
+}
+.iran-hero-picture img {
+  object-position: 48% center;
+}
+.iran-picture-label {
+  background: #fcf8edee;
+  border-radius: 4px;
+  bottom: 24px;
+  inset-inline: 24px;
+  box-shadow: none;
+  padding: 18px 22px;
+  gap: 12px;
+}
+.iran-picture-label > span {
+  color: #6c654f;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.iran-picture-label strong {
+  font-size: 11px;
+  font-weight: 600;
+  color: #3f493d;
+}
+.iran-photo-stamp {
+  position: absolute;
+  top: 55px;
+  inset-inline-start: 40px;
+  color: #fff8e8;
+  letter-spacing: 0.22em;
+  font-size: 18px;
+  line-height: 1.4;
+  text-align: center;
+  font-family: Georgia, serif;
+  transform: rotate(8deg);
+}
+.iran-photo-stamp small {
+  font-size: 7px;
+  letter-spacing: 0.08em;
+}
+.iran-quick-paths {
+  max-width: none;
+  padding: 16px 24px;
+  background: #e0bd75;
+  gap: 28px;
+  color: #252d25;
+  font-weight: 600;
+}
+.iran-quick-paths > span {
+  color: #655135;
+  font-size: 11px;
+}
+.iran-quick-paths > a {
+  background: transparent;
+  border: 0;
+  border-inline-start: 1px solid #5e4b2530;
+  border-radius: 0;
+  padding: 5px 24px 5px 0;
+  font-size: 12px;
+}
+.iran-quick-paths > a:hover {
+  color: #171f19;
+}
+.iran-hero + section {
+  margin: 0 auto !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  max-width: 1280px;
+}
+.iran-hero + section ul {
+  padding-top: 28px;
+  padding-bottom: 28px;
+}
+.iran-home-section {
+  padding-top: 64px !important;
+}
+.iran-home-section .iran-section-heading {
+  margin-bottom: 28px;
+}
+.iran-section-heading h2 {
+  font-size: 28px !important;
+  letter-spacing: -1px;
+}
+.iran-section-heading h2:before {
+  display: none;
+}
+.iran-section-heading h2 {
+  padding-inline-start: 0 !important;
+}
+.iran-section-heading p {
+  padding-inline-start: 0 !important;
+}
+.iran-section-heading > div:last-child > a {
+  border: 0;
+  background: transparent;
+  font-weight: 500;
+}
+.iran-pet-tile {
+  height: 290px !important;
+  border-radius: 14px !important;
+  isolation: isolate;
+}
+.iran-pet-tile img {
+  object-position: center 42%;
+  width: 70% !important;
+  inset-inline-start: auto !important;
+  inset-inline-end: 0 !important;
+  mix-blend-mode: multiply;
+}
+.iran-pet-cat {
+  background: #e8d7ba;
+}
+.iran-pet-dog {
+  background: #cad5c5;
+}
+.iran-pet-cat img {
+  object-position: 75% center;
+}
+.iran-pet-dog img {
+  object-position: 20% center;
+}
+.iran-pet-tile > div.absolute.inset-0 {
+  background: linear-gradient(90deg, transparent 25%, #27392c 100%);
+  opacity: 0.85;
+}
+.iran-pet-tile > div:last-child {
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 65%;
+  padding: 32px;
+}
+.iran-pet-tile h3 {
+  font-size: 30px !important;
+  line-height: 1.6;
+}
+.iran-pet-tile p {
+  font-size: 12px !important;
+  line-height: 2;
+}
+.iran-pet-tile span {
+  font-size: 12px;
+}
+.iran-product {
+  border: 1px solid #e5e3d9 !important;
+  border-radius: 12px !important;
+}
+.iran-product > div:first-child {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid #eee9df;
+}
+.iran-product > div:first-child > a {
+  background: #f1f0ea !important;
+}
+.iran-product h3 {
+  font-size: 13px !important;
+  line-height: 2 !important;
+  min-height: 55px;
+}
+.iran-product .iran-quick-add {
+  border-radius: 50% !important;
+  width: 42px !important;
+  height: 42px !important;
+}
+.iran-product .text-primary\/90 {
+  text-transform: uppercase;
+  font-size: 10px !important;
+  letter-spacing: 0.02em;
+}
+.iran-product > div:last-child {
+  padding: 18px !important;
+}
+.iran-header {
+  border-bottom-color: #ffffff15 !important;
+}
+.iran-header > div:nth-child(2) {
+  height: 80px !important;
+}
+.iran-header nav {
+  font-size: 12px;
+}
+.iran-header .shadow-gold {
+  box-shadow: none !important;
+}
+@media (min-width: 1440px) {
+  .iran-hero-copy {
+    padding-inline-start: 90px;
+  }
+}
+@media (max-width: 1023px) {
+  .iran-hero-grid {
+    min-height: 480px;
+    grid-template-columns: 1fr 1fr;
+  }
+  .iran-hero-copy {
+    padding: 40px 28px;
+  }
+  .iran-hero h1 {
+    font-size: 36px;
+  }
+  .iran-hero-picture {
+    min-height: 440px;
+    margin: 24px 0 24px 24px;
+    border-radius: 180px 180px 12px 12px;
+  }
+  .iran-hero-actions {
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .iran-picture-label {
+    inset-inline: 15px;
+    bottom: 15px;
+    padding: 14px;
+  }
+  .iran-picture-label strong {
+    display: none;
+  }
+  .iran-photo-stamp {
+    top: 42px;
+    inset-inline-start: 24px;
+  }
+  .iran-quick-paths {
+    gap: 10px;
+  }
+  .iran-quick-paths > a {
+    padding-inline-start: 14px;
+    font-size: 11px;
+  }
+  .iran-pet-tile h3 {
+    font-size: 24px !important;
+  }
+}
+@media (max-width: 640px) {
+  .iran-hero-grid {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .iran-hero-copy {
+    padding: 28px 24px 26px;
+    align-items: flex-start;
+  }
+  .iran-eyebrow {
+    font-size: 9px;
+    margin-bottom: 14px;
+  }
+  .iran-hero h1 {
+    font-size: 33px;
+    line-height: 1.65;
+    letter-spacing: -1px;
+  }
+  .iran-hero-signature {
+    font-size: 23px;
+    margin-top: 5px;
+  }
+  .iran-hero-copy > p {
+    font-size: 11px;
+    line-height: 2;
+    max-width: 100%;
+    margin-top: 12px;
+  }
+  .iran-hero-actions {
+    margin-top: 20px;
+    gap: 24px;
+  }
+  .iran-hero-actions .btn {
+    min-height: 46px;
+    padding-inline: 22px !important;
+    font-size: 12px;
+  }
+  .iran-clinic-link {
+    font-size: 11px;
+  }
+  .iran-hero-notes {
+    display: none;
+  }
+  .iran-hero-picture {
+    min-height: 320px;
+    margin: 0 24px 24px;
+    border-radius: 160px 160px 10px 10px;
+    align-self: stretch;
+  }
+  .iran-hero-picture img {
+    object-position: 50% 40%;
+  }
+  .iran-photo-stamp {
+    top: 32px;
+    inset-inline-start: 36px;
+    font-size: 13px;
+  }
+  .iran-picture-label {
+    bottom: 12px;
+    padding: 10px 14px;
+  }
+  .iran-picture-label > span {
+    font-size: 10px;
+  }
+  .iran-picture-label br {
+    display: none;
+  }
+  .iran-quick-paths {
+    padding: 12px 20px;
+    justify-content: flex-start;
+    overflow: auto;
+    gap: 0;
+  }
+  .iran-quick-paths > a {
+    font-size: 10px;
+    padding-inline: 14px;
+    flex-shrink: 0;
+  }
+  .iran-home-section {
+    padding-top: 36px !important;
+  }
+  .iran-section-heading h2 {
+    font-size: 22px !important;
+  }
+  .iran-pet-tile {
+    height: 215px !important;
+  }
+  .iran-pet-tile img {
+    width: 100% !important;
+  }
+  .iran-pet-tile > div:last-child {
+    max-width: 100%;
+    justify-content: flex-end;
+    padding: 18px;
+  }
+  .iran-pet-tile h3 {
+    font-size: 25px !important;
+  }
+  .iran-pet-tile p {
+    display: none !important;
+  }
+  .iran-pet-tile > div.absolute.inset-0 {
+    background: linear-gradient(0deg, #24392cdd, transparent 85%);
+  }
+  .iran-product > div:last-child {
+    padding: 12px !important;
+  }
+  .iran-product h3 {
+    font-size: 11px !important;
+  }
 }
