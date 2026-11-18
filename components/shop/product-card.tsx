@@ -30,7 +30,7 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
       : 0;
 
   return (
-    <article className="card-luxury group flex h-full flex-col overflow-hidden rounded-2xl">
+    <article className="iran-product card-luxury group flex h-full flex-col overflow-hidden rounded-2xl">
       <div className="relative">
         <Link
           href={href}
@@ -56,7 +56,7 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
         </Link>
         {purchasable && (
           <QuickAddButton
-            className="absolute bottom-2 end-2"
+            className="iran-quick-add absolute bottom-2 end-2"
             product={{ productId: product.id, name: product.nameFa, slug: product.slugFa, price: product.price, image: img }}
           />
         )}
@@ -89,7 +89,7 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
                 </span>
               )}
               <span className="flex flex-wrap items-baseline gap-x-1">
-                <span className="text-base font-black text-gradient-gold sm:text-lg">{fa(product.price)}</span>
+                <span className="text-base font-black text-foreground sm:text-lg">{fa(product.price)}</span>
                 <span className="text-[11px] font-medium text-muted-foreground">تومان</span>
               </span>
             </>

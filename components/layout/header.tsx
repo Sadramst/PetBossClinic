@@ -127,7 +127,7 @@ export function Header({
         Sticky with a negative top: the first row (logo row on phones, trust strip
         from md up) scrolls away and only the compact part stays pinned.
       */}
-      <header className="sticky -top-14 z-50 w-full border-b border-border/60 bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85 md:-top-8 print:static">
+      <header className="iran-header sticky -top-14 z-50 w-full border-b border-border/60 bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85 md:-top-8 print:static">
         {/* Trust strip */}
         <div className="hidden h-8 border-b border-border/50 bg-background/60 text-xs text-muted-foreground md:block">
           <div className="container mx-auto flex h-full max-w-7xl items-center justify-between gap-4 px-4">

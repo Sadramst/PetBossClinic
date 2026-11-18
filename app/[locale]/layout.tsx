@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import '@/styles/globals.css';
+import '@/styles/iran-storefront.css';
 import { AbstractIntlMessages, NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -154,7 +155,7 @@ export default async function LocaleLayout({
         <OrganizationJsonLd nap={nap} />
         <WebSiteJsonLd />
       </head>
-      <body
+      <body data-design="iran-storefront"
         className={`${vazirmatn.className} antialiased bg-background text-foreground min-h-screen flex flex-col selection:bg-primary selection:text-primary-foreground`}
       >
         <a

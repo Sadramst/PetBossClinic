@@ -41,7 +41,7 @@ export function SectionHeading({
   return (
     <div
       className={cn(
-        "mb-5 flex gap-4 sm:mb-6",
+        "iran-section-heading mb-5 flex gap-4 sm:mb-6",
         centered ? "flex-col items-center text-center" : "items-end justify-between",
         className
       )}

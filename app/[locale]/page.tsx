@@ -135,66 +135,19 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         urls={picks.map((p) => absoluteUrl(productPath(p.slugFa)))}
       />
 
-      {/* ═══ HERO ═══ */}
       {visible('hero') && (
-        <section className="relative isolate overflow-hidden border-b border-border bg-gradient-hero">
-          <div className="absolute -top-40 start-1/3 -z-10 w-[32rem] h-[32rem] rounded-full bg-[radial-gradient(circle,rgba(197,160,89,0.14)_0%,transparent_70%)] pointer-events-none" />
-          <div className={`${WRAP} py-8 sm:py-12 lg:py-16 grid grid-cols-1 gap-10 lg:grid-cols-[1.15fr_1fr] items-center`}>
-            <div className="relative z-10 space-y-4 sm:space-y-6">
-              {hero?.badgeFa && (
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border border-primary/40 bg-primary/10 text-primary">
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
-                  {hero.badgeFa}
-                </span>
-              )}
-              <h1 className="text-[1.7rem] sm:text-4xl lg:text-5xl font-black leading-[1.45] lg:leading-[1.35] text-balance">{heroTitle}</h1>
-              <p className="text-sm sm:text-base text-foreground/80 lg:text-muted-foreground leading-7 sm:leading-8 max-w-xl clamp-3 sm:[display:block]">
-                {heroSubtitle}
-              </p>
-              <SiteSearch id="hero-search" className="hidden md:block max-w-xl" />
-              <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
-                <Link href="/shop" className="btn btn-gold btn-lg px-4 sm:px-7 font-extrabold">
-                  <BagIcon className="hidden min-[380px]:block h-5 w-5 shrink-0" />
-                  {hero?.ctaLabelFa || 'ورود به پت‌شاپ'}
-                </Link>
-                <a href={nap.telLink} className="btn btn-outline btn-lg px-4 sm:px-7 bg-surface/60 backdrop-blur-sm">
-                  <PhoneIcon className="hidden min-[380px]:block h-5 w-5 shrink-0" />
-                  نوبت‌دهی کلینیک
-                </a>
-              </div>
-              {popularChips.length > 0 && (
-                <div className="flex items-center gap-2 -mx-4 px-4 overflow-x-auto scrollbar-none sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible">
-                  <span className="shrink-0 text-xs text-muted-foreground">پرطرفدار:</span>
-                  {popularChips.map((c) => (
-                    <Link key={c.id} href={categoryPath(c.slugFa)} className="chip shrink-0 text-xs">
-                      {c.nameFa}
-                    </Link>
-                  ))}
-                </div>
-              )}
+        <section className="iran-hero" aria-labelledby="hero-title">
+          <div className="iran-hero-grid">
+            <div className="iran-hero-copy">
+              <span className="iran-eyebrow">پت‌باس • پت‌شاپ و کلینیک قیطریه</span>
+              <h1 id="hero-title">یک دنیا عشق،<br/><em>برای دنیای کوچک او.</em></h1>
+              <p>از غذای هر روز تا مراقبت‌های تخصصی؛ با خیال راحت برای دوست کوچکت خرید کن.</p>
+              <div className="iran-hero-actions"><Link href="/shop" className="btn btn-gold btn-lg">شروع خرید <ArrowForwardIcon className="h-5 w-5"/></Link><Link href="/services" className="iran-clinic-link">خدمات و نوبت کلینیک ←</Link></div>
+              <div className="iran-hero-notes"><span><CalendarCheckIcon className="h-4 w-4"/>بررسی تاریخ انقضا</span><span><MapPinIcon className="h-4 w-4"/>خرید از کلینیک قیطریه</span></div>
             </div>
-            {/* Mobile: dimmed backdrop behind the text. Desktop: framed photo beside it. */}
-            <div className="absolute inset-0 -z-10 lg:static lg:z-auto lg:aspect-[4/3]">
-              <div className="relative h-full w-full overflow-hidden lg:rounded-[2rem] lg:border lg:border-border-gold lg:shadow-gold-lg">
-                <Image
-                  src="/images/petshop.jpg"
-                  alt="فروشگاه پت‌شاپ پت‌باس در قیطریه تهران"
-                  fill
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 45vw"
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-charcoal-950/80 lg:hidden" aria-hidden />
-                <div className="hidden lg:flex absolute inset-x-4 bottom-4 items-start gap-3 rounded-2xl bg-surface/85 backdrop-blur border border-border p-4 text-sm">
-                  <MapPinIcon className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                  <div>
-                    <p className="font-bold">پت‌شاپ و کلینیک پت‌باس، قیطریه</p>
-                    <p className="text-muted-foreground text-xs mt-1">{nap.workingHoursSummaryFa}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <Link href="/shop?pet=cat" className="iran-hero-picture"><Image src="/images/categories/cat-dry-food.jpg" alt="غذا و ملزومات گربه در فروشگاه پت‌باس" fill priority sizes="(max-width:768px) 100vw,50vw" className="object-cover"/><span className="iran-picture-label"><span>برای گربه‌های خوش‌سلیقه</span><strong>دنیای گربه‌ها <ArrowForwardIcon className="h-5 w-5"/></strong></span></Link>
           </div>
+          <div className="iran-quick-paths"><span>دنبال چی می‌گردی؟</span><Link href="/shop?pet=cat">غذا و لوازم گربه</Link><Link href="/shop?pet=dog">غذا و لوازم سگ</Link><Link href="/shop/cat-litter-hygiene">خاک و بهداشت</Link><Link href="/shop/pet-toys">بازی و سرگرمی</Link><Link href="/services">کلینیک و گرومینگ</Link></div>
         </section>
       )}
 
