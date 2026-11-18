@@ -58,7 +58,9 @@ test.describe('Shop search, filters and listings', () => {
     await expect(next).toHaveAttribute('href', /page=2/)
     await next.click()
     await expect(page).toHaveURL(/page=2/)
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://www.petbossclinic.com/shop?page=2')
+    // During client-side navigation Next briefly keeps the previous page's head tags next to the new
+    // ones; the newest canonical is the one that must point at page 2.
+    await expect(page.locator('link[rel="canonical"]').last()).toHaveAttribute('href', 'https://www.petbossclinic.com/shop?page=2', { timeout: 15000 })
   })
 
   test('brand page lists only that brand', async ({ page }) => {

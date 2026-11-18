@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
-import { Breadcrumbs } from '@/components/shop/breadcrumbs';
+import { PageHero } from '@/components/content/page-hero';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Pagination } from '@/components/ui/pagination';
 import { PostCard } from '@/components/blog/post-card';
 import { getBlogCategories, listPosts, postPath } from '@/lib/blog/posts';
 import { ItemListJsonLd } from '@/lib/seo/json-ld';
@@ -14,6 +16,11 @@ type Search = Promise<{ page?: string; category?: string }>;
 const TITLE = 'مجله پت‌باس | راهنمای تغذیه و سلامت سگ و گربه';
 const DESCRIPTION =
   'مقالات آموزشی دامپزشکان پت‌باس درباره تغذیه، واکسیناسیون، بهداشت، رفتار و نگهداری سگ و گربه؛ ساده، کاربردی و قابل اعتماد.';
+
+/** 40px pill; the active one is filled so it reads at a glance. */
+function chipClass(active: boolean): string {
+  return `chip h-10 px-4 ${active ? '!border-primary !bg-primary !text-charcoal-950' : ''}`;
+}
 
 function parse(sp: { page?: string; category?: string }) {
   const n = Number(sp.page);
@@ -38,61 +45,92 @@ export default async function BlogPage({ params, searchParams }: { params: Promi
   const [{ posts, pageCount }, categories] = await Promise.all([listPosts(page, category), getBlogCategories()]);
   if (page > pageCount) notFound();
 
+  const hrefFor = (n: number) => {
+    const qs = new URLSearchParams();
+    if (category) qs.set('category', category);
+    if (n > 1) qs.set('page', String(n));
+    const q = qs.toString();
+    return q ? `/blog?${q}` : '/blog';
+  };
+  const activeCategory = category ? categories.find((c) => c.slugFa === category) : undefined;
+  const showFeatured = page === 1 && !category && posts.length > 3;
+
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-6 sm:py-10 space-y-6">
-      <Breadcrumbs items={[{ name: 'خانه', href: '/' }, { name: 'مجله پت‌باس', href: '/blog' }]} />
-      <ItemListJsonLd
-        name="مقالات مجله پت‌باس"
-        urls={posts.map((p) => absoluteUrl(postPath(p.slugFa)))}
+    <div className="bg-background">
+      <ItemListJsonLd name="مقالات مجله پت‌باس" urls={posts.map((p) => absoluteUrl(postPath(p.slugFa)))} />
+      <PageHero
+        crumbs={[
+          { name: 'خانه', href: '/' },
+          { name: 'مجله پت‌باس', href: '/blog' },
+        ]}
+        badge="دانستنی‌های نگهداری سگ و گربه"
+        title="مجله پت‌باس"
+        subtitle={DESCRIPTION}
       />
-      <header>
-        <h1 className="text-2xl sm:text-3xl font-black">مجله پت‌باس</h1>
-        <p className="mt-2 text-sm text-muted-foreground leading-7 max-w-2xl">{DESCRIPTION}</p>
-      </header>
 
-      {categories.length > 0 && (
-        <nav aria-label="موضوعات مجله" className="flex flex-wrap gap-2 text-sm">
-          <Link href="/blog" className={`rounded-full border px-4 py-1.5 ${!category ? 'border-primary text-primary' : 'border-border'}`}>
-            همه
-          </Link>
-          {categories.map((c) => (
-            <Link
-              key={c.id}
-              href={`/blog?category=${encodeURIComponent(c.slugFa)}`}
-              className={`rounded-full border px-4 py-1.5 ${category === c.slugFa ? 'border-primary text-primary' : 'border-border hover:border-primary'}`}
-            >
-              {c.nameFa}
+      <div className="container-site section-tight space-y-6">
+        {categories.length > 0 && (
+          <nav aria-label="موضوعات مجله" className="rail rail-bleed gap-2">
+            <Link href="/blog" aria-current={!category ? 'page' : undefined} className={chipClass(!category)}>
+              همه
             </Link>
-          ))}
-        </nav>
-      )}
+            {categories.map((c) => (
+              <Link
+                key={c.id}
+                href={`/blog?category=${encodeURIComponent(c.slugFa)}`}
+                aria-current={category === c.slugFa ? 'page' : undefined}
+                className={chipClass(category === c.slugFa)}
+              >
+                {c.nameFa}
+              </Link>
+            ))}
+          </nav>
+        )}
 
-      {posts.length === 0 ? (
-        <p className="rounded-2xl border border-border bg-surface-card p-10 text-center text-sm text-muted-foreground">
-          به‌زودی اولین مقالات مجله پت‌باس منتشر می‌شود.
-        </p>
-      ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {posts.map((p) => (
-            <PostCard key={p.id} post={p} />
-          ))}
-        </div>
-      )}
+        {activeCategory && (
+          <h2 className="text-lg font-bold">
+            مقالات {activeCategory.nameFa}
+            {page > 1 && <span className="text-sm font-normal text-muted-foreground"> · صفحه {page.toLocaleString('fa-IR')}</span>}
+          </h2>
+        )}
 
-      {pageCount > 1 && (
-        <nav aria-label="صفحه‌بندی" className="flex justify-center gap-2">
-          {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
-            <Link
-              key={n}
-              href={n > 1 ? `/blog?page=${n}` : '/blog'}
-              aria-current={n === page ? 'page' : undefined}
-              className={`min-w-10 h-10 inline-flex items-center justify-center rounded-xl border text-sm font-bold ${n === page ? 'bg-primary text-charcoal-950 border-primary' : 'border-border'}`}
-            >
-              {n.toLocaleString('fa-IR')}
-            </Link>
-          ))}
-        </nav>
-      )}
+        {posts.length === 0 ? (
+          <EmptyState
+            variant="card"
+            title={category ? 'در این موضوع هنوز مقاله‌ای منتشر نشده است' : 'به‌زودی اولین مقالات مجله پت‌باس منتشر می‌شود'}
+            description="تا آن زمان می‌توانید محصولات پت‌شاپ را ببینید یا سوال خود را از کلینیک بپرسید."
+            action={
+              category ? (
+                <Link href="/blog" className="btn btn-gold">همه مقالات</Link>
+              ) : (
+                <Link href="/shop" className="btn btn-gold">مشاهده پت‌شاپ</Link>
+              )
+            }
+            secondaryAction={<Link href="/faq" className="btn btn-outline">سوالات متداول</Link>}
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+            {posts.map((p, i) => (
+              <PostCard key={p.id} post={p} featured={showFeatured && i === 0} />
+            ))}
+          </div>
+        )}
+
+        <Pagination page={page} pageCount={pageCount} hrefFor={hrefFor} />
+
+        <section className="surface-card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div>
+            <h2 className="text-base font-bold">محصول مناسب حیوان خود را پیدا کنید</h2>
+            <p className="mt-1 text-sm leading-7 text-muted-foreground">
+              غذا، مکمل و لوازم سگ و گربه با نمایش تاریخ انقضا و ارسال به سراسر کشور.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2.5 sm:flex-row sm:shrink-0">
+            <Link href="/shop" className="btn btn-gold">ورود به پت‌شاپ</Link>
+            <Link href="/services" className="btn btn-outline">خدمات کلینیک</Link>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

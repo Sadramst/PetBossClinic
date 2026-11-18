@@ -21,7 +21,7 @@ export function ProfileForm({ firstName, lastName, email }: { firstName: string;
       }}
     >
       <input type="hidden" name="next" value="/account/profile" />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <input name="firstName" defaultValue={firstName} placeholder="نام" className={field} required />
         <input name="lastName" defaultValue={lastName} placeholder="نام خانوادگی" className={field} required />
       </div>

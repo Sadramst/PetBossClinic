@@ -52,7 +52,7 @@ export function PostsManager({ posts, categories }: { posts: AdminPost[]; catego
         {error && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 text-sm px-4 py-3">{error}</p>}
         {p && <input type="hidden" name="id" value={p.id} />}
         <input name="titleFa" defaultValue={p?.titleFa} placeholder="عنوان مقاله" className={`${field} text-lg font-bold`} required />
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <label className="space-y-1 text-xs">
             <span>دسته</span>
             <input name="category" list="post-categories" defaultValue={p?.category ?? 'تغذیه'} className={field} />
@@ -77,7 +77,7 @@ export function PostsManager({ posts, categories }: { posts: AdminPost[]; catego
           </span>
           <textarea name="contentFa" defaultValue={p?.contentFa ?? ''} rows={22} className={`${field} leading-8 font-[inherit]`} required />
         </label>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <input name="imageId" defaultValue={p?.imageId ?? ''} dir="ltr" placeholder="/images/veterinarian.jpg یا آدرس https" className={field} />
           <input name="metaTitleFa" defaultValue={p?.metaTitleFa ?? ''} placeholder="عنوان سئو (اختیاری، حداکثر ۷۰ نویسه)" className={field} />
         </div>

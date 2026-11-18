@@ -214,7 +214,7 @@ export default async function ServiceDetailPage({ params }: { params: Params }) 
         ]}
       />
 
-      <div className="mt-6 grid gap-8 lg:grid-cols-[1.35fr_1fr]">
+      <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[1.35fr_1fr]">
         <div className="space-y-8">
           <header className="space-y-4">
             <Link href="/services" className="text-xs font-bold text-primary hover:underline">
@@ -264,7 +264,7 @@ export default async function ServiceDetailPage({ params }: { params: Params }) 
 
           <section>
             <h2 className="text-lg font-bold mb-4">چرا پت‌باس؟</h2>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {TRUST.map((item) => (
                 <div key={item.title} className="rounded-2xl border border-border bg-surface p-4">
                   <h3 className="text-sm font-bold">{item.title}</h3>
@@ -307,7 +307,7 @@ export default async function ServiceDetailPage({ params }: { params: Params }) 
                 <h2 className="text-lg font-bold">خدمات مرتبط</h2>
                 <Link href="/services" className="text-xs text-primary hover:underline">همه خدمات</Link>
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {related.map((item) => (
                   <Link
                     key={item.id}

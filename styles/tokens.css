@@ -87,6 +87,20 @@
   --section-py-sm: 3.5rem;
   --container-px: 1.25rem;
 
+  /* ─── Sticky chrome (scroll-margin / safe-area utilities read these) ─── */
+  --header-offset: 6rem;
+  --bottom-nav-h: 4rem;
+
+  /* ─── Radius scale: control 12px, card 16px, sheet 24px ─── */
+  --radius-control: 0.75rem;
+  --radius-card: 1rem;
+  --radius-sheet: 1.5rem;
+
+  /* ─── Layers ─── */
+  --z-header: 50;
+  --z-overlay: 60;
+  --z-toast: 70;
+
   /* ─── Transitions ─── */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);

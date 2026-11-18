@@ -35,7 +35,7 @@ async function handle(input: { page?: number; sort?: FeedSort; page_urls?: strin
   const products = rows.map(toTorob);
   return NextResponse.json(
     { api_version: 'torob_api_v3', current_page: page, total, max_pages: maxPages, products },
-    { headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=3600' } }
+    { headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=3600', 'X-Robots-Tag': 'noindex' } }
   );
 }
 

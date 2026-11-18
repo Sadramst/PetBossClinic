@@ -2,8 +2,10 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from '@/i18n/routing'
-import type { OrderStatus } from '@prisma/client'
+import type { OrderStatus, Role } from '@prisma/client'
 import { updateOrderAction } from '@/app/actions/admin-orders'
+import { allowedNextStatuses } from '@/components/admin/order-status'
+import { confirmDialog } from '@/components/ui/confirm-dialog'
 
 export interface AdminOrderRow {
   id: string
@@ -49,7 +51,7 @@ const STATUS_CLS: Partial<Record<OrderStatus, string>> = {
 }
 const toman = (n: number) => `${n.toLocaleString('fa-IR')} تومان`
 
-export function OrdersManager({ orders, counts, active }: { orders: AdminOrderRow[]; counts: Record<string, number>; active: string }) {
+export function OrdersManager({ orders, counts, active, role }: { orders: AdminOrderRow[]; counts: Record<string, number>; active: string; role: Role }) {
   const router = useRouter()
   const [open, setOpen] = useState<string | null>(null)
 
@@ -91,7 +93,7 @@ export function OrdersManager({ orders, counts, active }: { orders: AdminOrderRo
               <span className="font-bold">{toman(o.total)}</span>
               <span className={`justify-self-start text-xs rounded-full px-2.5 py-1 ${STATUS_CLS[o.status] ?? 'bg-surface text-muted-foreground'}`}>{STATUS_FA[o.status]}</span>
             </button>
-            {open === o.id && <OrderDetail order={o} onSaved={() => router.refresh()} />}
+            {open === o.id && <OrderDetail order={o} role={role} onSaved={() => router.refresh()} />}
           </div>
         ))}
       </div>
@@ -99,15 +101,17 @@ export function OrdersManager({ orders, counts, active }: { orders: AdminOrderRo
   )
 }
 
-function OrderDetail({ order, onSaved }: { order: AdminOrderRow; onSaved: () => void }) {
+function OrderDetail({ order, role, onSaved }: { order: AdminOrderRow; role: Role; onSaved: () => void }) {
   const [status, setStatus] = useState(order.status)
   const [tracking, setTracking] = useState(order.trackingCode ?? '')
   const [note, setNote] = useState(order.adminNote ?? '')
   const [msg, setMsg] = useState<string | null>(null)
   const [pending, start] = useTransition()
+  // Only the moves the server accepts for this order and role (same rules as updateOrderAction).
+  const options: OrderStatus[] = [order.status, ...allowedNextStatuses(order.status, role)]
 
   return (
-    <div className="px-4 pb-5 grid gap-4 lg:grid-cols-3 text-sm">
+    <div className="px-4 pb-5 grid grid-cols-1 gap-4 lg:grid-cols-3 text-sm">
       <div className="lg:col-span-2 space-y-3">
         <table className="w-full text-xs">
           <thead className="text-muted-foreground">
@@ -146,7 +150,7 @@ function OrderDetail({ order, onSaved }: { order: AdminOrderRow; onSaved: () => 
         <label className="block space-y-1">
           <span className="text-xs">وضعیت</span>
           <select value={status} onChange={(e) => setStatus(e.target.value as OrderStatus)} className="w-full rounded-xl border border-border bg-input px-3 py-2">
-            {(Object.keys(STATUS_FA) as OrderStatus[]).map((s) => <option key={s} value={s}>{STATUS_FA[s]}</option>)}
+            {options.map((s) => <option key={s} value={s}>{STATUS_FA[s]}</option>)}
           </select>
         </label>
         <label className="block space-y-1">
@@ -161,8 +165,27 @@ function OrderDetail({ order, onSaved }: { order: AdminOrderRow; onSaved: () => 
           disabled={pending}
           onClick={() =>
             start(async () => {
-              if (status === 'CANCELLED' && order.status !== 'CANCELLED' && !confirm('سفارش لغو شود؟ موجودی کالاها به انبار برمی‌گردد.')) return
-              const res = await updateOrderAction(order.id, { status, trackingCode: tracking, adminNote: note })
+              if (status === 'CANCELLED' && order.status !== 'CANCELLED') {
+                const ok = await confirmDialog({
+                  title: 'سفارش لغو شود؟',
+                  description: 'موجودی کالاها به انبار برمی‌گردد و در صورت پرداخت آنلاین باید وجه به مشتری بازگردانده شود.',
+                  confirmLabel: 'لغو سفارش',
+                  tone: 'danger',
+                })
+                if (!ok) return
+              }
+              // An online order with no recorded payment can only be confirmed by staff who have seen the money
+              // (e.g. card-to-card, or the ZarinPal panel after a bank timeout).
+              const confirmsUnpaid = status === 'CONFIRMED' && order.status !== 'CONFIRMED' && order.paymentMethod === 'ONLINE' && !order.paidAt
+              if (confirmsUnpaid) {
+                const ok = await confirmDialog({
+                  title: 'دریافت وجه تأیید شود؟',
+                  description: 'برای این سفارش آنلاین پرداختی ثبت نشده است. فقط اگر وجه را مطمئن دریافت کرده‌اید (مثلاً کارت‌به‌کارت یا در پنل درگاه) تأیید کنید.',
+                  confirmLabel: 'وجه دریافت شده است',
+                })
+                if (!ok) return
+              }
+              const res = await updateOrderAction(order.id, { status, trackingCode: tracking, adminNote: note, ...(confirmsUnpaid ? { confirmPaid: true } : {}) })
               setMsg(res.error ?? 'ذخیره شد.')
               if (!res.error) onSaved()
             })

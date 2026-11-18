@@ -780,7 +780,8 @@ model Wishlist {
 // SHOP: customers, addresses, orders, payments
 // -----------------------------------------------------------------------------
 
-/// A shop customer. Identified by Iranian mobile number (login by SMS one-time code).
+/// A shop customer. Identified by Iranian mobile number; signs in with an SMS one-time
+/// code or with a password.
 model Customer {
   id          String    @id @default(cuid())
   /// Normalised 09xxxxxxxxx
@@ -789,6 +790,17 @@ model Customer {
   lastName    String?
   email       String?
   isBlocked   Boolean   @default(false)
+  /// Bumped on logout / password change: tokens signed with an older version stop working.
+  sessionVersion Int    @default(0)
+  /// scrypt hash ("scrypt$<salt>$<hash>"); null = the customer only uses SMS codes.
+  passwordHash   String?
+  /// Set when the customer proved they own the number (SMS code). A password account whose
+  /// number was never verified loses its password when the real owner signs in by SMS,
+  /// so nobody can keep an account by registering someone else's number first.
+  phoneVerifiedAt DateTime?
+  /// Wrong-password counter (reset on success or after the lock window) and time of the last attempt.
+  failedLogins   Int       @default(0)
+  lastFailedAt   DateTime?
   lastLoginAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -811,6 +823,7 @@ model OtpCode {
   createdAt  DateTime  @default(now())
 
   @@index([phone, createdAt])
+  @@index([ip, createdAt])
 }
 
 model Address {
@@ -877,6 +890,8 @@ model Order {
   adminNote     String?
   trackingCode  String?
   stockAllocated Boolean      @default(false)
+  /// Client-generated key (one per checkout visit) so a double submit returns the same order.
+  idempotencyKey String?      @unique
   paidAt        DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -900,6 +915,9 @@ model OrderItem {
   unitPrice Int
   quantity  Int
   lineTotal Int
+  /// Units actually taken from stock: [{ "batchId": "...", "quantity": 2 }]. Null = legacy order
+  /// (allocated before this column existed) or not allocated.
+  allocations Json?
 
   order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)

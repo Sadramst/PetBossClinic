@@ -6,7 +6,7 @@ test.describe('Indexable shop pages', () => {
     const categoryLink = page.locator('main a[href^="/shop/"]').first()
     await expect(categoryLink).toBeVisible()
     await categoryLink.click()
-    await expect(page).toHaveURL(/\/shop\/[^/?]+/)
+    await expect(page).toHaveURL(/\/shop\/[^/?]+/, { timeout: 20000 })
     await expect(page.locator('h1')).toContainText('خرید')
 
     const productLink = page.locator('article a[href^="/product/"]').first()

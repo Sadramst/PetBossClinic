@@ -4,15 +4,19 @@ import React from 'react'
 import { PetBossLogo } from '@/components/shared/pet-boss-logo'
 
 describe('PetBossLogo UI Component Tests', () => {
-  it('renders SVG emblem with royal crown and lion crest', () => {
+  it('renders the emblem image, decorative when the wordmark is shown', () => {
     const { container } = render(<PetBossLogo size="md" variant="gold" />)
     const svg = container.querySelector('svg')
-    expect(svg).toBeDefined()
     expect(svg).not.toBeNull()
+    expect(svg?.getAttribute('aria-hidden')).toBe('true')
+    expect(container.querySelector('image')?.getAttribute('href')).toBe('/images/logo-64.png')
+  })
 
-    // Check SVG viewBox and gradients
-    const linearGradients = container.querySelectorAll('linearGradient')
-    expect(linearGradients.length).toBeGreaterThan(0)
+  it('names the emblem for screen readers when it is the only thing shown', () => {
+    const { container } = render(<PetBossLogo size="md" showText={false} />)
+    const svg = container.querySelector('svg')
+    expect(svg?.getAttribute('role')).toBe('img')
+    expect(svg?.getAttribute('aria-label')).toBe('نشان پت‌باس')
   })
 
   it('renders PET BOSS title and Persian subtitle by default', () => {

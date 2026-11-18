@@ -45,6 +45,9 @@ const columnExists = async (t, c) =>
     await client.query(`select 1 from information_schema.columns where table_schema='public' and table_name=$1 and column_name=$2`, [t, c])
   ).rowCount > 0;
 
+const indexExists = async (name) =>
+  (await client.query(`select 1 from pg_indexes where schemaname='public' and indexname=$1`, [name])).rowCount > 0;
+
 /** Each migration declares how to tell whether it is already applied. */
 const MIGRATIONS = [
   {
@@ -64,6 +67,23 @@ const MIGRATIONS = [
       return false;
     },
   },
+  {
+    dir: '20261118_order_integrity',
+    applied: async () =>
+      (await columnExists('OrderItem', 'allocations')) &&
+      (await columnExists('Order', 'idempotencyKey')) &&
+      (await columnExists('Customer', 'sessionVersion')) &&
+      (await indexExists('Order_idempotencyKey_key')) &&
+      (await indexExists('OtpCode_ip_createdAt_idx')),
+  },
+  {
+    dir: '20261119_customer_password',
+    applied: async () =>
+      (await columnExists('Customer', 'passwordHash')) &&
+      (await columnExists('Customer', 'phoneVerifiedAt')) &&
+      (await columnExists('Customer', 'failedLogins')) &&
+      (await columnExists('Customer', 'lastFailedAt')),
+  },
 ];
 
 try {
@@ -80,6 +100,9 @@ try {
     const sql = readFileSync(new URL(`../prisma/migrations/${m.dir}/migration.sql`, import.meta.url), 'utf8');
     console.log(`[release-db] ${m.dir}: applying…`);
     await client.query('BEGIN');
+    // If a long-running transaction holds the table, fail the build fast (the live site keeps serving)
+    // instead of queueing behind it and blocking every read and write.
+    await client.query("SET LOCAL lock_timeout = '5s'");
     try {
       await client.query(sql);
       await client.query('COMMIT');

@@ -3,7 +3,7 @@ import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
 import { db } from '@/lib/db';
 import { Prisma } from '@prisma/client';
-import { buildProductOrder, buildProductWhere, type ShopFilters } from '@/lib/shop/filters';
+import { buildProductOrder, buildProductWhere, rankByDiscount, type ShopFilters } from '@/lib/shop/filters';
 
 export const CATEGORY_PAGE_SIZE = 24;
 
@@ -95,6 +95,26 @@ export async function getCategoryProducts(categoryId: string, page: number) {
 
 export async function getListing(filters: ShopFilters, scope: Prisma.ProductWhereInput = {}) {
   const where = buildProductWhere(filters, scope);
+
+  if (filters.sort === 'discount') {
+    // Sorting by discount percentage needs both price columns, so rank the discounted
+    // candidates (a small subset of the catalogue) in memory, then load one page.
+    const candidates = await db.product.findMany({
+      where,
+      select: { id: true, price: true, comparePrice: true, stockStatus: true },
+    });
+    const ranked = rankByDiscount(candidates);
+    const pageIds = ranked
+      .slice((filters.page - 1) * CATEGORY_PAGE_SIZE, filters.page * CATEGORY_PAGE_SIZE)
+      .map((r) => r.id);
+    const rows = pageIds.length
+      ? await db.product.findMany({ where: { id: { in: pageIds } }, select: productCardSelect })
+      : [];
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    const products = pageIds.map((id) => byId.get(id)).filter((p): p is ProductCardData => !!p);
+    return { total: ranked.length, products, pageCount: Math.max(1, Math.ceil(ranked.length / CATEGORY_PAGE_SIZE)) };
+  }
+
   const [total, products] = await Promise.all([
     db.product.count({ where }),
     db.product.findMany({

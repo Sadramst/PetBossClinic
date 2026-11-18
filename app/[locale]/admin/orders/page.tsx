@@ -16,7 +16,8 @@ export default async function AdminOrdersPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { locale } = await params;
-  await requireAdmin('VIEWER', locale);
+  // Orders hold addresses and phone numbers: staff who only view the dashboard must not read them.
+  const session = await requireAdmin('EDITOR', locale);
   const active = (await searchParams).status ?? 'open';
 
   const where: Prisma.OrderWhereInput =
@@ -46,6 +47,7 @@ export default async function AdminOrdersPage({
   return (
     <OrdersManager
       active={active}
+      role={session.role}
       counts={counts}
       orders={orders.map((o) => ({
         id: o.id,

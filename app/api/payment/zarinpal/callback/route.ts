@@ -40,7 +40,20 @@ export async function GET(req: NextRequest) {
   if (status !== 'OK') return markFailed();
 
   const result = await verifyPayment(authority, payment.amountRial);
-  if (!result.ok) return markFailed(result.raw ?? undefined);
+  if (!result.ok) {
+    if (result.transient) {
+      // We could not confirm with the bank (timeout, outage). The customer may well have paid:
+      // do NOT mark the payment failed or invite a second payment. Keep it pending, remember
+      // when we last tried, and let the customer re-check from the order page.
+      await db.payment.updateMany({
+        where: { id: payment.id, status: { not: 'PAID' } },
+        data: { raw: { transientVerifyAt: new Date().toISOString() } },
+      });
+      console.error('ZarinPal verification unavailable; payment left pending', { orderId: payment.orderId });
+      return back(`${orderPage}?payment=pending`);
+    }
+    return markFailed(result.raw ?? undefined);
+  }
 
   const now = new Date();
   // Claim this payment: only the first request that gets here continues.

@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import { db } from "@/lib/db";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
-import { LuxuryPillBadge } from "@/components/ui/luxury-pill-badge";
-import { BreadcrumbJsonLd, FAQPageJsonLd } from "@/lib/seo/json-ld";
+import { PageHero } from '@/components/content/page-hero';
+import { CtaBand } from '@/components/content/cta-band';
+import { ChevronDownIcon } from '@/components/content/icons';
+import { FAQPageJsonLd } from "@/lib/seo/json-ld";
 import { pageMetadata } from "@/lib/seo/metadata";
 import { getClinicNAP } from "@/lib/clinic/nap";
 
@@ -32,6 +33,12 @@ export async function generateMetadata({
   });
 }
 
+const SHOP_HELP = [
+  { href: '/shipping', title: 'راهنمای خرید و ارسال', text: 'روش‌های ارسال، هزینه‌ها و شیوه‌های پرداخت.' },
+  { href: '/returns', title: 'رویه بازگرداندن کالا', text: 'شرایط و مهلت مرجوع کردن سفارش.' },
+  { href: '/terms', title: 'قوانین و مقررات', text: 'شرایط استفاده از سایت و خرید از پت‌شاپ.' },
+];
+
 export default async function FaqPage({
   params,
 }: {
@@ -39,10 +46,9 @@ export default async function FaqPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isEn = locale === 'en';
   const t = await getTranslations('FAQ');
 
-  const [categories, nap] = await Promise.all([
+  const [allCategories, nap] = await Promise.all([
     db.faqCategory.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
@@ -56,92 +62,103 @@ export default async function FaqPage({
     getClinicNAP(),
   ]);
 
+  const categories = allCategories.filter((cat) => cat.faqs.length > 0);
   const allFaqs = categories.flatMap((cat) =>
-    cat.faqs.map((f) => ({
-      question: isEn ? (f.questionEn || f.questionFa) : f.questionFa,
-      answer: isEn ? (f.answerEn || f.answerFa) : f.answerFa,
-    }))
+    cat.faqs.map((f) => ({ question: f.questionFa, answer: f.answerFa }))
   );
 
   return (
     <>
-      <BreadcrumbJsonLd
-        items={[
-          { name: isEn ? 'Home' : 'خانه', href: '/' },
-          { name: isEn ? 'FAQ' : 'سوالات متداول', href: '/faq' },
-        ]}
-        locale={locale}
-      />
       {allFaqs.length > 0 && <FAQPageJsonLd faqs={allFaqs} />}
       <div className="bg-background">
-      {/* Dynamic Theme Top Page Header */}
-      <section className="relative bg-gradient-hero text-foreground overflow-hidden border-b border-border/60 py-16 md:py-20 mb-12">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.12)_0%,transparent_70%)] rounded-full pointer-events-none" />
-        </div>
-        <div className="container-site relative z-10 text-center">
-          <LuxuryPillBadge variant="outline" className="mb-3">
-            {t('badge')}
-          </LuxuryPillBadge>
-          <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4">{t('title')}</h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto text-lg leading-relaxed">{t('subtitle')}</p>
-        </div>
-      </section>
+        <PageHero
+          crumbs={[
+            { name: 'خانه', href: '/' },
+            { name: 'سوالات متداول', href: '/faq' },
+          ]}
+          badge={t('badge')}
+          title={t('title')}
+          subtitle={t('subtitle')}
+        />
 
-      <div className="container-site max-w-4xl pb-20">
+        <div className="container-site section">
+          <div className="mx-auto max-w-4xl">
+            {categories.length > 1 && (
+              <nav aria-label="دسته‌بندی پرسش‌ها" className="rail rail-bleed mb-6 gap-2">
+                {categories.map((category) => (
+                  <a key={category.id} href={`#faq-${category.id}`} className="chip min-h-11 px-4">
+                    {category.nameFa}
+                  </a>
+                ))}
+              </nav>
+            )}
 
-        {/* FAQ by Category */}
-        <div className="space-y-12">
-          {categories.map((category) => {
-            const catName = isEn ? (category.nameEn || category.nameFa) : category.nameFa;
+            {categories.length === 0 && (
+              <p className="rounded-2xl border border-border bg-surface-card p-8 text-center text-sm leading-8 text-muted-foreground">
+                {t('noFaqs')} برای پرسش خود با کلینیک تماس بگیرید.
+              </p>
+            )}
 
-            return (
-              <div key={category.id} className="card-luxury p-6 md:p-8">
-                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
-                  <div className="w-2 h-6 bg-gradient-gold rounded-full" />
-                  <h2 className="text-xl font-bold text-foreground">{catName}</h2>
-                  <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-0.5 rounded-full font-bold ms-auto">
-                    {category.faqs.length} {t('questionsSuffix')}
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  {category.faqs.map((faq) => {
-                    const qText = isEn ? (faq.questionEn || faq.questionFa) : faq.questionFa;
-                    const aText = isEn ? (faq.answerEn || faq.answerFa) : faq.answerFa;
-
-                    return (
-                      <details key={faq.id} className="group rounded-xl bg-surface border border-border/60 overflow-hidden cursor-pointer">
-                        <summary className="flex items-center justify-between px-5 py-4 text-sm font-bold text-foreground hover:text-primary transition-colors list-none">
-                          <span>{qText}</span>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-primary transition-transform group-open:rotate-180"><path d="m6 9 6 6 6-6"/></svg>
+            <div className="space-y-6 sm:space-y-8">
+              {categories.map((category) => (
+                <section
+                  key={category.id}
+                  id={`faq-${category.id}`}
+                  className="card-luxury scroll-mt-header p-4 sm:p-6"
+                  aria-labelledby={`faq-title-${category.id}`}
+                >
+                  <div className="mb-4 flex items-center gap-3 border-b border-border pb-4">
+                    <span aria-hidden className="h-6 w-1.5 shrink-0 rounded-full bg-gradient-gold" />
+                    <h2 id={`faq-title-${category.id}`} className="text-lg font-bold text-foreground sm:text-xl">
+                      {category.nameFa}
+                    </h2>
+                    <span className="ms-auto shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">
+                      {category.faqs.length.toLocaleString('fa-IR')} {t('questionsSuffix')}
+                    </span>
+                  </div>
+                  <div className="space-y-2.5">
+                    {category.faqs.map((faq) => (
+                      <details key={faq.id} className="group overflow-hidden rounded-xl border border-border/60 bg-surface open:border-border-gold/60">
+                        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-bold leading-7 text-foreground transition-colors hover:text-primary [&::-webkit-details-marker]:hidden">
+                          <span>{faq.questionFa}</span>
+                          <ChevronDownIcon className="h-4 w-4 shrink-0 text-primary transition-transform group-open:rotate-180" />
                         </summary>
-                        <div className="px-5 pb-4 text-sm text-muted-foreground leading-relaxed border-t border-border/40 pt-3">
-                          {aText}
+                        <div className="whitespace-pre-line border-t border-border/40 px-4 pb-4 pt-3 text-sm leading-8 text-muted-foreground">
+                          {faq.answerFa}
                         </div>
                       </details>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
 
-        {/* Still have questions? */}
-        <div className="mt-16 text-center card-luxury p-10 border-border-gold shadow-gold">
-          <h3 className="text-2xl font-bold mb-3 text-foreground">{t('stillHaveQuestions')}</h3>
-          <p className="text-muted-foreground mb-8 max-w-md mx-auto text-sm leading-relaxed">{t('contactPrompt')}</p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button asChild className="bg-gradient-gold hover:opacity-90 text-charcoal-950 font-bold rounded-full shadow-gold px-8 py-6">
-              <a href={nap.telLink}>{t('callDirect')}</a>
-            </Button>
-            <Button asChild variant="outline" className="rounded-full border-border-gold text-foreground hover:bg-surface-elevated px-8 py-6">
-              <Link href="/contact">{t('sendMessage')}</Link>
-            </Button>
+            <section className="mt-8 sm:mt-10" aria-labelledby="shop-help-title">
+              <h2 id="shop-help-title" className="mb-3 text-lg font-bold text-foreground">
+                راهنمای خرید از پت‌شاپ
+              </h2>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {SHOP_HELP.map((item) => (
+                  <Link key={item.href} href={item.href} className="surface-card hover-lift block p-4">
+                    <h3 className="text-sm font-bold text-foreground">{item.title}</h3>
+                    <p className="mt-1 text-xs leading-6 text-muted-foreground">{item.text}</p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            <CtaBand
+              className="mt-8 sm:mt-10"
+              title={t('stillHaveQuestions')}
+              text={`${t('contactPrompt')} ${nap.workingHoursSummaryFa}.`}
+              nap={nap}
+              callLabel={t('callDirect')}
+            >
+              <Link href="/contact" className="btn btn-secondary">{t('sendMessage')}</Link>
+            </CtaBand>
           </div>
         </div>
       </div>
-    </div>
     </>
   );
 }

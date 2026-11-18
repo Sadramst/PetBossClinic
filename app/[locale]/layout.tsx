@@ -3,7 +3,7 @@ import '@/styles/globals.css';
 import { AbstractIntlMessages, NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { Outfit, Vazirmatn } from 'next/font/google';
+import { Vazirmatn } from 'next/font/google';
 import { ThemeProvider } from '@/lib/theme';
 import { getActiveClinicTheme } from '@/lib/theme/theme-server';
 import { Header } from '@/components/layout/header';
@@ -11,6 +11,7 @@ import { Footer } from '@/components/layout/footer';
 import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
 import { CartProvider } from '@/components/shop/cart-provider';
 import { HideOnAdmin } from '@/components/layout/hide-on-admin';
+import { Toaster } from '@/components/ui/toaster';
 import { getNavCatalog } from '@/lib/shop/catalog';
 import { getClinicNAP } from '@/lib/clinic/nap';
 import { getSitePictures } from '@/lib/media';
@@ -25,12 +26,6 @@ import {
   SITE_URL,
 } from '@/lib/seo/site';
 import Script from 'next/script';
-
-const outfit = Outfit({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-outfit',
-});
 
 const vazirmatn = Vazirmatn({
   subsets: ['arabic'],
@@ -51,6 +46,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   themeColor: '#c5a059',
   colorScheme: 'dark light',
+  // Lets env(safe-area-inset-*) resolve, so the bottom nav clears the iPhone home indicator.
+  viewportFit: 'cover',
 };
 
 export async function generateMetadata({
@@ -60,14 +57,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   setRequestLocale(locale);
-  const isEn = locale === 'en';
-  const [nap, seo] = await Promise.all([getClinicNAP(), getSeoConfig()]);
+  const seo = await getSeoConfig();
 
-  const title = isEn ? 'Pet Boss Clinic & Pet Shop | Veterinary Clinic in Tehran' : SITE_HOME_TITLE;
-
-  const description = isEn
-    ? `Premier veterinary surgery, dental clinic, grooming salon & luxury pet boutique in Gheytariyeh, Tehran. ${nap.addressEn}. ${nap.workingHoursSummaryEn}.`
-    : SITE_HOME_DESCRIPTION;
+  const title = SITE_HOME_TITLE;
+  const description = SITE_HOME_DESCRIPTION;
 
   return {
     metadataBase: new URL(SITE_URL),
@@ -76,16 +69,14 @@ export async function generateMetadata({
     title: {
       default: title,
       // Short brand suffix: page titles are already authored to ~60 characters.
-      template: isEn ? '%s | Pet Boss Clinic' : '%s | پت‌باس',
+      template: '%s | پت‌باس',
     },
     applicationName: SITE_NAME_LONG_FA,
     description,
-    keywords: isEn
-      ? ['veterinary clinic Tehran', 'pet shop Gheitariyeh', 'dog cat grooming Tehran', 'pet surgery Tehran', 'vaccination dog cat', 'Pet Boss Clinic']
-      : ['کلینیک دامپزشکی تهران', 'دامپزشکی قیطریه', 'دامپزشکی شریعتی', 'پت شاپ قیطریه', 'گرومینگ سگ و گربه تهران', 'واکسیناسیون سگ و گربه', 'جراحی حیوانات خانگی', 'پت باس'],
-    authors: [{ name: 'Pet Boss Clinic', url: SITE_URL }],
-    creator: 'Pet Boss Clinic',
-    publisher: 'Pet Boss Clinic',
+    keywords: ['کلینیک دامپزشکی تهران', 'دامپزشکی قیطریه', 'دامپزشکی شریعتی', 'پت شاپ قیطریه', 'گرومینگ سگ و گربه تهران', 'واکسیناسیون سگ و گربه', 'جراحی حیوانات خانگی', 'پت باس'],
+    authors: [{ name: SITE_NAME_LONG_FA, url: SITE_URL }],
+    creator: SITE_NAME_LONG_FA,
+    publisher: SITE_NAME_LONG_FA,
     category: 'pets',
     // Iranian phone numbers must not be auto-linked by iOS/Safari.
     formatDetection: { telephone: false, email: false, address: false },
@@ -149,7 +140,6 @@ export default async function LocaleLayout({
 
   const initialTheme = await getActiveClinicTheme();
 
-  const fontClass = locale === 'fa' ? vazirmatn.className : outfit.className;
   const [seo, nap, sitePictures, navItems, navCatalog] = await Promise.all([
     getSeoConfig(),
     getClinicNAP(),
@@ -159,14 +149,20 @@ export default async function LocaleLayout({
   ]);
 
   return (
-    <html lang={locale === 'fa' ? 'fa-IR' : locale} dir={locale === 'fa' ? 'rtl' : 'ltr'} data-theme={initialTheme} suppressHydrationWarning>
+    <html lang="fa-IR" dir="rtl" data-theme={initialTheme} suppressHydrationWarning>
       <head>
         <OrganizationJsonLd nap={nap} />
         <WebSiteJsonLd />
       </head>
       <body
-        className={`${fontClass} antialiased bg-background text-foreground min-h-screen flex flex-col selection:bg-primary selection:text-primary-foreground`}
+        className={`${vazirmatn.className} antialiased bg-background text-foreground min-h-screen flex flex-col selection:bg-primary selection:text-primary-foreground`}
       >
+        <a
+          href="#main-content"
+          className="sr-only rounded-xl bg-gradient-gold px-4 py-2 font-bold text-charcoal-950 focus:not-sr-only focus:fixed focus:start-2 focus:top-2 focus:z-[100]"
+        >
+          پرش به محتوای اصلی
+        </a>
         {seo.ga4Id && isValidGa4Id(seo.ga4Id) && (
           <>
             <Script src={`https://www.googletagmanager.com/gtag/js?id=${seo.ga4Id}`} strategy="afterInteractive" />
@@ -182,9 +178,13 @@ export default async function LocaleLayout({
               logoUrl={sitePictures.site_logo}
               navItems={navItems}
               phone={nap.phone}
+              whatsappLink={nap.whatsappLink}
               categories={navCatalog.categories}
+              brands={navCatalog.brands}
             />
-            <main className="flex-grow">{children}</main>
+            <main id="main-content" tabIndex={-1} className="flex-grow outline-none">
+              {children}
+            </main>
             <HideOnAdmin>
               <Footer
                 nap={nap}
@@ -196,6 +196,7 @@ export default async function LocaleLayout({
               />
             </HideOnAdmin>
             <MobileBottomNav phone={nap.phone} />
+            <Toaster />
             </CartProvider>
           </NextIntlClientProvider>
         </ThemeProvider>

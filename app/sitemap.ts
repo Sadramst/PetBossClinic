@@ -17,6 +17,11 @@ const STATIC_PAGES: Array<{ path: string; priority: number; changeFrequency: 'da
   { path: '/about', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/faq', priority: 0.7, changeFrequency: 'weekly' },
   { path: '/blog', priority: 0.8, changeFrequency: 'weekly' },
+  // Shop policy pages (also linked from the footer on every page).
+  { path: '/shipping', priority: 0.5, changeFrequency: 'monthly' },
+  { path: '/returns', priority: 0.5, changeFrequency: 'monthly' },
+  { path: '/terms', priority: 0.3, changeFrequency: 'monthly' },
+  { path: '/privacy', priority: 0.3, changeFrequency: 'monthly' },
 ];
 
 function imageUrl(src: string | null | undefined): string[] {

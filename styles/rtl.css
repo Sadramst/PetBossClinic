@@ -1,1 +1,13 @@
 /* RTL overrides */
+
+/* Directional icons (chevrons, arrows) drawn for LTR: add .rtl-flip to mirror them in Persian. */
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* Latin brand names / codes inside Persian paragraphs keep their own direction. */
+[dir="rtl"] bdi,
+[dir="rtl"] code,
+[dir="rtl"] kbd {
+  unicode-bidi: isolate;
+}

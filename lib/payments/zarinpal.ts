@@ -56,16 +56,30 @@ export async function requestPayment(opts: {
   }
 }
 
+/**
+ * Codes that mean the bank has *decided* the payment did not happen (amount mismatch,
+ * unsuccessful, unknown or foreign authority). Anything else is treated as "could not
+ * confirm right now": the customer may have paid.
+ */
+const DEFINITIVE_FAILURE_CODES = new Set([-50, -51, -52, -53, -54]);
+
+export type VerifyResult =
+  | { ok: true; refId: string | null; cardPan: string | null; raw: ZpResponse }
+  /** transient: we could not reach or understand the bank, so the payment must stay pending. */
+  | { ok: false; transient: boolean; raw: ZpResponse | null };
+
 /** Verifies a payment. Code 100 = verified now, 101 = already verified earlier. */
-export async function verifyPayment(authority: string, amountRial: number) {
+export async function verifyPayment(authority: string, amountRial: number): Promise<VerifyResult> {
   try {
     const raw = await post('/pg/v4/payment/verify.json', { amount: amountRial, authority });
     const d = dataOf(raw);
     if (d && (d.code === 100 || d.code === 101)) {
-      return { ok: true as const, refId: d.ref_id ? String(d.ref_id) : null, cardPan: d.card_pan ?? null, raw };
+      return { ok: true, refId: d.ref_id ? String(d.ref_id) : null, cardPan: d.card_pan ?? null, raw };
     }
-    return { ok: false as const, raw };
+    const code = d?.code ?? errorOf(raw)?.code;
+    // A timeout, a 5xx, an empty or non-JSON answer, or an unrecognised code is not a "no".
+    return { ok: false, transient: typeof code !== 'number' || !DEFINITIVE_FAILURE_CODES.has(code), raw };
   } catch {
-    return { ok: false as const, raw: null };
+    return { ok: false, transient: true, raw: null };
   }
 }

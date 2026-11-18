@@ -15,6 +15,8 @@ const MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
 interface CustomerToken {
   cid: string;
   exp: number;
+  /** Customer.sessionVersion when the token was issued (absent = 0, for older tokens). */
+  v?: number;
 }
 
 function key(): string {
@@ -28,14 +30,15 @@ function key(): string {
     .digest('hex');
 }
 
-export function signCustomerToken(customerId: string, now = Date.now()): string {
-  const payload: CustomerToken = { cid: customerId, exp: Math.floor(now / 1000) + MAX_AGE_SECONDS };
+export function signCustomerToken(customerId: string, now = Date.now(), version = 0): string {
+  const payload: CustomerToken = { cid: customerId, exp: Math.floor(now / 1000) + MAX_AGE_SECONDS, v: version };
   const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const sig = crypto.createHmac('sha256', key()).update(body).digest('base64url');
   return `${body}.${sig}`;
 }
 
-export function verifyCustomerToken(token: string | undefined, now = Date.now()): string | null {
+/** Verifies signature and expiry; returns the customer id and session version, or null. */
+export function parseCustomerToken(token: string | undefined, now = Date.now()): { id: string; version: number } | null {
   if (!token) return null;
   const [body, sig] = token.split('.');
   if (!body || !sig) return null;
@@ -46,14 +49,19 @@ export function verifyCustomerToken(token: string | undefined, now = Date.now())
   try {
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString()) as CustomerToken;
     if (!payload.cid || payload.exp * 1000 < now) return null;
-    return payload.cid;
+    return { id: payload.cid, version: payload.v ?? 0 };
   } catch {
     return null;
   }
 }
 
-export async function setCustomerCookie(customerId: string): Promise<void> {
-  (await cookies()).set(COOKIE, signCustomerToken(customerId), {
+export function verifyCustomerToken(token: string | undefined, now = Date.now()): string | null {
+  return parseCustomerToken(token, now)?.id ?? null;
+}
+
+/** Starts a session. `version` must be the customer's current sessionVersion. */
+export async function setCustomerCookie(customerId: string, version = 0): Promise<void> {
+  (await cookies()).set(COOKIE, signCustomerToken(customerId, Date.now(), version), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -66,12 +74,17 @@ export async function clearCustomerCookie(): Promise<void> {
   (await cookies()).delete(COOKIE);
 }
 
-/** The signed-in, non-blocked customer, or null. */
+/**
+ * The signed-in, non-blocked customer, or null. A token only works while its version
+ * matches the customer's current sessionVersion, so logging out (or changing the
+ * password) ends every session that was issued before.
+ */
 export async function getCustomer() {
-  const id = verifyCustomerToken((await cookies()).get(COOKIE)?.value);
-  if (!id) return null;
-  const customer = await db.customer.findUnique({ where: { id } });
-  return customer && !customer.isBlocked ? customer : null;
+  const token = parseCustomerToken((await cookies()).get(COOKIE)?.value);
+  if (!token) return null;
+  const customer = await db.customer.findUnique({ where: { id: token.id } });
+  if (!customer || customer.isBlocked || customer.sessionVersion !== token.version) return null;
+  return customer;
 }
 
 /**
