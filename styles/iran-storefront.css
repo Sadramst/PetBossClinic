@@ -935,3 +935,45 @@ body[data-design='iran-storefront'] footer {
     font-size: 11px !important;
   }
 }
+.iran-hero-grid {
+  min-height: 580px;
+}
+.iran-hero-picture {
+  min-height: 510px;
+}
+.iran-hero h1 {
+  font-size: clamp(36px, 3.5vw, 52px);
+}
+.iran-hero-copy {
+  padding-top: 42px;
+  padding-bottom: 42px;
+}
+.iran-hero-copy > p {
+  margin-top: 16px;
+}
+.iran-photo-stamp {
+  inset-inline-start: 58px;
+  top: 54px;
+  font-size: 15px;
+}
+@media (max-width: 640px) {
+  .iran-hero-grid {
+    min-height: 0;
+  }
+  .iran-hero-copy {
+    padding: 26px 24px;
+  }
+  .iran-hero h1 {
+    font-size: 29px;
+  }
+  .iran-hero-picture {
+    min-height: 290px;
+  }
+  .iran-hero-signature {
+    font-size: 21px;
+  }
+  .iran-photo-stamp {
+    top: 40px;
+    font-size: 12px;
+  }
+}
