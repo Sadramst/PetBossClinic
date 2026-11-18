@@ -4,6 +4,7 @@
  * "squatter" takeover protection, logout invalidating old tokens, and password change.
  */
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest'
+import { isLocalDatabaseUrl } from '../helpers/local-db'
 
 vi.mock('server-only', () => ({}))
 vi.mock('next/cache', () => ({ unstable_cache: (fn: unknown) => fn, revalidatePath: vi.fn() }))
@@ -37,12 +38,18 @@ vi.mock('next/headers', () => ({
   },
 }))
 
-const hasDb = !!process.env.DATABASE_URL && process.env.DATABASE_URL.includes('localhost')
+const hasDb = isLocalDatabaseUrl(process.env.DATABASE_URL)
 const d = hasDb ? describe : describe.skip
 
 const PASSWORD = 'Gorbeh-Parvaneh-1405'
 let seq = 0
-const newPhone = () => `0938${String(Date.now()).slice(-5)}${String(++seq).padStart(2, '0')}`
+// Every phone this file creates is remembered, and cleanup removes exactly those rows.
+const createdPhones = new Set<string>()
+const newPhone = () => {
+  const phone = `0938${String(Date.now()).slice(-5)}${String(++seq).padStart(2, '0')}`
+  createdPhones.add(phone)
+  return phone
+}
 const newIp = () => `10.9.${Math.floor(seq / 250)}.${(seq % 250) + 1}`
 
 function form(values: Record<string, string>): FormData {
@@ -70,8 +77,8 @@ d('customer password login (real database)', () => {
   })
 
   afterAll(async () => {
-    await db.otpCode.deleteMany({ where: { phone: { startsWith: '0938' } } })
-    await db.customer.deleteMany({ where: { phone: { startsWith: '0938' } } })
+    await db.otpCode.deleteMany({ where: { phone: { in: [...createdPhones] } } })
+    await db.customer.deleteMany({ where: { phone: { in: [...createdPhones] } } })
     await db.$disconnect()
   })
 

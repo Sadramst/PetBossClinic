@@ -117,7 +117,7 @@ export async function placeOrderAction(input: {
   if (!address) return { error: 'نشانی ارسال را انتخاب کنید.' }
 
   const method: PaymentMethod = input.paymentMethod === 'COD' ? 'COD' : 'ONLINE'
-  if (method === 'COD' && !codAllowed(address.province)) {
+  if (method === 'COD' && !codAllowed(address.province, address.city)) {
     return { error: 'پرداخت در محل فقط برای سفارش‌های تهران امکان‌پذیر است.' }
   }
   if (method === 'ONLINE' && !zarinpalConfigured()) {
@@ -129,7 +129,7 @@ export async function placeOrderAction(input: {
     return { error: 'برخی اقلام سبد تغییر کرده‌اند. لطفاً سبد را بررسی کنید.', lines: withMissingLines(items, priced.lines) }
   }
 
-  const { fee } = shippingFor(address.province, priced.subtotal)
+  const { fee } = shippingFor(address.province, priced.subtotal, address.city)
   const total = priced.subtotal + fee
   const fullAddress = [address.addressLine, address.plaque && `پلاک ${address.plaque}`, address.unit && `واحد ${address.unit}`]
     .filter(Boolean)
@@ -206,6 +206,19 @@ export async function retryPaymentAction(orderNumber: string): Promise<CheckoutS
   })
   if (!order) return { error: 'سفارش قابل پرداخت پیدا نشد.' }
 
+  // A payment we could not verify with the bank may still turn out to be paid: paying again could charge twice.
+  const unverified = await db.payment.findMany({
+    where: { orderId: order.id, status: 'INITIATED', createdAt: { gt: new Date(Date.now() - 24 * 3600_000) } },
+    select: { raw: true },
+  })
+  const waiting = unverified.some((p) => {
+    const at = (p.raw as { transientVerifyAt?: string } | null)?.transientVerifyAt
+    return typeof at === 'string' && Date.now() - Date.parse(at) < 30 * 60_000
+  })
+  if (waiting) {
+    return { error: 'پرداخت قبلی شما هنوز در حال تأیید است. چند دقیقه صبر کنید و وضعیت را دوباره بررسی کنید؛ برای جلوگیری از پرداخت دوباره، فعلاً پرداخت جدید انجام ندهید.' }
+  }
+
   // Stock may have run out since the order was created.
   const priced = await priceCart(order.items.filter((i) => i.productId).map((i) => ({ productId: i.productId!, quantity: i.quantity })))
   if (priced.hasProblems) return { error: 'برخی اقلام این سفارش دیگر موجود نیستند. لطفاً سفارش جدید ثبت کنید.' }
@@ -262,17 +275,18 @@ export interface Quote {
 }
 
 /** Authoritative prices for the cart page and checkout summary (works for guests). */
-export async function quoteAction(rawItems: unknown, province?: string): Promise<Quote> {
+export async function quoteAction(rawItems: unknown, province?: string, city?: string): Promise<Quote> {
   const items = sanitizeCartInput(rawItems)
   const priced = await priceCart(items)
-  const ship = province ? shippingFor(province, priced.subtotal) : null
+  // The city decides whether the Tehran courier (and cash on delivery) applies, exactly as at order time.
+  const ship = province ? shippingFor(province, priced.subtotal, city) : null
   return {
     lines: withMissingLines(items, priced.lines),
     subtotal: priced.subtotal,
     shippingFee: ship ? ship.fee : null,
     shippingMethod: ship ? ship.method : null,
     total: priced.subtotal + (ship?.fee ?? 0),
-    codAllowed: province ? codAllowed(province) : false,
+    codAllowed: province ? codAllowed(province, city) : false,
     onlineAvailable: zarinpalConfigured(),
     freeShippingOver: SHIPPING.freeOver,
   }

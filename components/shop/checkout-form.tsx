@@ -17,16 +17,19 @@ export function CheckoutForm({ addresses, recipient }: { addresses: AddressData[
   const [quote, setQuote] = useState<Quote | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  // One random key per checkout attempt: a double click, a retry after a slow response or a second tab
+  // gets the first order back instead of creating another. Renewed only after a failure.
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
   const address = addresses.find((a) => a.id === addressId);
   const items = lines.map(({ productId, quantity }) => ({ productId, quantity }));
   // Keyed on the province (not just the id): a just-saved address arrives a moment after its id.
-  const key = `${address?.province ?? ''}|${lines.map((l) => `${l.productId}:${l.quantity}`).join(',')}`;
+  const key = `${address?.province ?? ''}|${address?.city ?? ''}|${lines.map((l) => `${l.productId}:${l.quantity}`).join(',')}`;
 
   useEffect(() => {
     if (!ready) return;
     let alive = true;
-    quoteAction(items, address?.province).then((q) => {
+    quoteAction(items, address?.province, address?.city).then((q) => {
       if (!alive) return;
       setQuote(q);
       // Choose a payment method that is actually available for this address.
@@ -51,9 +54,12 @@ export function CheckoutForm({ addresses, recipient }: { addresses: AddressData[
   const placeOrder = () =>
     start(async () => {
       setError(null);
-      const res = await placeOrderAction({ items, addressId, paymentMethod: method, note });
+      const res = await placeOrderAction({ items, addressId, paymentMethod: method, note, idempotencyKey });
       if (res.error) {
         setError(res.error);
+        setIdempotencyKey(crypto.randomUUID());
+        // Stock or prices changed since the quote: show the affected lines instead of leaving the old summary.
+        if (res.lines) setQuote((q) => (q ? { ...q, lines: res.lines! } : q));
         if (res.redirectTo) router.push(res.redirectTo);
         return;
       }

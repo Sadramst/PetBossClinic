@@ -39,6 +39,22 @@ if (selected.some((s) => s.id === 'unit' || s.id === 'e2e') && !process.env.DATA
   console.warn('! DATABASE_URL is not set: database integration and e2e tests will be skipped or fail.\n');
 }
 
+// The tests create and delete customers, orders and stock. Refuse to run against a real database:
+// the host is parsed, so "localhost" inside a query string or a look-alike domain does not pass.
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
+if (process.env.DATABASE_URL) {
+  let host = '';
+  try {
+    host = new URL(process.env.DATABASE_URL).hostname.toLowerCase();
+  } catch {
+    /* unparsable: treated as not local */
+  }
+  if (!LOCAL_HOSTS.has(host)) {
+    console.error('✗ DATABASE_URL does not point at this machine. test:all creates and deletes data; use a local PostgreSQL.');
+    process.exit(2);
+  }
+}
+
 const results = [];
 for (const step of selected) {
   console.log(`\n━━━ ${step.label} ━━━`);

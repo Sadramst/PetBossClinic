@@ -31,12 +31,21 @@ export default async function OrderPage({
 
   const order = await db.order.findFirst({
     where: { number: decodeURIComponent(number), customerId: customer.id },
-    include: { items: true, payments: { where: { status: 'PAID' }, select: { refId: true } } },
+    include: { items: true, payments: { select: { status: true, refId: true, authority: true, raw: true }, orderBy: { createdAt: 'desc' } } },
   });
   if (!order) notFound();
 
   const unpaidOnline = order.paymentMethod === 'ONLINE' && ['PENDING_PAYMENT', 'PAYMENT_FAILED'].includes(order.status);
-  const success = sp.payment === 'success' || sp.placed === '1';
+  // The banner (and clearing the cart) must reflect the real order, not just the URL: an old or edited
+  // link must not claim success for a cancelled or unpaid order.
+  const confirmed = !['PENDING_PAYMENT', 'PAYMENT_FAILED', 'CANCELLED'].includes(order.status);
+  const success = (sp.payment === 'success' || sp.placed === '1') && confirmed;
+  const verifying = sp.payment === 'pending' && order.status === 'PENDING_PAYMENT';
+  const paidRef = order.payments.find((p) => p.status === 'PAID')?.refId ?? null;
+  // A payment the bank could not confirm yet: the customer can re-check it (verification is idempotent and uses the stored amount).
+  const awaiting = order.payments.find(
+    (p) => p.status === 'INITIATED' && p.authority && typeof (p.raw as { transientVerifyAt?: string } | null)?.transientVerifyAt === 'string'
+  );
   const stepIndex = STEPS.indexOf(order.status as (typeof STEPS)[number]);
 
   return (
@@ -49,13 +58,27 @@ export default async function OrderPage({
       )}
       {success && (
         <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
-          سفارش شما با موفقیت ثبت شد{order.payments[0]?.refId ? ` · کد پیگیری پرداخت: ${order.payments[0].refId}` : ''}. همکاران ما
+          سفارش شما با موفقیت ثبت شد{paidRef ? ` · کد پیگیری پرداخت: ${paidRef}` : ''}. همکاران ما
           به‌زودی آن را آماده و ارسال می‌کنند.
         </div>
       )}
       {sp.payment === 'failed' && (
         <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
           پرداخت انجام نشد. اگر مبلغی از حساب شما کسر شده، طی ۷۲ ساعت به‌صورت خودکار بازمی‌گردد. می‌توانید دوباره پرداخت کنید.
+        </div>
+      )}
+      {verifying && (
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm leading-7 text-amber-200">
+          تأیید پرداخت شما با تأخیر انجام می‌شود. <b>لطفاً دوباره پرداخت نکنید.</b> اگر مبلغ از حساب شما کسر شده، سفارش تا دقایقی دیگر
+          تأیید می‌شود؛ در غیر این صورت با کلینیک تماس بگیرید تا پیگیری کنیم.
+          {awaiting?.authority && (
+            <a
+              href={`/api/payment/zarinpal/callback?Authority=${encodeURIComponent(awaiting.authority)}&Status=OK`}
+              className="btn btn-outline btn-sm mt-3 inline-flex"
+            >
+              بررسی دوباره وضعیت پرداخت
+            </a>
+          )}
         </div>
       )}
       {sp.payment === 'review' && (
@@ -80,7 +103,7 @@ export default async function OrderPage({
             ))}
           </ol>
         )}
-        {unpaidOnline && <RetryPayment orderNumber={order.number} />}
+        {unpaidOnline && !verifying && <RetryPayment orderNumber={order.number} />}
       </div>
 
       <div className="rounded-2xl border border-border bg-surface-card divide-y divide-border">

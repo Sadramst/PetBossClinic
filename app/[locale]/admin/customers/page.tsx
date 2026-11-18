@@ -15,7 +15,8 @@ export default async function AdminCustomersPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { locale } = await params;
-  await requireAdmin('VIEWER', locale);
+  // Customer phone numbers, spend and login history: not for view-only staff.
+  await requireAdmin('EDITOR', locale);
   const q = normalizeFa((await searchParams).q ?? '').slice(0, 50);
   const digits = toLatinDigits(q).replace(/\D/g, '');
 

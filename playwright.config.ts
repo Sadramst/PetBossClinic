@@ -1,4 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
+import { assertLocalDatabase } from './tests/helpers/local-db';
+
+// The specs create and delete customers, orders and stock: never run them against a real database.
+assertLocalDatabase();
 
 /**
  * End-to-end tests run against a real server and the real database.
@@ -38,7 +42,8 @@ export default defineConfig({
   webServer: {
     command: production ? `npx next start -p ${PORT}` : `npx next dev -p ${PORT}`,
     url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
+    // test:all (E2E_PROD) always starts its own server, so a stale or dev server on the port can never be tested by mistake.
+    reuseExistingServer: !process.env.CI && !process.env.E2E_PROD,
     timeout: 120000,
   },
 });

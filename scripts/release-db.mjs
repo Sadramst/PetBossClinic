@@ -100,6 +100,9 @@ try {
     const sql = readFileSync(new URL(`../prisma/migrations/${m.dir}/migration.sql`, import.meta.url), 'utf8');
     console.log(`[release-db] ${m.dir}: applying…`);
     await client.query('BEGIN');
+    // If a long-running transaction holds the table, fail the build fast (the live site keeps serving)
+    // instead of queueing behind it and blocking every read and write.
+    await client.query("SET LOCAL lock_timeout = '5s'");
     try {
       await client.query(sql);
       await client.query('COMMIT');

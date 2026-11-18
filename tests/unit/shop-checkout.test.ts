@@ -58,6 +58,12 @@ describe('shipping', () => {
     expect(shippingFor('اصفهان', SHIPPING.freeOver).fee).toBe(0)
     expect(codAllowed('تهران')).toBe(true)
     expect(codAllowed('البرز')).toBe(false)
+    // Tehran province is not enough: the courier serves the city (and close suburbs).
+    expect(shippingFor('تهران', 100_000, 'تهران').fee).toBe(SHIPPING.tehranFee)
+    expect(shippingFor('تهران', 100_000, 'شهر تهران').fee).toBe(SHIPPING.tehranFee)
+    expect(shippingFor('تهران', 100_000, 'پردیس').fee).toBe(SHIPPING.postFee)
+    expect(codAllowed('تهران', 'دماوند')).toBe(false)
+    expect(codAllowed('تهران', 'تهران')).toBe(true)
   })
 })
 
@@ -131,6 +137,29 @@ describe('ZarinPal client', () => {
 
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
     expect((await verifyPayment('A1', 1000)).ok).toBe(false)
+  })
+
+  it('tells "the bank said no" apart from "we could not reach the bank"', async () => {
+    vi.stubEnv('ZARINPAL_MERCHANT_ID', 'test-merchant')
+    const { verifyPayment } = await import('@/lib/payments/zarinpal')
+    const answer = (body: unknown) => vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: async () => body }))
+
+    // Definite refusals: the payment did not happen.
+    for (const code of [-50, -51, -52, -53, -54]) {
+      answer({ data: [], errors: { code, message: 'no' } })
+      expect(await verifyPayment('A1', 1000)).toMatchObject({ ok: false, transient: false })
+    }
+    // Everything else may be an outage on the bank's side: the customer might have paid.
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('timeout')))
+    expect(await verifyPayment('A1', 1000)).toMatchObject({ ok: false, transient: true })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ json: async () => { throw new SyntaxError('not json') } }))
+    expect(await verifyPayment('A1', 1000)).toMatchObject({ ok: false, transient: true })
+    answer({})
+    expect(await verifyPayment('A1', 1000)).toMatchObject({ ok: false, transient: true })
+    answer({ data: [], errors: { code: -9, message: 'validation' } })
+    expect(await verifyPayment('A1', 1000)).toMatchObject({ ok: false, transient: true })
+    answer({ data: { code: 100, ref_id: 7, card_pan: '6037**1234' } })
+    expect(await verifyPayment('A1', 1000)).toMatchObject({ ok: true, refId: '7' })
   })
 
   it('refuses to start a payment without a merchant id', async () => {
