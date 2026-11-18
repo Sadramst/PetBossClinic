@@ -210,7 +210,7 @@ export default async function ProductPage({ params }: { params: Params }) {
             </div>
           </div>
 
-          <div className="space-y-4 rounded-2xl border border-border bg-surface-card p-4 sm:p-5">
+          <div className="iran-buy-box space-y-4 rounded-2xl border border-border bg-surface-card p-4 sm:p-5">
             {/* 1. Price */}
             {product.price > 0 ? (
               <PriceTag price={product.price} compareAt={product.comparePrice} size="lg" className="[&_.text-gradient-gold]:font-black" />

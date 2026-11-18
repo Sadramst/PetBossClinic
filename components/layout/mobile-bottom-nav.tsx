@@ -50,7 +50,7 @@ export function MobileBottomNav({ phone }: { phone?: string }) {
   return (
     <nav
       aria-label="ناوبری پایین"
-      className="pb-safe fixed inset-x-0 bottom-0 z-50 flex h-[calc(var(--bottom-nav-h,4rem)+env(safe-area-inset-bottom,0px))] border-t border-border bg-surface/95 backdrop-blur lg:hidden print:hidden"
+      className="iran-mobile-nav pb-safe fixed inset-x-0 bottom-0 z-50 flex h-[calc(var(--bottom-nav-h,4rem)+env(safe-area-inset-bottom,0px))] border-t border-border bg-surface/95 backdrop-blur lg:hidden print:hidden"
     >
       <Link href="/" className={cls(tabs.home)} aria-current={current(tabs.home)}>
         <Icon active={tabs.home}>

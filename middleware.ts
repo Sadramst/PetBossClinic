@@ -15,6 +15,9 @@ const LEGACY_PREFIX = /^\/(en|fa)(?=\/|$)/;
 export default async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
+  // The dev server can re-enter middleware when proxying the internal locale rewrite.
+  if (process.env.NODE_ENV === 'development' && (pathname === '/fa' || pathname.startsWith('/fa/'))) return NextResponse.next();
+
   if (LEGACY_PREFIX.test(pathname)) {
     const target = new URL(request.url);
     target.pathname = pathname.replace(LEGACY_PREFIX, '') || '/';

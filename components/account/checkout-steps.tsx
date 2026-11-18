@@ -10,7 +10,7 @@ const STEPS: { label: string; href?: string }[] = [
 /** Progress indicator shared by the cart, checkout and order-placed pages. */
 export function CheckoutSteps({ current, className }: { current: 1 | 2 | 3; className?: string }) {
   return (
-    <nav aria-label="مراحل خرید" className={cn('print:hidden', className)}>
+    <nav aria-label="مراحل خرید" className={cn('iran-checkout-steps print:hidden', className)}>
       <ol className="mx-auto grid max-w-xl grid-cols-3">
         {STEPS.map((step, i) => {
           const n = i + 1;
