@@ -171,7 +171,7 @@ test.describe('club B: points and tiers', () => {
     await expect(rows.first()).toContainText(fa(cfg.signupBonus))
 
     // Visiting again, or logging in again, never pays it twice.
-    await page.reload()
+    await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('club-points')).toHaveText(fa(cfg.signupBonus))
     expect(await countKind(row.id, 'SIGNUP')).toBe(1)
   })

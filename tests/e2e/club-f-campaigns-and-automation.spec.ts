@@ -318,7 +318,7 @@ test.describe('customer club: campaigns, automations, outbox, carts, AI', () => 
       await page.waitForTimeout(1500)
       const current = await prisma.messageOutbox.findUniqueOrThrow({ where: { id: msg.id } })
       if (current.status !== 'QUEUED') break
-      await page.reload()
+      await page.reload({ waitUntil: 'domcontentloaded' })
     }
     const done = await prisma.messageOutbox.findUniqueOrThrow({ where: { id: msg.id } })
     if (!configured) {
@@ -444,7 +444,7 @@ test.describe('customer club: campaigns, automations, outbox, carts, AI', () => 
     expect((await prisma.cartSnapshot.findUniqueOrThrow({ where: { customerId: c.id } })).lastReminderAt).not.toBeNull()
 
     // A second click is refused by the one-marketing-SMS-a-day rule: still one message, one live code.
-    await page.reload()
+    await page.reload({ waitUntil: 'domcontentloaded' })
     await page.getByTestId('cart-row').filter({ hasText: c.firstName }).getByTestId('cart-remind').click()
     await page.waitForTimeout(2000)
     expect(await prisma.messageOutbox.count({ where: { customerId: c.id } })).toBe(1)

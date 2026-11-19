@@ -166,7 +166,7 @@ test.describe('club: services and owner profile', () => {
     expect(row.city).toBe('شیراز')
     expect(row.gender).toBe('FEMALE')
     expect(row.birthDate?.toISOString().slice(0, 10)).toBe('1992-07-15')
-    await page.reload()
+    await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.locator('input[name="city"]')).toHaveValue('شیراز')
     await expect(page.locator('input[name="birthDate"]')).toHaveValue('1992-07-15')
     await expect(page.locator('select[name="gender"]')).toHaveValue('FEMALE')
@@ -183,7 +183,7 @@ test.describe('club: services and owner profile', () => {
     await expect.poll(async () => (await prisma.customer.findUniqueOrThrow({ where: { id: c.id } })).marketingSmsConsent).toBe(true)
     const on = await prisma.customer.findUniqueOrThrow({ where: { id: c.id } })
     expect(on.marketingConsentAt).not.toBeNull()
-    await page.reload()
+    await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('pref-sms-consent')).toBeChecked()
 
     await expect(page.getByTestId('pref-sms-consent')).toBeEnabled()
@@ -191,7 +191,7 @@ test.describe('club: services and owner profile', () => {
     await expect.poll(async () => (await prisma.customer.findUniqueOrThrow({ where: { id: c.id } })).marketingSmsConsent).toBe(false)
     const off = await prisma.customer.findUniqueOrThrow({ where: { id: c.id } })
     expect(off.marketingConsentAt!.getTime()).toBeGreaterThanOrEqual(on.marketingConsentAt!.getTime())
-    await page.reload()
+    await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('pref-sms-consent')).not.toBeChecked()
   })
 

@@ -412,7 +412,7 @@ test.describe('marketing B: customer flow', () => {
     await applyInCart(page, coupon.code)
     await expect(page.getByTestId('coupon-applied')).toBeVisible()
 
-    await page.reload()
+    await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('coupon-applied')).toContainText(coupon.code)
     const cartTotal = (await page.getByTestId('cart-total').innerText()).trim()
     expect(cartTotal.length).toBeGreaterThan(0)
