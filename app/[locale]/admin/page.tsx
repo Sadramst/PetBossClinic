@@ -6,7 +6,10 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { EXPIRY_CRITICAL_DAYS, formatJalaliDate } from '@/lib/shop/expiry';
 import { ORDER_STATUS_LABEL, ORDER_STATUS_TONE } from '@/components/admin/order-status';
-import { LEAD_STATUS_FA, faNum, relativeAgeFa, tehranDayStart, toman } from '@/components/admin/format';
+import { LEAD_STATUS_FA, faNum, relativeAgeFa, roleAtLeast, tehranDayStart, toman } from '@/components/admin/format';
+import { getLoyaltyConfig } from '@/lib/club/config';
+import { getClubReport } from '@/lib/club/reports';
+import { outboxCounts } from '@/lib/club/messaging/outbox';
 
 export const dynamic = 'force-dynamic';
 
@@ -145,6 +148,13 @@ export default async function AdminDashboard({
     db.contactMessage.findMany({ orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, name: true, message: true, isRead: true } }),
   ]);
 
+  // Club KPIs: customer data, so staff only; a failure here never breaks the dashboard.
+  const club = roleAtLeast(session.role, 'EDITOR')
+    ? await Promise.all([getLoyaltyConfig().then((c) => getClubReport(c.pointValueToman)), outboxCounts()])
+        .then(([report, counts]) => ({ report, queued: counts.QUEUED }))
+        .catch(() => null)
+    : null;
+
   const oldestOpenLate = oldestOpen ? now.getTime() - oldestOpen.createdAt.getTime() > DAY : false;
 
   const quickLinks = [
@@ -255,6 +265,15 @@ export default async function AdminDashboard({
         />
         <Tile href="/admin/customers" icon={ICONS.users} value={faNum(newCustomers)} label="مشتری جدید" hint="در ۷ روز اخیر" />
       </section>
+
+      {club && (
+        <section aria-label="باشگاه مشتریان" className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4" data-testid="club-kpis">
+          <Tile href="/admin/club" icon={ICONS.users} value={faNum(club.report.members)} label="عضو باشگاه مشتریان" hint="مشتریان ثبت‌نام‌شده" />
+          <Tile href="/admin/customers" icon={ICONS.users} value={faNum(club.report.activeThisMonth)} label="فعال در ۳۰ روز اخیر" hint="خرید یا خدمت کلینیک" />
+          <Tile href="/admin/club" icon={ICONS.coin} value={faNum(club.report.pointsOutstanding)} label="امتیاز در گردش" hint={`بدهی باشگاه: ${toman(club.report.liabilityToman)}`} />
+          <Tile href="/admin/outbox" icon={ICONS.mail} value={faNum(club.queued)} label="پیامک در صف ارسال" hint="کمپین، یادآوری و پیام‌های دستی" urgent={club.queued > 0} />
+        </section>
+      )}
 
       <nav aria-label="دسترسی سریع" className="flex flex-wrap gap-2">
         {quickLinks.map((l) => (

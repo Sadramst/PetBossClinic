@@ -225,6 +225,12 @@ export function LoginForm({
               <Input name="email" type="email" inputMode="email" autoComplete="email" dir="ltr" className="text-start" placeholder="name@example.com" maxLength={120} />
             </Field>
             <PasswordField label="رمز عبور" name="password" autoComplete="new-password" hint={PASSWORD_HINT} />
+            <label className="flex cursor-pointer items-start gap-3 text-sm leading-7">
+              <input type="checkbox" name="marketingSmsConsent" data-testid="register-sms-consent" className="mt-1.5 size-4 shrink-0 accent-[var(--color-primary,#c9a24a)]" />
+              <span>
+                مایلم پیشنهادهای ویژه و یادآوری‌های حیوان خانگی‌ام را با پیامک دریافت کنم. <span className="text-xs text-muted-foreground">(اختیاری؛ هر زمان قابل لغو است)</span>
+              </span>
+            </label>
             <Button type="submit" variant="gold" size="lg" block loading={pending} loadingText="در حال ساخت حساب…" disabled={notReady}>
               ثبت‌نام و ورود
             </Button>

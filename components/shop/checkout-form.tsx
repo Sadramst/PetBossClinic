@@ -6,6 +6,7 @@ import { useCart } from '@/components/shop/cart-provider';
 import { placeOrderAction, quoteAction, type Quote } from '@/app/actions/checkout';
 import { AddressForm, formatAddress, type AddressData } from '@/components/account/address-form';
 import { formatPrice } from '@/lib/format/price';
+import { CouponBox, DiscountLines, useCouponCode } from '@/components/marketing/coupon-box';
 
 export function CheckoutForm({ addresses, recipient }: { addresses: AddressData[]; recipient: { name: string; phone: string } }) {
   const router = useRouter();
@@ -17,6 +18,7 @@ export function CheckoutForm({ addresses, recipient }: { addresses: AddressData[
   const [quote, setQuote] = useState<Quote | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const { code, setCode, codeReady, notice } = useCouponCode(quote);
   // One random key per checkout attempt: a double click, a retry after a slow response or a second tab
   // gets the first order back instead of creating another. Renewed only after a failure.
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
@@ -24,12 +26,12 @@ export function CheckoutForm({ addresses, recipient }: { addresses: AddressData[
   const address = addresses.find((a) => a.id === addressId);
   const items = lines.map(({ productId, quantity }) => ({ productId, quantity }));
   // Keyed on the province (not just the id): a just-saved address arrives a moment after its id.
-  const key = `${address?.province ?? ''}|${address?.city ?? ''}|${lines.map((l) => `${l.productId}:${l.quantity}`).join(',')}`;
+  const key = `${address?.province ?? ''}|${address?.city ?? ''}|${lines.map((l) => `${l.productId}:${l.quantity}`).join(',')}|${code}`;
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !codeReady) return;
     let alive = true;
-    quoteAction(items, address?.province, address?.city).then((q) => {
+    quoteAction(items, address?.province, address?.city, code || undefined).then((q) => {
       if (!alive) return;
       setQuote(q);
       // Choose a payment method that is actually available for this address.
@@ -40,7 +42,7 @@ export function CheckoutForm({ addresses, recipient }: { addresses: AddressData[
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, key]);
+  }, [ready, codeReady, key]);
 
   if (ready && lines.length === 0) {
     return (
@@ -54,7 +56,7 @@ export function CheckoutForm({ addresses, recipient }: { addresses: AddressData[
   const placeOrder = () =>
     start(async () => {
       setError(null);
-      const res = await placeOrderAction({ items, addressId, paymentMethod: method, note, idempotencyKey });
+      const res = await placeOrderAction({ items, addressId, paymentMethod: method, note, idempotencyKey, couponCode: code || undefined });
       if (res.error) {
         setError(res.error);
         setIdempotencyKey(crypto.randomUUID());
@@ -63,6 +65,7 @@ export function CheckoutForm({ addresses, recipient }: { addresses: AddressData[
         if (res.redirectTo) router.push(res.redirectTo);
         return;
       }
+      setCode(''); // the order holds the coupon now
       if (res.redirectTo?.startsWith('http')) {
         // Online payment: the cart is cleared after the bank confirms (order page).
         window.location.assign(res.redirectTo);
@@ -165,6 +168,7 @@ export function CheckoutForm({ addresses, recipient }: { addresses: AddressData[
             <dt className="text-muted-foreground">جمع کالاها</dt>
             <dd>{quote ? formatPrice(quote.subtotal, 'fa') : '…'}</dd>
           </div>
+          <DiscountLines quote={quote} />
           <div className="flex justify-between">
             <dt className="text-muted-foreground">ارسال {quote?.shippingMethod ? `(${quote.shippingMethod})` : ''}</dt>
             <dd>{quote?.shippingFee == null ? '—' : quote.shippingFee === 0 ? 'رایگان' : formatPrice(quote.shippingFee, 'fa')}</dd>
@@ -174,6 +178,7 @@ export function CheckoutForm({ addresses, recipient }: { addresses: AddressData[
             <dd className="text-gradient-gold">{quote ? formatPrice(quote.total, 'fa') : '…'}</dd>
           </div>
         </dl>
+        <CouponBox quote={quote} code={code} setCode={setCode} notice={notice} items={items} province={address?.province} city={address?.city} />
         {problems.length > 0 && (
           <p className="text-xs text-red-400">
             برخی اقلام مشکل دارند. <Link href="/cart" className="underline">ویرایش سبد</Link>

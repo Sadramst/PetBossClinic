@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test'
 
+// The welcome popup (8 s after load) would cover the page during long tests: these tests are not about it.
+test.beforeEach(async ({ context }) => {
+  await context.addInitScript(() => {
+    try { localStorage.setItem('pb_welcome_popup_v1', String(Date.now() + 365 * 86400000)) } catch {}
+  })
+})
+
+
 test.describe('Indexable shop pages', () => {
   test('category page lists products that link to product pages with Product schema', async ({ page }) => {
     await page.goto('/shop', { waitUntil: 'domcontentloaded' })

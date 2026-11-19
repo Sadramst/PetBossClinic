@@ -7,7 +7,9 @@ import { getSessionWithRole } from '@/lib/auth'
 import { logAdminChange } from '@/lib/audit'
 import crypto from 'crypto'
 import { allocateOrderStock, releaseOrderStock } from '@/lib/shop/orders'
+import { reinstateCouponForOrderId, releaseCouponForOrderId } from '@/lib/marketing/coupons'
 import { hashPassword, validatePassword } from '@/lib/customer/password'
+import { onOrderDelivered, onOrderUndelivered } from '@/lib/club/hooks'
 import { ORDER_STATUS_LABEL, canTransition } from '@/components/admin/order-status'
 
 export interface AdminOrderState {
@@ -65,6 +67,14 @@ export async function updateOrderAction(
   // Keep shelf stock in line with the order's life cycle (both helpers are idempotent).
   if (ALLOCATED.includes(input.status)) await allocateOrderStock(orderId)
   else await releaseOrderStock(orderId)
+  // A cancelled order gives its discount code use back.
+  if (input.status === 'CANCELLED') await releaseCouponForOrderId(orderId)
+  // Reopening a cancelled order keeps its discount, so its coupon use counts again.
+  else if (before.status === 'CANCELLED') await reinstateCouponForOrderId(orderId)
+
+  // Customer club: points and counters follow the DELIVERED state (hooks never throw).
+  if (input.status === 'DELIVERED' && before.status !== 'DELIVERED') await onOrderDelivered(orderId)
+  else if (before.status === 'DELIVERED' && input.status !== 'DELIVERED') await onOrderUndelivered(orderId)
 
   const after = await db.order.findUnique({ where: { id: orderId } })
   await logAdminChange({

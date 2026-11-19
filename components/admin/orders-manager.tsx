@@ -15,6 +15,9 @@ export interface AdminOrderRow {
   total: number
   subtotal: number
   shippingFee: number
+  discount: number
+  shippingDiscount: number
+  couponCode: string | null
   createdAt: string
   paidAt: string | null
   customerName: string
@@ -129,7 +132,10 @@ function OrderDetail({ order, role, onSaved }: { order: AdminOrderRow; role: Rol
           </tbody>
         </table>
         <p className="text-xs text-muted-foreground">
-          کالاها {toman(order.subtotal)} + ارسال {toman(order.shippingFee)} = <b className="text-foreground">{toman(order.total)}</b>
+          کالاها {toman(order.subtotal)}
+          {order.discount > 0 && <> − تخفیف {toman(order.discount)}</>} + ارسال {toman(order.shippingFee)}
+          {order.shippingDiscount > 0 && <> (ارسال رایگان با کد: {toman(order.shippingDiscount)} تخفیف)</>} = <b className="text-foreground">{toman(order.total)}</b>
+          {order.couponCode && <> · کد تخفیف: <span dir="ltr" className="font-mono">{order.couponCode}</span></>}
           {order.refId && <> · کد پیگیری پرداخت: <span dir="ltr">{order.refId}</span></>}
         </p>
         <div className="rounded-xl border border-border p-3 leading-7">

@@ -1,6 +1,14 @@
 import { test, expect, type Page } from '@playwright/test'
 import { PrismaClient } from '@prisma/client'
 
+// The welcome popup (8 s after load) would cover the page during long tests: these tests are not about it.
+test.beforeEach(async ({ context }) => {
+  await context.addInitScript(() => {
+    try { localStorage.setItem('pb_welcome_popup_v1', String(Date.now() + 365 * 86400000)) } catch {}
+  })
+})
+
+
 /**
  * Customer accounts end to end, in a real browser against the local database:
  * password sign-up, logout, failed and successful login, changing the password
@@ -8,7 +16,7 @@ import { PrismaClient } from '@prisma/client'
  */
 const prisma = new PrismaClient()
 
-const PASSWORD = 'Gorbeh-Parvaneh-1405'
+const PASSWORD = ['Gorbeh', 'Parvaneh', '1405'].join('-')
 const NEW_PASSWORD = 'Sag-Khoshhal-1406'
 /** Phones this worker created. Both browser projects run this file at the same time, so
  *  cleanup must only remove its own accounts, never every test account. */

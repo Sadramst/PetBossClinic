@@ -34,6 +34,7 @@ const ICON = {
   products: 'm21 8-9-5-9 5m18 0-9 5m9-5v8l-9 5m0-8L3 8m9 5v8M3 8v8l9 5',
   inventory: 'M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
   customers: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M15 3.13a4 4 0 0 1 0 7.75M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
+  marketing: 'M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1zm13.5-2.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12',
   posts: 'M4 5a1 1 0 0 1 1-1h11l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5zm4 5h8m-8 4h8m-8 4h5',
   home: 'm3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9z',
   menus: 'M4 6h16M4 12h16M4 18h10',
@@ -49,6 +50,8 @@ const ICON = {
   settings: 'M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M1 14h6m2-6h6m2 8h6',
   theme: 'M12 22a10 10 0 1 1 10-10c0 2.2-1.8 3-4 3h-2a2 2 0 0 0-1.5 3.3c.3.4.5.8.5 1.2 0 1.4-1.3 2.5-3 2.5zM7.5 11h.01M10.5 7h.01M15 7.5h.01',
   users: 'M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5l-8-3zm-3 10 2 2 4-4',
+  club: 'M12 3l2.7 5.6 6.3.9-4.5 4.3 1 6.2L12 17l-5.5 3 1-6.2L3 9.5l6.3-.9L12 3z',
+  cart: 'M3 4h2l2.4 11h10.2L20 7H6.2M9 20a1 1 0 1 0 0-.01M17 20a1 1 0 1 0 0-.01',
   audit: 'M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5m4-1v5l3 2',
 } as const
 
@@ -61,6 +64,18 @@ const SECTIONS: { label?: string; items: NavItem[] }[] = [
       { href: '/admin/products', label: 'محصولات', icon: ICON.products },
       { href: '/admin/inventory', label: 'موجودی و انقضا', icon: ICON.inventory },
       { href: '/admin/customers', label: 'مشتریان', icon: ICON.customers },
+      { href: '/admin/marketing', label: 'بازاریابی', icon: ICON.marketing, minRole: 'EDITOR' },
+    ],
+  },
+  {
+    label: 'باشگاه مشتریان',
+    items: [
+      { href: '/admin/club', label: 'باشگاه مشتریان', icon: ICON.club, minRole: 'EDITOR' },
+      { href: '/admin/segments', label: 'گروه‌های مشتریان', icon: ICON.customers, minRole: 'EDITOR' },
+      { href: '/admin/campaigns', label: 'کمپین‌های پیامکی', icon: ICON.marketing, minRole: 'EDITOR' },
+      { href: '/admin/automations', label: 'پیام‌های خودکار', icon: ICON.settings, minRole: 'EDITOR' },
+      { href: '/admin/outbox', label: 'صف پیامک', icon: ICON.messages, minRole: 'EDITOR' },
+      { href: '/admin/carts', label: 'سبد خرید مشتریان', icon: ICON.cart, minRole: 'EDITOR' },
     ],
   },
   {

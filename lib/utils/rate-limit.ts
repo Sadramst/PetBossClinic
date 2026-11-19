@@ -76,3 +76,11 @@ export function checkRateLimit(
     resetSeconds: Math.ceil(windowMs / 1000),
   };
 }
+
+/** True while `key` is still under `limit` in the window. Does not record anything. */
+export function isUnderRateLimit(key: string, limit: number, windowMs: number = 3600 * 1000): boolean {
+  const record = store.get(key);
+  if (!record) return true;
+  const windowStart = Date.now() - windowMs;
+  return record.timestamps.filter((t) => t > windowStart).length < limit;
+}

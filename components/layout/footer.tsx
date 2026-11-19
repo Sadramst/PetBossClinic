@@ -4,6 +4,7 @@ import { SocialIcon } from '@/components/shared/social-icon';
 import type { ClinicNAP } from '@/lib/clinic/nap';
 import type { NavItem } from '@/lib/navigation/menu';
 import { brandPath, categoryPath } from '@/lib/shop/urls';
+import { FooterCapture } from '@/components/marketing/footer-capture';
 
 interface LinkItem {
   id: string;
@@ -70,6 +71,7 @@ export function Footer({
   categories = [],
   brands = [],
   enamad = null,
+  welcomeLabel,
 }: {
   nap?: ClinicNAP;
   logoUrl?: string;
@@ -77,6 +79,8 @@ export function Footer({
   categories?: LinkItem[];
   brands?: LinkItem[];
   enamad?: { id: string; code: string } | null;
+  /** Short description of the welcome offer, e.g. «۱۰٪ تخفیف». */
+  welcomeLabel?: string;
 }) {
   const clinicLinks = [
     ...(navItems && navItems.length > 0
@@ -112,6 +116,8 @@ export function Footer({
           ))}
         </ul>
       </div>
+
+      <FooterCapture offerLabel={welcomeLabel} />
 
       <div className="container mx-auto grid max-w-7xl gap-x-8 gap-y-9 px-4 py-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr] lg:py-12">
         {/* Brand & contact */}

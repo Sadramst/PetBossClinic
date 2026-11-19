@@ -639,6 +639,9 @@ enum StockStatus {
 
 model Product {
   id                 String    @id @default(cuid())
+  /// Days a pack typically lasts: drives repeat-purchase reminders
+  consumeDays        Int?
+  forSpecies         PetSpecies[]
   categoryId         String
   brandId            String?
   sku                String?   @unique
@@ -806,10 +809,44 @@ model Customer {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  // Customer club / CRM
+  birthDate   DateTime?
+  gender      String?
+  city        String?
+  /// Admin-only CRM notes
+  notes       String?
+  tags        String[]
+  referralCode String?  @unique
+  referredById String?
+  pointsBalance Int     @default(0)
+  lifetimePoints Int    @default(0)
+  tier        String    @default("BRONZE")
+  marketingSmsConsent Boolean @default(false)
+  marketingConsentAt DateTime?
+  lastOrderAt DateTime?
+  ordersCount Int       @default(0)
+  totalSpent  Int       @default(0)
+  createdByAdmin Boolean @default(false)
+  source      String?
+
+  pets      Pet[]
+  visits    ServiceVisit[]
+  pointsTransactions PointsTransaction[]
+  rewardRedemptions  RewardRedemption[]
+  cartSnapshot CartSnapshot?
+  adminNotes AdminCustomerNote[]
+  outbox     MessageOutbox[]
+
   addresses Address[]
   orders    Order[]
+  coupons   Coupon[]
+  couponRedemptions CouponRedemption[]
+  groupMemberships  CustomerGroupMember[]
+  marketingContacts MarketingContact[]
 
   @@index([createdAt])
+  @@index([tier])
+  @@index([lastOrderAt])
 }
 
 /// One-time login code sent by SMS. Only a hash of the code is stored.
@@ -879,6 +916,10 @@ model Order {
   subtotal      Int
   shippingFee   Int
   discount      Int           @default(0)
+  /// Shipping fee waived by a free-shipping coupon (shippingFee is stored after this discount).
+  shippingDiscount Int        @default(0)
+  couponId      String?
+  couponCode    String?
   total         Int
   /// Address snapshot at order time (addresses can be edited/deleted later)
   shipName      String
@@ -900,8 +941,11 @@ model Order {
   customer Customer    @relation(fields: [customerId], references: [id])
   items    OrderItem[]
   payments Payment[]
+  coupon   Coupon?           @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  redemption CouponRedemption?
 
   @@index([customerId, createdAt])
+  @@index([couponId])
   @@index([status, createdAt])
 }
 
@@ -1305,10 +1349,11 @@ model PetOwner {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  pets      Pet[]
+  pets      LegacyPet[]
 }
 
-model Pet {
+/// Unused legacy table (physical name stays "Pet"); the customer club uses model Pet -> "ClubPet".
+model LegacyPet {
   id        String   @id @default(cuid())
   ownerId   String
   name      String
@@ -1327,6 +1372,7 @@ model Pet {
   vaccinations   VaccinationRecord[]
   
   @@index([ownerId])
+  @@map("Pet")
 }
 
 model MedicalRecord {
@@ -1340,7 +1386,7 @@ model MedicalRecord {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
-  pet         Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  pet         LegacyPet @relation(fields: [petId], references: [id], onDelete: Cascade)
   
   @@index([petId])
 }
@@ -1355,7 +1401,7 @@ model VaccinationRecord {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
-  pet         Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  pet         LegacyPet @relation(fields: [petId], references: [id], onDelete: Cascade)
   
   @@index([petId])
 }
@@ -1396,4 +1442,443 @@ model Media {
   folder    MediaFolder? @relation(fields: [folderId], references: [id])
 
   @@index([folderId])
+}
+
+
+// ─── Marketing: coupons, groups, leads ──────────────────────────────────────
+
+enum CouponType {
+  PERCENT
+  FIXED
+  FREE_SHIPPING
+}
+
+model Coupon {
+  id              String     @id @default(cuid())
+  /// UPPERCASE, characters A-Z 0-9 and "-"
+  code            String     @unique
+  title           String
+  description     String?
+  type            CouponType
+  /// Percent (1-100) or Toman, depending on type
+  value           Int        @default(0)
+  maxDiscount     Int?
+  minSubtotal     Int        @default(0)
+  startsAt        DateTime?
+  endsAt          DateTime?
+  isActive        Boolean    @default(true)
+  autoApply       Boolean    @default(false)
+  usageLimit      Int?
+  usedCount       Int        @default(0)
+  perCustomerLimit Int?      @default(1)
+  firstOrderOnly  Boolean    @default(false)
+  customerId      String?
+  groupId         String?
+  categoryIds     String[]
+  brandIds        String[]
+  productIds      String[]
+  /// manual | welcome | bulk
+  source          String     @default("manual")
+  batchId         String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  redemptions CouponRedemption[]
+  orders      Order[]
+  group       CustomerGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  customer    Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([isActive, endsAt])
+  @@index([batchId])
+  @@index([customerId])
+  @@index([groupId])
+}
+
+model CouponRedemption {
+  id         String   @id @default(cuid())
+  couponId   String
+  orderId    String   @unique
+  customerId String
+  /// Item discount + shipping discount
+  amount     Int
+  createdAt  DateTime @default(now())
+
+  coupon   Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([couponId, customerId])
+}
+
+model CustomerGroup {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  members CustomerGroupMember[]
+  coupons Coupon[]
+}
+
+model CustomerGroupMember {
+  groupId    String
+  customerId String
+  createdAt  DateTime @default(now())
+
+  group    CustomerGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  customer Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, customerId])
+  @@index([customerId])
+}
+
+model MarketingContact {
+  id              String    @id @default(cuid())
+  /// Lower-case
+  email           String?   @unique
+  /// Normalised 09xxxxxxxxx
+  phone           String?   @unique
+  name            String?
+  /// popup | footer | signup | checkout | admin
+  source          String
+  consentAt       DateTime
+  customerId      String?
+  welcomeCouponId String?
+  unsubscribedAt  DateTime?
+  createdAt       DateTime  @default(now())
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([customerId])
+}
+
+model MarketingConfig {
+  id                 String     @id @default("main")
+  popupEnabled       Boolean    @default(true)
+  popupTitle         String     @default("۱۰٪ تخفیف اولین خرید شما")
+  popupText          String     @default("شماره موبایل یا ایمیل خود را وارد کنید تا کد تخفیف شخصی‌تان همین حالا ساخته شود.")
+  popupDelaySeconds  Int        @default(8)
+  welcomeEnabled     Boolean    @default(true)
+  welcomeType        CouponType @default(PERCENT)
+  welcomeValue       Int        @default(10)
+  welcomeMaxDiscount Int?
+  welcomeMinSubtotal Int        @default(0)
+  welcomeValidDays   Int        @default(14)
+  bannerEnabled      Boolean    @default(false)
+  bannerText         String?
+  bannerLink         String?
+  bannerEndsAt       DateTime?
+  bannerCouponCode   String?
+  updatedAt          DateTime   @updatedAt
+}
+
+
+// ═══════════════════════════ Customer club ═══════════════════════════
+
+enum PetSpecies {
+  DOG
+  CAT
+  BIRD
+  RABBIT
+  FISH
+  REPTILE
+  RODENT
+  OTHER
+}
+
+enum PetSex {
+  MALE
+  FEMALE
+  UNKNOWN
+}
+
+enum PetRecordKind {
+  VACCINE
+  DEWORMING
+  CHECKUP
+  SURGERY
+  GROOMING
+  DENTAL
+  WEIGHT
+  TREATMENT
+  NOTE
+}
+
+enum PointsKind {
+  SIGNUP
+  FIRST_PET
+  PET_PROFILE
+  ORDER
+  SERVICE
+  REFERRAL_GIVEN
+  REFERRAL_JOINED
+  BIRTHDAY
+  REVIEW
+  REDEEM
+  ADJUST
+  EXPIRE
+  REVERSAL
+}
+
+enum MessageStatus {
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+  SKIPPED
+  CANCELLED
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  RUNNING
+  DONE
+  CANCELLED
+}
+
+model Pet {
+  id          String     @id @default(cuid())
+  customerId  String
+  name        String
+  species     PetSpecies
+  breed       String?
+  sex         PetSex     @default(UNKNOWN)
+  birthDate   DateTime?
+  adoptedAt   DateTime?
+  weightKg    Float?
+  neutered    Boolean?
+  color       String?
+  microchip   String?
+  photoUrl    String?
+  foodBrand   String?
+  foodProductId String?
+  allergies   String?
+  medicalNotes String?
+  isActive    Boolean    @default(true)
+  deceasedAt  DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  customer Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  records  PetRecord[]
+  visits   ServiceVisit[]
+
+  @@index([customerId])
+  @@map("ClubPet")
+}
+
+model PetRecord {
+  id           String        @id @default(cuid())
+  petId        String
+  kind         PetRecordKind
+  title        String
+  doneAt       DateTime
+  nextDueAt    DateTime?
+  valueNumber  Float?
+  notes        String?
+  /// customer | admin | visit
+  source       String        @default("customer")
+  visitId      String?
+  reminderSentAt DateTime?
+  createdAt    DateTime      @default(now())
+
+  pet Pet @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@index([petId, doneAt])
+  @@index([nextDueAt])
+}
+
+model ServiceVisit {
+  id          String   @id @default(cuid())
+  customerId  String
+  petId       String?
+  serviceId   String?
+  serviceName String
+  visitedAt   DateTime
+  amount      Int      @default(0)
+  doctor      String?
+  notes       String?
+  pointsAwarded Int    @default(0)
+  createdByAdminId String?
+  createdAt   DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  pet      Pet?     @relation(fields: [petId], references: [id], onDelete: SetNull)
+
+  @@index([customerId, visitedAt])
+  @@index([petId])
+}
+
+model PointsTransaction {
+  id           String     @id @default(cuid())
+  customerId   String
+  kind         PointsKind
+  points       Int
+  balanceAfter Int
+  refType      String?
+  refId        String?
+  note         String?
+  expiresAt    DateTime?
+  createdByAdminId String?
+  createdAt    DateTime   @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, kind, refId])
+  @@index([customerId, createdAt])
+}
+
+model LoyaltyConfig {
+  id                    String  @id @default("main")
+  enabled               Boolean @default(true)
+  pointsPerThousandToman Int    @default(1)
+  serviceMultiplier     Float   @default(1.5)
+  signupBonus           Int     @default(50)
+  firstPetBonus         Int     @default(30)
+  petProfileBonus       Int     @default(20)
+  reviewBonus           Int     @default(10)
+  birthdayBonus         Int     @default(100)
+  referralGiven         Int     @default(150)
+  referralJoined        Int     @default(100)
+  pointValueToman       Int     @default(100)
+  tiersJson             Json
+  pointsExpireMonths    Int?
+  updatedAt             DateTime @updatedAt
+}
+
+model Reward {
+  id                String     @id @default(cuid())
+  title             String
+  description       String?
+  pointsCost        Int
+  couponType        CouponType
+  couponValue       Int
+  couponMaxDiscount Int?
+  couponMinSubtotal Int        @default(0)
+  couponValidDays   Int        @default(30)
+  minTier           String?
+  stock             Int?
+  redeemedCount     Int        @default(0)
+  isActive          Boolean    @default(true)
+  sortOrder         Int        @default(0)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  redemptions RewardRedemption[]
+}
+
+model RewardRedemption {
+  id         String   @id @default(cuid())
+  rewardId   String
+  customerId String
+  couponId   String?
+  points     Int
+  createdAt  DateTime @default(now())
+
+  reward   Reward   @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, createdAt])
+}
+
+model Segment {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  rules       Json
+  isPinned    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaigns MessageCampaign[]
+}
+
+model MessageCampaign {
+  id             String         @id @default(cuid())
+  name           String
+  status         CampaignStatus @default(DRAFT)
+  segmentId      String?
+  rulesSnapshot  Json?
+  body           String
+  couponTemplate Json?
+  scheduledFor   DateTime?
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  recipientsCount Int           @default(0)
+  sentCount      Int            @default(0)
+  failedCount    Int            @default(0)
+  convertedCount Int            @default(0)
+  createdByAdminId String?
+  createdAt      DateTime       @default(now())
+
+  segment Segment?        @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  outbox  MessageOutbox[]
+
+  @@index([status, scheduledFor])
+}
+
+model MessageOutbox {
+  id           String        @id @default(cuid())
+  customerId   String?
+  phone        String
+  channel      String        @default("SMS")
+  kind         String
+  body         String
+  status       MessageStatus @default(QUEUED)
+  scheduledFor DateTime      @default(now())
+  sentAt       DateTime?
+  attempts     Int           @default(0)
+  error        String?
+  providerRef  String?
+  campaignId   String?
+  couponId     String?
+  dedupeKey    String?       @unique
+  createdAt    DateTime      @default(now())
+
+  customer Customer?        @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  campaign MessageCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([status, scheduledFor])
+  @@index([customerId, createdAt])
+  @@index([campaignId])
+}
+
+model AutomationRule {
+  id           String   @id @default(cuid())
+  kind         String   @unique
+  enabled      Boolean  @default(false)
+  params       Json
+  bodyTemplate String
+  couponTemplate Json?
+  updatedAt    DateTime @updatedAt
+}
+
+model CartSnapshot {
+  id         String   @id @default(cuid())
+  customerId String   @unique
+  items      Json
+  itemCount  Int      @default(0)
+  subtotal   Int      @default(0)
+  updatedAt  DateTime @updatedAt
+  lastReminderAt DateTime?
+  recoveredOrderId String?
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([updatedAt])
+}
+
+model AdminCustomerNote {
+  id         String   @id @default(cuid())
+  customerId String
+  adminId    String?
+  adminName  String?
+  body       String
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, createdAt])
 }

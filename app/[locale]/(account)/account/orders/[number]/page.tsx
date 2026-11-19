@@ -124,7 +124,17 @@ export default async function OrderPage({
         ))}
         <dl className="p-4 text-sm space-y-2">
           <Row label="جمع کالاها" value={formatPrice(order.subtotal, 'fa')} />
+          {order.discount > 0 && (
+            <div data-testid="discount-line">
+              <Row label={order.couponCode ? `تخفیف (کد ${order.couponCode})` : 'تخفیف'} value={`−${formatPrice(order.discount, 'fa')}`} />
+            </div>
+          )}
           <Row label="هزینه ارسال" value={order.shippingFee ? formatPrice(order.shippingFee, 'fa') : 'رایگان'} />
+          {order.shippingDiscount > 0 && (
+            <div data-testid="shipping-discount-line">
+              <Row label={order.couponCode ? `تخفیف ارسال (کد ${order.couponCode})` : 'تخفیف ارسال'} value={`−${formatPrice(order.shippingDiscount, 'fa')}`} />
+            </div>
+          )}
           <Row label="مبلغ کل" value={formatPrice(order.total, 'fa')} strong />
         </dl>
       </div>

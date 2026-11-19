@@ -13,6 +13,7 @@ import { toast } from '@/components/ui/toaster';
 import { formatPrice } from '@/lib/format/price';
 import { MAX_QTY_PER_LINE, type CartLine } from '@/lib/shop/cart-types';
 import { productPath } from '@/lib/shop/urls';
+import { CouponBox, DiscountLines, useCouponCode } from '@/components/marketing/coupon-box';
 
 const fa = (n: number) => n.toLocaleString('fa-IR');
 
@@ -73,12 +74,19 @@ export function CartView({
   const [quoteFailed, setQuoteFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
-  // Re-price from the server whenever the cart changes.
-  const key = lines.map((l) => `${l.productId}:${l.quantity}`).join(',');
+  const { code, setCode, codeReady, notice } = useCouponCode(quote);
+
+  // Re-price from the server whenever the cart (or the coupon) changes.
+  const key = `${lines.map((l) => `${l.productId}:${l.quantity}`).join(',')}|${code}`;
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !codeReady) return;
     let alive = true;
-    quoteAction(lines.map(({ productId, quantity }) => ({ productId, quantity })))
+    quoteAction(
+      lines.map(({ productId, quantity }) => ({ productId, quantity })),
+      undefined,
+      undefined,
+      code || undefined
+    )
       .then((q) => {
         if (!alive) return;
         setQuote(q);
@@ -89,7 +97,7 @@ export function CartView({
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, key, attempt]);
+  }, [ready, codeReady, key, attempt]);
 
   if (!ready) return <CartSkeleton />;
 
@@ -285,11 +293,30 @@ export function CartView({
             <dt className="text-muted-foreground">جمع کالاها ({fa(itemCount)} عدد)</dt>
             <dd className="font-extrabold">{quote ? formatPrice(quote.subtotal, 'fa') : <Skeleton className="h-4 w-24" />}</dd>
           </div>
+          <DiscountLines quote={quote} />
           <div className="flex items-center justify-between gap-3">
             <dt className="text-muted-foreground">هزینه ارسال</dt>
-            <dd className="text-xs text-muted-foreground">در مرحله بعد محاسبه می‌شود</dd>
+            <dd className="text-xs text-muted-foreground">
+              {quote?.coupon?.type === 'FREE_SHIPPING' ? 'رایگان با کد تخفیف' : 'در مرحله بعد محاسبه می‌شود'}
+            </dd>
           </div>
+          {quote && (
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-2.5">
+              <dt className="font-bold">مبلغ کالاها پس از تخفیف</dt>
+              <dd data-testid="cart-total" className="text-gradient-gold font-black">
+                {formatPrice(Math.max(0, quote.subtotal - quote.discount), 'fa')}
+              </dd>
+            </div>
+          )}
         </dl>
+
+        <CouponBox
+          quote={quote}
+          code={code}
+          setCode={setCode}
+          notice={notice}
+          items={lines.map(({ productId, quantity }) => ({ productId, quantity }))}
+        />
 
         {quote && freeOver > 0 && quote.subtotal > 0 && (
           <div className="space-y-2 rounded-xl bg-primary/10 px-3 py-2.5">
@@ -336,8 +363,8 @@ export function CartView({
       <div className="bottom-above-nav fixed inset-x-0 z-40 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur lg:hidden print:hidden">
         <div className="mx-auto flex max-w-xl items-center gap-3">
           <div className="min-w-0 shrink-0">
-            <p className="text-[11px] text-muted-foreground">جمع کالاها</p>
-            <p className="text-gradient-gold text-sm font-black">{quote ? formatPrice(quote.subtotal, 'fa') : '…'}</p>
+            <p className="text-[11px] text-muted-foreground">{quote && quote.discount > 0 ? 'پس از تخفیف' : 'جمع کالاها'}</p>
+            <p className="text-gradient-gold text-sm font-black">{quote ? formatPrice(Math.max(0, quote.subtotal - quote.discount), 'fa') : '…'}</p>
           </div>
           <div className="min-w-0 flex-1">{cta('btn-block')}</div>
         </div>

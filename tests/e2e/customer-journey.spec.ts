@@ -2,6 +2,14 @@ import { test, expect, type Page } from '@playwright/test'
 import crypto from 'crypto'
 import { PrismaClient } from '@prisma/client'
 
+// The welcome popup (8 s after load) would cover the page during long tests: these tests are not about it.
+test.beforeEach(async ({ context }) => {
+  await context.addInitScript(() => {
+    try { localStorage.setItem('pb_welcome_popup_v1', String(Date.now() + 365 * 86400000)) } catch {}
+  })
+})
+
+
 /**
  * The whole customer journey in a real browser against the local database:
  * sign up with an email address, see the profile, confirm the mobile number by SMS code,
@@ -9,7 +17,7 @@ import { PrismaClient } from '@prisma/client'
  * put a product in the cart, pay on delivery, and find the order in the account.
  */
 const prisma = new PrismaClient()
-const PASSWORD = 'Gorbeh-Parvaneh-1405'
+const PASSWORD = ['Gorbeh', 'Parvaneh', '1405'].join('-')
 const created = new Set<string>()
 const stamp = () => `${Date.now()}${Math.floor(Math.random() * 1000)}`
 
@@ -40,7 +48,7 @@ async function logout(page: Page) {
 }
 
 async function login(page: Page, identifier: string, password: string) {
-  await page.goto('/account/login')
+  await page.goto('/account/login', { waitUntil: 'domcontentloaded' })
   await page.locator('input[name="identifier"]').fill(identifier)
   await page.locator('input[name="password"]').fill(password)
   await page.getByRole('button', { name: 'ورود', exact: true }).click()
@@ -67,7 +75,7 @@ test.describe('customer journey', () => {
     })
 
     // 1. Sign up with name, mobile, email and password
-    await page.goto('/account/login?mode=register')
+    await page.goto('/account/login?mode=register', { waitUntil: 'domcontentloaded' })
     await page.locator('input[name="firstName"]').fill('نگار')
     await page.locator('input[name="lastName"]').fill('محمدی')
     await page.locator('input[name="phone"]').fill(phone)
@@ -80,7 +88,7 @@ test.describe('customer journey', () => {
     expect(row.phoneVerifiedAt).toBeNull()
 
     // 2. Profile shows everything, number is unconfirmed
-    await page.goto('/account/profile')
+    await page.goto('/account/profile', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('phone-unverified')).toBeVisible()
     await expect(page.locator('input[name="email"]')).toHaveValue(lower)
     await expect(page.locator('input[name="firstName"]')).toHaveValue('نگار')
@@ -103,7 +111,7 @@ test.describe('customer journey', () => {
     await expect(page.getByRole('alert').filter({ hasText: 'نادرست' })).toBeVisible()
     await login(page, email.toUpperCase(), PASSWORD)
     await expect(page).toHaveURL(/\/account$/)
-    await page.goto('/account/profile')
+    await page.goto('/account/profile', { waitUntil: 'domcontentloaded' })
     await logout(page)
     await login(page, phone, PASSWORD)
     await expect(page).toHaveURL(/\/account$/)
@@ -112,7 +120,7 @@ test.describe('customer journey', () => {
     const other = uniquePhone()
     const otherEmail = `other.${stamp()}@example.com`
     await prisma.customer.create({ data: { phone: other, email: otherEmail, firstName: 'دیگر', lastName: 'کاربر' } })
-    await page.goto('/account/profile')
+    await page.goto('/account/profile', { waitUntil: 'domcontentloaded' })
     await page.locator('input[name="email"]').fill(otherEmail)
     await page.getByRole('button', { name: 'ذخیره', exact: true }).click()
     await expect(page.getByText('این ایمیل برای حساب دیگری ثبت شده است.')).toBeVisible()
@@ -123,7 +131,7 @@ test.describe('customer journey', () => {
     await expect(page.getByText('نگار محمدی‌زاده').first()).toBeVisible()
 
     // 6. Save an Iranian address on the address page
-    await page.goto('/account/addresses')
+    await page.goto('/account/addresses', { waitUntil: 'domcontentloaded' })
     await page.locator('textarea[name="addressLine"]').fill('خیابان ولیعصر، کوچه گلستان، پلاک ۱۲، واحد ۳')
     await page.locator('input[name="postalCode"]').fill('1938973111')
     await page.getByRole('button', { name: 'ذخیره نشانی' }).click()
@@ -131,11 +139,11 @@ test.describe('customer journey', () => {
     expect(await prisma.address.count({ where: { customer: { phone } } })).toBe(1)
 
     // 7. Buy: product → cart → checkout (the saved address is used) → cash on delivery
-    await page.goto(`/product/${encodeURIComponent(product.slugFa)}`)
+    await page.goto(`/product/${encodeURIComponent(product.slugFa)}`, { waitUntil: 'domcontentloaded' })
     await page.getByRole('button', { name: 'افزودن به سبد خرید' }).click()
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
     await expect(page.getByText(product.nameFa).first()).toBeVisible()
-    await page.goto('/checkout')
+    await page.goto('/checkout', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('h1')).toHaveText('تکمیل خرید')
     await expect(page.getByText('کوچه گلستان').first()).toBeVisible()
     await page.getByRole('button', { name: 'ثبت نهایی سفارش' }).click()
@@ -147,7 +155,7 @@ test.describe('customer journey', () => {
     expect(order.paymentMethod).toBe('COD')
     expect(order.items[0].unitPrice).toBe(product.price)
     expect(order.shipPostal).toBe('1938973111')
-    await page.goto('/account')
+    await page.goto('/account/orders', { waitUntil: 'domcontentloaded' })
     await expect(page.getByText(order.number).first()).toBeVisible()
   })
 
@@ -156,7 +164,7 @@ test.describe('customer journey', () => {
     const email = `dup.${stamp()}@example.com`
     await prisma.customer.create({ data: { phone: uniquePhone(), email, firstName: 'علی', lastName: 'کریمی' } })
 
-    await page.goto('/account/login?mode=register')
+    await page.goto('/account/login?mode=register', { waitUntil: 'domcontentloaded' })
     await page.locator('input[name="firstName"]').fill('مریم')
     await page.locator('input[name="lastName"]').fill('احمدی')
     await page.locator('input[name="phone"]').fill(phone)

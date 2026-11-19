@@ -1,6 +1,14 @@
 import { test, expect } from '@playwright/test'
 import { PrismaClient } from '@prisma/client'
 
+// The welcome popup (8 s after load) would cover the page during long tests: these tests are not about it.
+test.beforeEach(async ({ context }) => {
+  await context.addInitScript(() => {
+    try { localStorage.setItem('pb_welcome_popup_v1', String(Date.now() + 365 * 86400000)) } catch {}
+  })
+})
+
+
 const prisma = new PrismaClient()
 
 test.describe('blog, feeds and launch fallbacks', () => {
