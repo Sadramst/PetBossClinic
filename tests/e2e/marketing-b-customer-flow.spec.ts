@@ -70,7 +70,7 @@ async function pickProduct() {
 }
 
 async function register(page: Page, phone: string, email: string, first = 'سارا') {
-  await page.goto('/account/login?mode=register')
+  await page.goto('/account/login?mode=register', { waitUntil: 'domcontentloaded' })
   await page.locator('input[name="firstName"]').fill(first)
   await page.locator('input[name="lastName"]').fill('آزمون')
   await page.locator('input[name="phone"]').fill(phone)
@@ -92,9 +92,9 @@ async function welcomeCouponOf(phone: string) {
 }
 
 async function addToCart(page: Page, product: { slugFa: string; nameFa: string }) {
-  await page.goto(`/product/${encodeURIComponent(product.slugFa)}`)
+  await page.goto(`/product/${encodeURIComponent(product.slugFa)}`, { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: 'افزودن به سبد خرید' }).click()
-  await page.goto('/cart')
+  await page.goto('/cart', { waitUntil: 'domcontentloaded' })
   await expect(page.getByText(product.nameFa).first()).toBeVisible()
 }
 
@@ -104,7 +104,7 @@ async function applyInCart(page: Page, code: string) {
 }
 
 async function saveAddress(page: Page, phone: string) {
-  await page.goto('/checkout')
+  await page.goto('/checkout', { waitUntil: 'domcontentloaded' })
   await expect(page.locator('h1')).toHaveText('تکمیل خرید')
   await page.locator('textarea[name="addressLine"]').fill('خیابان شریعتی، کوچه آزمون بازاریابی، پلاک ۷')
   await page.locator('input[name="postalCode"]').fill('1938973111')
@@ -202,12 +202,12 @@ test.describe('marketing B: customer flow', () => {
     expect(coupon.code).toMatch(/^WELCOME-/)
     expect(await prisma.marketingContact.count({ where: { phone } })).toBe(1)
 
-    await page.goto('/account')
+    await page.goto('/account', { waitUntil: 'domcontentloaded' })
     const banner = page.getByTestId('welcome-banner')
     await expect(banner).toBeVisible()
     await expect(banner).toContainText(coupon.code)
 
-    await page.goto('/account/coupons')
+    await page.goto('/account/coupons', { waitUntil: 'domcontentloaded' })
     const list = page.getByTestId('my-coupons-list')
     await expect(list).toBeVisible()
     await expect(list.getByText(coupon.code)).toBeVisible()
@@ -262,9 +262,9 @@ test.describe('marketing B: customer flow', () => {
     await saveAddress(page, phone)
     await placeOrder(page)
 
-    await page.goto('/account')
+    await page.goto('/account', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('welcome-banner')).toHaveCount(0)
-    await page.goto('/account/coupons')
+    await page.goto('/account/coupons', { waitUntil: 'domcontentloaded' })
     const list = page.getByTestId('my-coupons-list')
     await expect(list.getByText(coupon.code)).toBeVisible()
     await expect(list.getByText('استفاده شده')).toBeVisible()
@@ -293,7 +293,7 @@ test.describe('marketing B: customer flow', () => {
 
     // A stale code left in the browser is dropped by the server-side quote at checkout.
     await page.evaluate((c) => localStorage.setItem('pb_coupon_v1', c), coupon.code)
-    await page.goto('/checkout')
+    await page.goto('/checkout', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('h1')).toHaveText('تکمیل خرید')
     await expect(page.getByTestId('discount-line')).toHaveCount(0)
     await placeOrder(page)
@@ -347,7 +347,7 @@ test.describe('marketing B: customer flow', () => {
     await applyInCart(page, normal.code)
     await expect(page.getByTestId('coupon-applied')).toContainText(normal.code)
     await expect(page.getByTestId('discount-line')).toBeVisible()
-    await page.goto('/checkout')
+    await page.goto('/checkout', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('coupon-applied')).toContainText(normal.code)
     await placeOrder(page)
 
@@ -372,7 +372,7 @@ test.describe('marketing B: customer flow', () => {
     await expect(page.getByText(/وارد حساب شوید/).first()).toBeVisible()
 
     await signIn(context, baseURL, customer.id)
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
     await applyInCart(page, coupon.code)
     await expect(page.getByTestId('coupon-applied')).toContainText(coupon.code)
     await expect(page.getByTestId('discount-line')).toBeVisible()
@@ -440,7 +440,7 @@ test.describe('marketing B: customer flow', () => {
     await expect(page.getByRole('alert').filter({ hasText: 'برای حساب شما صادر نشده' })).toBeVisible()
     await expect(page.getByTestId('coupon-applied')).toHaveCount(0)
 
-    await page.goto('/account/coupons')
+    await page.goto('/account/coupons', { waitUntil: 'domcontentloaded' })
     await expect(page.getByText(coupon.code)).toHaveCount(0)
     expect(await prisma.couponRedemption.count({ where: { couponId: coupon.id } })).toBe(0)
     expect((await prisma.coupon.findUniqueOrThrow({ where: { id: coupon.id } })).usedCount).toBe(0)

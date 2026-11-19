@@ -90,7 +90,7 @@ async function hydrated(page: Page, testid: string) {
 }
 
 async function open360(page: Page, customerId: string) {
-  await page.goto(`/admin/customers/${customerId}`)
+  await page.goto(`/admin/customers/${customerId}`, { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('customer-360')).toBeVisible()
   await hydrated(page, 'customer-360')
 }
@@ -226,7 +226,7 @@ test.describe('customer club: admin CRM', () => {
     await makePet(b.id, `میمی${TAG}`, 'CAT')
     await makePet(c.id, `بتی${TAG}`, 'CAT')
 
-    await page.goto('/admin/customers')
+    await page.goto('/admin/customers', { waitUntil: 'domcontentloaded' })
     await hydrated(page, 'customers-search')
     const search = page.getByTestId('customers-search')
 
@@ -278,7 +278,7 @@ test.describe('customer club: admin CRM', () => {
     await expect(rows.first()).toContainText(`${flag}-a`)
 
     // Sorting by points: the header link toggles the direction.
-    await page.goto(`/admin/customers?q=${flag}`)
+    await page.goto(`/admin/customers?q=${flag}`, { waitUntil: 'domcontentloaded' })
     await hydrated(page, 'customers-search')
     await page.getByTestId('customers-table').getByRole('link', { name: 'امتیاز' }).click()
     await expect(page).toHaveURL(/sort=points&dir=desc|dir=desc&sort=points/)
@@ -298,7 +298,7 @@ test.describe('customer club: admin CRM', () => {
         marketingSmsConsent: false,
       })),
     })
-    await page.goto(`/admin/customers?q=${bulk}&sort=points&dir=desc`)
+    await page.goto(`/admin/customers?q=${bulk}&sort=points&dir=desc`, { waitUntil: 'domcontentloaded' })
     await expect(rows).toHaveCount(25)
     await expect(page.getByText('۲۷ مشتری')).toBeVisible()
     await expect(rows.first()).toContainText(`${bulk}-26`)
@@ -316,7 +316,7 @@ test.describe('customer club: admin CRM', () => {
     const phone = uniquePhone()
     const email = `e2e.${TAG}.${++seq}@example.com`
 
-    await page.goto('/admin/customers')
+    await page.goto('/admin/customers', { waitUntil: 'domcontentloaded' })
     await hydrated(page, 'customer-create-toggle')
     await page.getByTestId('customer-create-toggle').click()
     const form = page.getByTestId('customer-create-form')
@@ -348,7 +348,7 @@ test.describe('customer club: admin CRM', () => {
     await expect.poll(() => auditCount(admin.id, 'CUSTOMER', 'CREATE', row.id)).toBe(1)
 
     // The same phone is refused, then the same email under another phone.
-    await page.goto('/admin/customers')
+    await page.goto('/admin/customers', { waitUntil: 'domcontentloaded' })
     await hydrated(page, 'customer-create-toggle')
     await page.getByTestId('customer-create-toggle').click()
     const again = page.getByTestId('customer-create-form')
@@ -657,7 +657,7 @@ test.describe('customer club: admin CRM', () => {
     const evil = await makeCustomer({ firstName: "=HYPERLINK(\"http://x.test\")", lastName: csvTag, city: '+SUM(1)', tags: ['@cmd'] })
     await makeCustomer({ firstName: '-2+3', lastName: csvTag })
 
-    await page.goto(`/admin/customers?q=${csvTag}`)
+    await page.goto(`/admin/customers?q=${csvTag}`, { waitUntil: 'domcontentloaded' })
     await hydrated(page, 'customers-export')
     await expect(page.getByTestId('customer-row')).toHaveCount(2)
     // Editors manage customers but cannot reset passwords or block.
@@ -686,7 +686,7 @@ test.describe('customer club: admin CRM', () => {
 
     // An admin sees the extra controls on the same rows.
     await signIn(context, baseURL, 'ADMIN')
-    await page.goto(`/admin/customers?q=${csvTag}`)
+    await page.goto(`/admin/customers?q=${csvTag}`, { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('button', { name: 'رمز موقت' }).first()).toBeVisible()
 
     // A viewer cannot open any of the club admin pages.
@@ -695,7 +695,7 @@ test.describe('customer club: admin CRM', () => {
       await page.goto(url)
       await expect(page).not.toHaveURL(/\/admin\/(customers|club|segments)/)
     }
-    await page.goto('/admin/customers')
+    await page.goto('/admin/customers', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('customers-table')).toHaveCount(0)
   })
 
@@ -709,7 +709,7 @@ test.describe('customer club: admin CRM', () => {
 
     await withLoyaltyLock(async () => {
       // Report: the numbers are internally consistent and include the two members just created.
-      await page.goto('/admin/club')
+      await page.goto('/admin/club', { waitUntil: 'domcontentloaded' })
       await expect(page.getByRole('heading', { level: 1, name: 'باشگاه مشتریان' })).toBeVisible()
       await hydrated(page, 'club-report')
       const members = toNumber((await page.getByTestId('rep-members').textContent()) ?? '')
@@ -730,7 +730,7 @@ test.describe('customer club: admin CRM', () => {
       // An admin raises the earn rate; a clinic visit then earns on the new rate.
       const admin = await signIn(context, baseURL, 'ADMIN')
       adminId = admin.id
-      await page.goto('/admin/club')
+      await page.goto('/admin/club', { waitUntil: 'domcontentloaded' })
       await hydrated(page, 'club-report')
       await openTab(page, 'تنظیمات امتیاز و سطح‌ها')
       const newRate = cfgRow.pointsPerThousandToman === 3 ? 4 : 3
@@ -755,7 +755,7 @@ test.describe('customer club: admin CRM', () => {
     })
 
     // Rewards: create, edit, delete (admin session is still active).
-    await page.goto('/admin/club')
+    await page.goto('/admin/club', { waitUntil: 'domcontentloaded' })
     await hydrated(page, 'club-report')
     await openTab(page, 'جوایز')
     await page.getByTestId('reward-new').click()
@@ -809,7 +809,7 @@ test.describe('customer club: admin CRM', () => {
     await makePet(catOwner.id, `میمی${TAG}`, 'CAT')
     const name = `گروه آزمون ${TAG}`
 
-    await page.goto('/admin/segments')
+    await page.goto('/admin/segments', { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('heading', { level: 1, name: 'گروه‌های مشتریان' })).toBeVisible()
     await hydrated(page, 'segment-new')
     await page.getByTestId('segment-new').click()

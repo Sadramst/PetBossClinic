@@ -55,7 +55,7 @@ async function silencePopup(page: Page) {
 }
 
 async function openPopup(page: Page) {
-  await page.goto('/')
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('welcome-popup')).toBeVisible({ timeout: (popupDelay + 20) * 1000 })
 }
 
@@ -100,7 +100,7 @@ test.describe('lead capture and welcome code', () => {
     await page.reload()
     await page.waitForTimeout(Math.min(popupDelay + 3, 15) * 1000)
     await expect(page.getByTestId('welcome-popup')).toHaveCount(0)
-    await page.goto('/shop')
+    await page.goto('/shop', { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(1500)
     await expect(page.getByTestId('welcome-popup')).toHaveCount(0)
   })
@@ -202,7 +202,7 @@ test.describe('lead capture and welcome code', () => {
     await ownIp(context)
     const phone = uniquePhone()
 
-    await page.goto('/')
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
     await page.getByTestId('footer-capture-input').fill(phone)
     await page.getByTestId('footer-capture-submit').click()
     const first = page.getByTestId('welcome-code')
@@ -215,7 +215,7 @@ test.describe('lead capture and welcome code', () => {
       await ownIp(ctx2)
       const p2 = await ctx2.newPage()
       await silencePopup(p2)
-      await p2.goto('/')
+      await p2.goto('/', { waitUntil: 'domcontentloaded' })
       await p2.getByTestId('footer-capture-input').fill(toFa(phone))
       await p2.getByTestId('footer-capture-submit').click()
       // The existing code is NOT shown to an anonymous submitter; they are pointed to their account instead.
@@ -237,7 +237,7 @@ test.describe('lead capture and welcome code', () => {
     await ownIp(context)
     const email = uniqueEmail()
 
-    await page.goto('/')
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
     await page.getByTestId('footer-capture-input').fill(email)
     await page.getByTestId('footer-capture-submit').click()
     const el = page.getByTestId('welcome-code')
@@ -252,7 +252,7 @@ test.describe('lead capture and welcome code', () => {
       await ownIp(ctx2)
       const p2 = await ctx2.newPage()
       await silencePopup(p2)
-      await p2.goto('/')
+      await p2.goto('/', { waitUntil: 'domcontentloaded' })
       await p2.getByTestId('footer-capture-input').fill(email.toUpperCase())
       await p2.getByTestId('footer-capture-submit').click()
       // The existing code is NOT shown to an anonymous submitter; they are pointed to their account instead.
@@ -269,7 +269,7 @@ test.describe('lead capture and welcome code', () => {
     await silencePopup(page)
     await ownIp(context)
     await page.setViewportSize({ width: 360, height: 740 })
-    await page.goto('/')
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
     const input = page.getByTestId('footer-capture-input')
     await input.scrollIntoViewIfNeeded()
 
@@ -291,13 +291,13 @@ test.describe('lead capture and welcome code', () => {
 
   test('A08 the popup is never shown on /checkout, /cart or the admin area', async ({ page, context }) => {
     await ownIp(context)
-    await page.goto('/checkout')
+    await page.goto('/checkout', { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout((popupDelay + 3) * 1000)
     await expect(page.getByTestId('welcome-popup')).toHaveCount(0)
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(2000)
     await expect(page.getByTestId('welcome-popup')).toHaveCount(0)
-    await page.goto('/admin')
+    await page.goto('/admin', { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(2000)
     await expect(page.getByTestId('welcome-popup')).toHaveCount(0)
     await expect(page.getByTestId('promo-banner')).toHaveCount(0)
@@ -349,7 +349,7 @@ test.describe('campaign config driven storefront (changes the shared config row,
         where: { id: 'main' },
         data: { bannerEnabled: true, bannerText: text, bannerLink: '/shop', bannerEndsAt: new Date(Date.now() + 2 * 86_400_000), bannerCouponCode: null },
       })
-      await page.goto('/shop')
+      await page.goto('/shop', { waitUntil: 'domcontentloaded' })
       const banner = page.getByTestId('promo-banner')
       await expect(banner).toBeVisible()
       await expect(banner).toContainText(text)
@@ -366,7 +366,7 @@ test.describe('campaign config driven storefront (changes the shared config row,
       try {
         const p2 = await ctx2.newPage()
         await silencePopup(p2)
-        await p2.goto('/shop')
+        await p2.goto('/shop', { waitUntil: 'domcontentloaded' })
         await expect(p2.getByTestId('promo-banner')).toContainText(text)
       } finally {
         await ctx2.close()
@@ -378,7 +378,7 @@ test.describe('campaign config driven storefront (changes the shared config row,
       try {
         const p3 = await ctx3.newPage()
         await silencePopup(p3)
-        await p3.goto('/shop')
+        await p3.goto('/shop', { waitUntil: 'domcontentloaded' })
         await expect(p3.getByTestId('promo-banner')).toHaveCount(0)
         await prisma.marketingConfig.update({ where: { id: 'main' }, data: { bannerEndsAt: null, bannerEnabled: false } })
         await p3.reload()
@@ -397,7 +397,7 @@ test.describe('campaign config driven storefront (changes the shared config row,
     await ownIp(context)
     try {
       await prisma.marketingConfig.update({ where: { id: 'main' }, data: { popupEnabled: false } })
-      await page.goto('/shop')
+      await page.goto('/shop', { waitUntil: 'domcontentloaded' })
       await expect(page.locator('h1').first()).toBeVisible()
       await page.waitForTimeout(Math.min(popupDelay + 3, 15) * 1000)
       await expect(page.getByTestId('welcome-popup')).toHaveCount(0)

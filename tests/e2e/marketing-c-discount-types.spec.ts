@@ -130,7 +130,7 @@ test.describe('marketing C: discount types in cart and checkout', () => {
     const [p] = await pool()
     const c = await mkCoupon({ type: 'PERCENT', value: 10, title: `ده درصد ${stamp()}` })
     await seedCart(page, [{ p, qty: 2 }])
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
     const subtotal = p.price * 2
     const off = Math.floor((subtotal * 10) / 100)
 
@@ -148,7 +148,7 @@ test.describe('marketing C: discount types in cart and checkout', () => {
     const capped = await mkCoupon({ type: 'PERCENT', value: 50, maxDiscount: 30_000 })
     const fixed = await mkCoupon({ type: 'FIXED', value: 25_000 })
     await seedCart(page, [{ p, qty: 1 }])
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
 
     await applyCode(page, capped.code)
     await expect(page.getByTestId('discount-line')).toContainText(fmt(30_000)) // 50% would be far more
@@ -168,7 +168,7 @@ test.describe('marketing C: discount types in cart and checkout', () => {
     const [p] = await pool()
     const c = await mkCoupon({ type: 'FIXED', value: p.price + 500_000 })
     await seedCart(page, [{ p, qty: 1 }])
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
     await applyCode(page, c.code)
     await expect(page.getByTestId('coupon-applied')).toBeVisible()
     // The saving is capped at the cart value, so the goods cost nothing (price 0 renders as «تماس بگیرید»).
@@ -183,7 +183,7 @@ test.describe('marketing C: discount types in cart and checkout', () => {
     const c = await mkCoupon({ type: 'FREE_SHIPPING' })
     await signIn(context, baseURL, customer.id)
     await seedCart(page, [{ p, qty: 1 }])
-    await page.goto('/checkout')
+    await page.goto('/checkout', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('h1')).toHaveText('تکمیل خرید')
 
     // Before the code: shipping is charged by post and added to the total.
@@ -207,7 +207,7 @@ test.describe('marketing C: discount types in cart and checkout', () => {
     const min = p.price * 2
     const c = await mkCoupon({ type: 'FIXED', value: 10_000, minSubtotal: min })
     await seedCart(page, [{ p, qty: 1 }])
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
 
     await applyCode(page, c.code)
     await expect(page.locator('#coupon-error')).toContainText('حداقل مبلغ خرید برای این کد')
@@ -238,7 +238,7 @@ test.describe('marketing C: discount types in cart and checkout', () => {
     const future = await mkCoupon({ type: 'PERCENT', value: 20, startsAt: new Date(now + 5 * 86_400_000) })
     const off = await mkCoupon({ type: 'PERCENT', value: 20, isActive: false })
     await seedCart(page, [{ p, qty: 1 }])
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
 
     const cases: [string, string][] = [
       [expired.code, 'این کد تخفیف معتبر نیست'],
@@ -260,7 +260,7 @@ test.describe('marketing C: discount types in cart and checkout', () => {
     const digits = String(Date.now()).slice(-6)
     const c = await mkCoupon({ type: 'PERCENT', value: 15, code: `NRM-${digits}-X` })
     await seedCart(page, [{ p, qty: 1 }])
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
 
     const persianDigits = digits.replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)])
     await applyCode(page, `  nrm ${persianDigits} x `)
@@ -283,7 +283,7 @@ test.describe('marketing C: discount types in cart and checkout', () => {
     await mkCoupon({ type: 'PERCENT', value: 90, autoApply: true, title, customerId: customer.id, productIds: [p.id] })
     await signIn(context, baseURL, customer.id)
     await seedCart(page, [{ p, qty: 1 }])
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
 
     await expect(page.getByTestId('coupon-applied')).toContainText(title)
     await expect(page.getByTestId('coupon-applied')).toContainText('اعمال خودکار')
@@ -306,7 +306,7 @@ test.describe('marketing C: discount types in cart and checkout', () => {
       { p: a, qty: 1 },
       { p: b!, qty: 1 },
     ])
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
     const subtotal = a.price + b!.price
     await expect(page.getByTestId('cart-total')).toContainText(fmt(subtotal))
 
@@ -344,14 +344,14 @@ test.describe('marketing C: discount types in cart and checkout', () => {
     const c = await mkCoupon({ type: 'PERCENT', value: 15, maxDiscount: 100_000 })
     await signIn(context, baseURL, customer.id)
     await seedCart(page, [{ p, qty: 1 }])
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
     await applyCode(page, c.code)
     const off = Math.min(Math.floor((p.price * 15) / 100), 100_000)
     await expect(page.getByTestId('discount-line')).toContainText(fmt(off))
     await expect(page.getByTestId('cart-total')).toContainText(fmt(p.price - off))
 
     // The code follows the customer into checkout (kept in the browser, re-checked by the server).
-    await page.goto('/checkout')
+    await page.goto('/checkout', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('h1')).toHaveText('تکمیل خرید')
     await expect(page.getByTestId('coupon-applied')).toContainText(c.code)
     await expect(page.getByTestId('discount-line')).toContainText(fmt(off))

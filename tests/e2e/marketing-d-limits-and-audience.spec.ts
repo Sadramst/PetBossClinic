@@ -96,7 +96,7 @@ async function makeCoupon(over: Record<string, unknown> = {}) {
 async function startAs(page: Page, context: BrowserContext, baseURL: string, customerId: string | null, product: Product) {
   await context.clearCookies()
   if (customerId) await context.addCookies([{ name: 'pb_customer', value: customerToken(customerId), url: baseURL }])
-  await page.goto('/robots.txt')
+  await page.goto('/robots.txt', { waitUntil: 'domcontentloaded' })
   await page.evaluate((p) => {
     localStorage.setItem('pb_cart_v1', JSON.stringify([{ productId: p.id, quantity: 1, name: p.nameFa, slug: p.slugFa, price: p.price, image: '' }]))
     localStorage.removeItem('pb_coupon_v1')
@@ -104,7 +104,7 @@ async function startAs(page: Page, context: BrowserContext, baseURL: string, cus
 }
 
 async function openCheckout(page: Page) {
-  await page.goto('/checkout')
+  await page.goto('/checkout', { waitUntil: 'domcontentloaded' })
   await expect(page.locator('h1')).toHaveText('تکمیل خرید')
 }
 
@@ -273,14 +273,14 @@ test.describe('discount codes: limits and audience', () => {
     const coupon = await makeCoupon({ firstOrderOnly: true, perCustomerLimit: 1 })
 
     // As a guest the cart says the code needs an account
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
     await typeCode(page, coupon.code)
     await expect(page.getByRole('alert').filter({ hasText: 'برای استفاده از این کد وارد حساب شوید.' })).toBeVisible()
     await expect(page.getByTestId('coupon-applied')).toHaveCount(0)
 
     // Sign up from the cart; the cart survives and brings us back to it
     const phone = uniquePhone()
-    await page.goto('/account/login?mode=register&next=%2Fcart')
+    await page.goto('/account/login?mode=register&next=%2Fcart', { waitUntil: 'domcontentloaded' })
     await page.locator('input[name="firstName"]').fill('مهمان')
     await page.locator('input[name="lastName"]').fill('تازه‌وارد')
     await page.locator('input[name="phone"]').fill(phone)
@@ -319,7 +319,7 @@ test.describe('discount codes: limits and audience', () => {
     // Staff cancel the first order in the admin panel
     await context.clearCookies()
     await context.addCookies([adminCookie(baseURL!)])
-    await page.goto('/admin/orders?status=all')
+    await page.goto('/admin/orders?status=all', { waitUntil: 'domcontentloaded' })
     await page.getByRole('button', { name: new RegExp(number) }).click()
     await page.locator('label', { hasText: 'وضعیت' }).locator('select').selectOption({ label: 'لغوشده' })
     await page.getByRole('button', { name: 'ذخیره تغییرات' }).click()
@@ -402,14 +402,14 @@ test.describe('discount codes: limits and audience', () => {
     await expect(page.getByText(`${order.total.toLocaleString('fa-IR')} تومان`).first()).toBeVisible()
 
     // Account list shows the same discounted total (not the full price)
-    await page.goto('/account/orders')
+    await page.goto('/account/orders', { waitUntil: 'domcontentloaded' })
     const row = page.locator(`a[href$="/account/orders/${number}"]`)
     await expect(row).toContainText(`${order.total.toLocaleString('fa-IR')} تومان`)
 
     // Staff see the discount and the code on the order too
     await context.clearCookies()
     await context.addCookies([adminCookie(baseURL!)])
-    await page.goto('/admin/orders?status=all')
+    await page.goto('/admin/orders?status=all', { waitUntil: 'domcontentloaded' })
     await page.getByRole('button', { name: new RegExp(number) }).click()
     await expect(page.getByText(coupon.code).first()).toBeVisible()
   })

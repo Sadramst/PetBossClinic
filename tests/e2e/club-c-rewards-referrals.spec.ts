@@ -129,7 +129,7 @@ async function redeemInUi(page: Page, title: string): Promise<string> {
 }
 
 async function startCart(page: Page, product: Product) {
-  await page.goto('/robots.txt')
+  await page.goto('/robots.txt', { waitUntil: 'domcontentloaded' })
   await page.evaluate((p) => {
     localStorage.setItem('pb_cart_v1', JSON.stringify([{ productId: p.id, quantity: 1, name: p.nameFa, slug: p.slugFa, price: p.price, image: '' }]))
     localStorage.removeItem('pb_coupon_v1')
@@ -137,7 +137,7 @@ async function startCart(page: Page, product: Product) {
 }
 
 async function openCheckout(page: Page) {
-  await page.goto('/checkout')
+  await page.goto('/checkout', { waitUntil: 'domcontentloaded' })
   await expect(page.locator('h1')).toHaveText('تکمیل خرید')
 }
 
@@ -166,7 +166,7 @@ async function deliverAsAdmin(browser: Browser, baseURL: string, number: string,
       try { localStorage.setItem('pb_welcome_popup_v1', String(Date.now() + 365 * 86400000)) } catch {}
     })
     const admin = await ctx.newPage()
-    await admin.goto('/admin/orders?status=SHIPPED')
+    await admin.goto('/admin/orders?status=SHIPPED', { waitUntil: 'domcontentloaded' })
     await admin.getByRole('button', { name: new RegExp(number) }).click()
     await admin.locator('select').selectOption({ label: 'تحویل‌شده' })
     await admin.getByRole('button', { name: 'ذخیره تغییرات' }).click()
@@ -223,7 +223,7 @@ test.describe('customer club: rewards and referrals', () => {
     const reward = await makeReward({ pointsCost: 200, description: 'تخفیف ویژه اعضای باشگاه' })
     await signIn(context, baseURL!, me.id)
 
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('club-points')).toHaveText(fa(500))
     const code = await redeemInUi(page, reward.title)
     expect(code).toMatch(/^[A-Z0-9-]{6,}$/)
@@ -246,7 +246,7 @@ test.describe('customer club: rewards and referrals', () => {
     await expect(page.getByTestId('points-history-row').filter({ hasText: fa(200) })).toHaveCount(1)
 
     // The code is also in «کدهای تخفیف من»
-    await page.goto('/account/coupons')
+    await page.goto('/account/coupons', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('my-coupons-list')).toContainText(code)
   })
 
@@ -256,7 +256,7 @@ test.describe('customer club: rewards and referrals', () => {
     const reward = await makeReward({ pointsCost: 150 })
 
     await signIn(context, baseURL!, owner.id)
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     const code = await redeemInUi(page, reward.title)
     couponIds.add((await prisma.coupon.findUniqueOrThrow({ where: { code } })).id)
 
@@ -291,14 +291,14 @@ test.describe('customer club: rewards and referrals', () => {
 
     // Visible refusal: disabled, with the exact shortfall
     await signIn(context, baseURL!, poor.id)
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     const c = card(page, reward.title)
     await expect(c.getByTestId('reward-redeem')).toBeDisabled()
     await expect(c.getByTestId('reward-redeem')).toHaveText(`${fa(380)} امتیاز کم دارید`)
 
     // A page loaded while the balance was enough: the server re-checks and nothing is charged
     await signIn(context, baseURL!, rich.id)
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     await expect(card(page, cheap.title).getByTestId('reward-redeem')).toBeEnabled()
     await prisma.customer.update({ where: { id: rich.id }, data: { pointsBalance: 100 } })
     await card(page, cheap.title).getByTestId('reward-redeem').click()
@@ -317,7 +317,7 @@ test.describe('customer club: rewards and referrals', () => {
     const lastOne = await makeReward({ pointsCost: 100, stock: 1, redeemedCount: 0 })
 
     await signIn(context, baseURL!, me.id)
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     await expect(card(page, locked.title).getByTestId('reward-redeem')).toBeDisabled()
     await expect(card(page, locked.title).getByTestId('reward-redeem')).toContainText('ویژه سطح')
     await expect(card(page, soldOut.title).getByTestId('reward-redeem')).toBeDisabled()
@@ -340,7 +340,7 @@ test.describe('customer club: rewards and referrals', () => {
     const reward = await makeReward({ pointsCost: 300 })
     await signIn(context, baseURL!, me.id)
 
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     const c = card(page, reward.title)
     await expect(c.getByTestId('reward-redeem')).toBeEnabled()
     await c.getByTestId('reward-redeem').click()
@@ -360,7 +360,7 @@ test.describe('customer club: rewards and referrals', () => {
     const inviter = await makeCustomer({ referralCode: code })
     const phone = uniquePhone()
 
-    await page.goto(`/r/${code}`)
+    await page.goto(`/r/${code}`, { waitUntil: 'domcontentloaded' })
     await expect(page).toHaveURL(/\/account\/login\?mode=register/)
     const cookie = (await context.cookies()).find((c) => c.name === 'pb_ref')
     expect(cookie?.value).toBe(code)
@@ -377,7 +377,7 @@ test.describe('customer club: rewards and referrals', () => {
     expect(await prisma.pointsTransaction.count({ where: { customerId: { in: [friend.id, inviter.id] }, kind: { in: ['REFERRAL_GIVEN', 'REFERRAL_JOINED'] } } })).toBe(0)
 
     // The friend has an invite code of their own on the club page
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('referral-code')).toHaveText(friend.referralCode!)
   })
 
@@ -414,7 +414,7 @@ test.describe('customer club: rewards and referrals', () => {
     expect((await prisma.customer.findUniqueOrThrow({ where: { id: inviter.id } })).pointsBalance).toBe(cfg.referralGiven)
 
     // The friend sees the gift in the history
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('points-history-row').filter({ hasText: fa(cfg.referralJoined) }).first()).toBeVisible()
   })
 
@@ -430,7 +430,7 @@ test.describe('customer club: rewards and referrals', () => {
 
     await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(baseURL!).origin }).catch(() => undefined)
     await signIn(context, baseURL!, inviter.id)
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('referral-code')).toHaveText(code)
     const stat = (label: string) => page.locator('dl > div').filter({ hasText: label })
     await expect(stat('دعوت‌شده')).toContainText(fa(3))
@@ -453,19 +453,19 @@ test.describe('customer club: rewards and referrals', () => {
     const existing = await makeCustomer({ ageDays: 3, referralCode: uniqueReferralCode() })
 
     // An unknown code sets no cookie but still lands on sign-up
-    await page.goto('/r/ZZZZZZZZ')
+    await page.goto('/r/ZZZZZZZZ', { waitUntil: 'domcontentloaded' })
     await expect(page).toHaveURL(/\/account\/login\?mode=register/)
     expect((await context.cookies()).find((c) => c.name === 'pb_ref')).toBeUndefined()
 
     // A real code, then an already-registered person tries to sign up again through it
-    await page.goto(`/r/${code}`)
+    await page.goto(`/r/${code}`, { waitUntil: 'domcontentloaded' })
     await expect(page).toHaveURL(/\/account\/login\?mode=register/)
     await register(page, existing.phone, 'علی', 'کریمی')
     await expect(page.getByRole('alert').filter({ hasText: 'قبلاً ثبت‌نام کرده است' })).toBeVisible()
     expect((await prisma.customer.findUniqueOrThrow({ where: { id: existing.id } })).referredById).toBeNull()
 
     // The inviter cannot invite themselves through their own link either
-    await page.goto(`/r/${code}`)
+    await page.goto(`/r/${code}`, { waitUntil: 'domcontentloaded' })
     await register(page, inviter.phone, 'مینا', 'صادقی')
     await expect(page.getByRole('alert').filter({ hasText: 'قبلاً ثبت‌نام کرده است' })).toBeVisible()
     expect((await prisma.customer.findUniqueOrThrow({ where: { id: inviter.id } })).referredById).toBeNull()
@@ -481,7 +481,7 @@ test.describe('customer club: rewards and referrals', () => {
     const hidden = await makeReward({ pointsCost: 100, isActive: false })
     await signIn(context, baseURL!, me.id)
 
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     await expect(card(page, stays.title)).toHaveCount(1)
     await expect(card(page, goes.title)).toHaveCount(1)
     await expect(card(page, hidden.title)).toHaveCount(0)
@@ -496,7 +496,7 @@ test.describe('customer club: rewards and referrals', () => {
     expect(await prisma.rewardRedemption.count({ where: { customerId: me.id } })).toBe(0)
 
     // After a reload it is gone, the other reward still works
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     await expect(card(page, goes.title)).toHaveCount(0)
     await redeemInUi(page, stays.title)
     await expect.poll(async () => (await prisma.customer.findUniqueOrThrow({ where: { id: me.id } })).pointsBalance).toBe(500)

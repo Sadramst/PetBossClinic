@@ -119,7 +119,7 @@ const contactRow = (page: Page, text: string) => page.locator('tr[data-testid="c
 async function openTab(page: Page, tab: string, q?: string) {
   const qs = new URLSearchParams({ tab })
   if (q) qs.set('q', q)
-  await page.goto(`/admin/marketing?${qs.toString()}`)
+  await page.goto(`/admin/marketing?${qs.toString()}`, { waitUntil: 'domcontentloaded' })
   await expect(page.getByRole('heading', { level: 1, name: 'بازاریابی و تخفیف‌ها' })).toBeVisible()
 }
 
@@ -137,9 +137,9 @@ async function purchasableSlug(): Promise<string> {
 }
 
 async function fillCart(page: Page, slug: string) {
-  await page.goto(`/product/${encodeURIComponent(slug)}`)
+  await page.goto(`/product/${encodeURIComponent(slug)}`, { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: 'افزودن به سبد خرید' }).click()
-  await page.goto('/cart')
+  await page.goto('/cart', { waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('coupon-input')).toBeVisible({ timeout: 25000 })
 }
 
@@ -233,7 +233,7 @@ test.describe('marketing admin panel', () => {
   test('E01 admin finds Marketing in the menu, every tab opens, nothing overflows, a viewer is kept out', async ({ page, context, baseURL }) => {
     await seedCoupon('long', { title: `E2E ${TAG} یک عنوان بسیار بلند برای بررسی سرریز در عرض موبایل و نمایش درست کارت‌ها در پنل` })
     await signInAdmin(context, baseURL)
-    await page.goto('/admin')
+    await page.goto('/admin', { waitUntil: 'domcontentloaded' })
     const navLink = page.locator('a[href*="/admin/marketing"]').first()
     const isDesktop = (page.viewportSize()?.width ?? 1280) >= 1024
     if (isDesktop) {
@@ -243,7 +243,7 @@ test.describe('marketing admin panel', () => {
       await expect(page).toHaveURL(/\/admin\/marketing/)
     } else {
       await expect(navLink).toBeAttached()
-      await page.goto('/admin/marketing')
+      await page.goto('/admin/marketing', { waitUntil: 'domcontentloaded' })
     }
     await expect(page.getByRole('heading', { level: 1, name: 'بازاریابی و تخفیف‌ها' })).toBeVisible()
 
@@ -262,9 +262,9 @@ test.describe('marketing admin panel', () => {
 
     // A viewer is a valid admin session but must not see or open Marketing.
     await context.addCookies([{ name: 'petboss_session', value: sessionToken('viewer_e2e', 'VIEWER'), url: baseURL! }])
-    await page.goto('/admin/marketing')
+    await page.goto('/admin/marketing', { waitUntil: 'domcontentloaded' })
     await expect(page).not.toHaveURL(/\/admin\/marketing/)
-    await page.goto('/admin')
+    await page.goto('/admin', { waitUntil: 'domcontentloaded' })
     await expect(page).toHaveURL(/\/admin(?!\/login)/)
     await expect(page.locator('a[href*="/admin/marketing"]')).toHaveCount(0)
   })
@@ -333,7 +333,7 @@ test.describe('marketing admin panel', () => {
 
     // The storefront now refuses it with a specific message.
     await clearStoredCoupon(page)
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('coupon-input')).toBeVisible({ timeout: 25000 })
     await applyCode(page, coupon.code)
     await expect(page.getByRole('alert').filter({ hasText: 'معتبر نیست' })).toBeVisible()
@@ -488,7 +488,7 @@ test.describe('marketing admin panel', () => {
     // Someone outside the group is told the code is for a group.
     await context.addCookies([{ name: 'pb_customer', value: customerToken(outsider.id), url: baseURL! }])
     await clearStoredCoupon(page)
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('coupon-input')).toBeVisible({ timeout: 25000 })
     await applyCode(page, coupon.code)
     await expect(page.getByRole('alert').filter({ hasText: 'مخصوص گروهی' })).toBeVisible()
@@ -496,7 +496,7 @@ test.describe('marketing admin panel', () => {
     // The member gets the discount.
     await context.addCookies([{ name: 'pb_customer', value: customerToken(member.id), url: baseURL! }])
     await clearStoredCoupon(page)
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('coupon-input')).toBeVisible({ timeout: 25000 })
     await applyCode(page, coupon.code)
     await expect(page.getByTestId('coupon-applied')).toContainText(coupon.title)
@@ -509,7 +509,7 @@ test.describe('marketing admin panel', () => {
     await again.getByTestId('group-members').getByRole('button').first().click()
     await expect.poll(async () => prisma.customerGroupMember.count({ where: { groupId: group.id } }), { timeout: 20000 }).toBe(0)
     await clearStoredCoupon(page)
-    await page.goto('/cart')
+    await page.goto('/cart', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('coupon-input')).toBeVisible({ timeout: 25000 })
     await applyCode(page, coupon.code)
     await expect(page.getByRole('alert').filter({ hasText: 'مخصوص گروهی' })).toBeVisible()
@@ -598,7 +598,7 @@ test.describe('marketing admin panel', () => {
       expect(await prisma.auditLog.count({ where: { entity: 'MARKETING_CONFIG', userId: admin.id, action: 'UPDATE' } })).toBeGreaterThan(0)
 
       // A visitor on the storefront sees the banner and the popup with the new copy, and gets a 23% code.
-      await page.goto('/')
+      await page.goto('/', { waitUntil: 'domcontentloaded' })
       await expect(page.getByTestId('promo-banner')).toContainText(bannerText, { timeout: 20000 })
       const popup = page.getByTestId('welcome-popup')
       await expect(popup).toBeVisible({ timeout: 25000 })

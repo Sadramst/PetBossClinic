@@ -90,7 +90,7 @@ const localInput = (d: Date) => {
 
 /** Drives the real four-step wizard and launches (scheduled two days ahead). Returns the new campaign id. */
 async function launchWizard(page: Page, o: { name: string; brand: string; body: string; coupon?: boolean; restrict?: boolean; expectAudience?: number }) {
-  await page.goto('/admin/campaigns')
+  await page.goto('/admin/campaigns', { waitUntil: 'domcontentloaded' })
   await page.getByTestId('campaign-new').click()
   await page.getByTestId('campaign-name').fill(o.name)
   await page.getByRole('button', { name: 'سگ', exact: true }).click()
@@ -143,7 +143,7 @@ test.describe('customer club: campaigns, automations, outbox, carts, AI', () => 
     await makeCustomer('ت', { species: 'DOG', brand: token('other') }) // other brand
     await signInAdmin(context, baseURL)
 
-    await page.goto('/admin/segments')
+    await page.goto('/admin/segments', { waitUntil: 'domcontentloaded' })
     await page.getByTestId('segment-new').click()
     const name = `سگ‌داران ${TAG}`
     await page.getByTestId('segment-name').fill(name)
@@ -182,7 +182,7 @@ test.describe('customer club: campaigns, automations, outbox, carts, AI', () => 
     await prisma.marketingContact.create({ data: { phone: unsub.phone, name: unsub.firstName, source: 'admin', consentAt: new Date(Date.now() - 86400000 * 5), unsubscribedAt: new Date(), customerId: unsub.id } })
     await signInAdmin(context, baseURL)
 
-    await page.goto('/admin/campaigns')
+    await page.goto('/admin/campaigns', { waitUntil: 'domcontentloaded' })
     await page.getByTestId('campaign-new').click()
     const name = `کمپین غذا ${TAG}`
     await page.getByTestId('campaign-name').fill(name)
@@ -256,7 +256,7 @@ test.describe('customer club: campaigns, automations, outbox, carts, AI', () => 
     const no = await makeCustomer('بدون-رضایت', { consent: false })
     await signInAdmin(context, baseURL)
 
-    await page.goto(`/admin/customers/${ok.id}`)
+    await page.goto(`/admin/customers/${ok.id}`, { waitUntil: 'domcontentloaded' })
     await page.getByRole('tab', { name: /پیام‌ها/ }).click()
     await page.getByTestId('msg-body').fill(`سلام {name}، این یک پیام آزمایشی است ${TAG}`)
     const sentAt = new Date()
@@ -275,7 +275,7 @@ test.describe('customer club: campaigns, automations, outbox, carts, AI', () => 
       expect(Math.abs(row.scheduledFor.getTime() - sentAt.getTime())).toBeLessThan(10 * 60_000)
     }
 
-    await page.goto(`/admin/customers/${no.id}`)
+    await page.goto(`/admin/customers/${no.id}`, { waitUntil: 'domcontentloaded' })
     await page.getByRole('tab', { name: /پیام‌ها/ }).click()
     await expect(page.getByText('رضایت دریافت پیامک تبلیغاتی نداده است')).toBeVisible()
     await page.getByTestId('msg-body').fill('پیام آزمایشی بدون رضایت')
@@ -304,7 +304,7 @@ test.describe('customer club: campaigns, automations, outbox, carts, AI', () => 
     const msg = await prisma.messageOutbox.create({ data: { customerId: p.id, phone: p.phone, kind: 'admin', body: `پیام صف ${TAG}`, status: 'QUEUED', scheduledFor: old } })
     await signInAdmin(context, baseURL)
 
-    await page.goto('/admin/outbox')
+    await page.goto('/admin/outbox', { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('heading', { level: 1, name: 'صف پیامک‌ها' })).toBeVisible()
     const banner = page.getByTestId('sender-banner')
     const configured = (await banner.count()) === 0
@@ -340,13 +340,13 @@ test.describe('customer club: campaigns, automations, outbox, carts, AI', () => 
     const queued = await prisma.messageOutbox.create({ data: { customerId: b.id, phone: b.phone, kind: 'admin', body: `در صف ${TAG}`, status: 'QUEUED', scheduledFor: new Date(Date.now() + 2 * 86_400_000) } })
     await signInAdmin(context, baseURL)
 
-    await page.goto('/admin/outbox?status=FAILED')
+    await page.goto('/admin/outbox?status=FAILED', { waitUntil: 'domcontentloaded' })
     const failedRow = page.getByTestId('outbox-row').filter({ hasText: a.phone })
     await expect(failedRow).toContainText('خطای آزمایشی')
     await failedRow.getByRole('button', { name: 'تلاش مجدد' }).click()
     await expect.poll(async () => (await prisma.messageOutbox.findUniqueOrThrow({ where: { id: failed.id } })).status, { timeout: 15000 }).not.toBe('FAILED')
 
-    await page.goto('/admin/outbox?status=QUEUED')
+    await page.goto('/admin/outbox?status=QUEUED', { waitUntil: 'domcontentloaded' })
     const queuedRow = page.getByTestId('outbox-row').filter({ hasText: b.phone })
     await expect(queuedRow).toBeVisible()
     await queuedRow.getByRole('button', { name: 'لغو', exact: true }).click()
@@ -384,7 +384,7 @@ test.describe('customer club: campaigns, automations, outbox, carts, AI', () => 
       },
     })
     await signInAdmin(context, baseURL)
-    await page.goto('/admin/automations')
+    await page.goto('/admin/automations', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('automations-list')).toBeVisible()
 
     // Toggle: one rule per browser project so the two projects never fight over the same flag.
@@ -428,7 +428,7 @@ test.describe('customer club: campaigns, automations, outbox, carts, AI', () => 
       },
     })
     await signInAdmin(context, baseURL)
-    await page.goto('/admin/carts')
+    await page.goto('/admin/carts', { waitUntil: 'domcontentloaded' })
     const row = page.getByTestId('cart-row').filter({ hasText: c.firstName })
     await expect(row).toBeVisible()
     await expect(row).toContainText(product.nameFa)
@@ -459,7 +459,7 @@ test.describe('customer club: campaigns, automations, outbox, carts, AI', () => 
       if (r.method() === 'POST' && r.headers()['next-action']) bodies.push(r.postData() ?? '')
     })
 
-    await page.goto(`/admin/customers/${c.id}`)
+    await page.goto(`/admin/customers/${c.id}`, { waitUntil: 'domcontentloaded' })
     await page.getByRole('tab', { name: /پیام‌ها/ }).click()
     await page.getByTestId('ai-draft').click()
     const options = page.getByTestId('draft-options')

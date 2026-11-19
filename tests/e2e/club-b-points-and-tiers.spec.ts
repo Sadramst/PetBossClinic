@@ -118,7 +118,7 @@ const countKind = (customerId: string, kind: 'SIGNUP' | 'FIRST_PET' | 'PET_PROFI
   prisma.pointsTransaction.count({ where: { customerId, kind } })
 
 async function addPetViaUi(page: Page, input: { name: string; breed?: string; birthDate?: string; weight?: string }) {
-  await page.goto('/account/pets')
+  await page.goto('/account/pets', { waitUntil: 'domcontentloaded' })
   await page.getByTestId('pet-add').first().click()
   await page.getByTestId('pet-name-input').fill(input.name)
   if (input.breed) await page.locator('input[name="breed"]').fill(input.breed)
@@ -149,7 +149,7 @@ test.describe('club B: points and tiers', () => {
     const cfg = await getLoyaltyConfig()
     test.skip(!cfg.enabled || cfg.signupBonus <= 0, 'sign-up bonus is switched off')
     const phone = uniquePhone()
-    await page.goto('/account/login?mode=register')
+    await page.goto('/account/login?mode=register', { waitUntil: 'domcontentloaded' })
     await page.locator('input[name="firstName"]').fill('بهار')
     await page.locator('input[name="lastName"]').fill('امتیازی')
     await page.locator('input[name="phone"]').fill(phone)
@@ -163,7 +163,7 @@ test.describe('club B: points and tiers', () => {
     await expect.poll(() => countKind(row.id, 'SIGNUP'), { timeout: 15000 }).toBe(1)
     expect(await balanceOf(row.id)).toBe(cfg.signupBonus)
 
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('club-points')).toHaveText(fa(cfg.signupBonus))
     const rows = page.getByTestId('points-history-row')
     await expect(rows).toHaveCount(1)
@@ -194,7 +194,7 @@ test.describe('club B: points and tiers', () => {
     expect(await countKind(c.id, 'FIRST_PET')).toBe(1)
     expect(await balanceOf(c.id)).toBe(start + cfg.firstPetBonus)
 
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('club-points')).toHaveText(fa(start + cfg.firstPetBonus))
     await expect(page.getByTestId('points-history-row').filter({ hasText: 'ثبت اولین حیوان خانگی' })).toHaveCount(1)
   })
@@ -243,12 +243,12 @@ test.describe('club B: points and tiers', () => {
     expect(stats.ordersCount).toBe(1)
     expect(stats.totalSpent).toBe(180_000)
 
-    await page.goto('/account')
+    await page.goto('/account', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('club-points')).toHaveText(fa(second.minPoints + expected))
     await expect(page.getByTestId('club-tier')).toContainText(second.label)
     await expect(page.locator('dl > div').filter({ hasText: 'سفارش تحویل‌شده' })).toContainText(fa(1))
 
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     const row = page.getByTestId('points-history-row').filter({ hasText: 'خرید از پت‌شاپ' })
     await expect(row).toHaveCount(1)
     await expect(row).toContainText(fa(expected))
@@ -271,7 +271,7 @@ test.describe('club B: points and tiers', () => {
     expect(await balanceOf(c.id)).toBe(expected)
     expect((await prisma.customer.findUniqueOrThrow({ where: { id: c.id } })).ordersCount).toBe(1)
 
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('club-points')).toHaveText(fa(expected))
     await expect(page.getByTestId('points-history-row').filter({ hasText: 'خرید از پت‌شاپ' })).toHaveCount(1)
   })
@@ -295,11 +295,11 @@ test.describe('club B: points and tiers', () => {
     expect(stats.ordersCount).toBe(0)
     expect(stats.totalSpent).toBe(0)
 
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('club-points')).toHaveText(fa(0))
     await expect(page.getByTestId('points-history-row').filter({ hasText: 'برگشت امتیاز' })).toHaveCount(1)
     await expect(page.getByTestId('points-history-row').filter({ hasText: 'خرید از پت‌شاپ' })).toHaveCount(1)
-    await page.goto('/account')
+    await page.goto('/account', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('dl > div').filter({ hasText: 'سفارش تحویل‌شده' })).toContainText(fa(0))
   })
 
@@ -313,7 +313,7 @@ test.describe('club B: points and tiers', () => {
     expect(spent.ok).toBe(true)
     expect(await balanceOf(c.id)).toBe(180)
 
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     const rows = page.getByTestId('points-history-row')
     await expect(rows).toHaveCount(3)
     await expect(page.getByTestId('club-points')).toHaveText(fa(180))
@@ -342,7 +342,7 @@ test.describe('club B: points and tiers', () => {
     const c = await newCustomer({ tier: low.key, points: mid.minPoints - 15, lifetime: mid.minPoints - 15 })
     await signIn(context, baseURL, c.id)
 
-    await page.goto('/account')
+    await page.goto('/account', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('club-tier')).toContainText(low.label)
     const before = tierProgress(cfg.tiers, mid.minPoints - 15)
     await expect(page.getByTestId('club-progress')).toHaveAttribute('aria-valuenow', String(before.percent))
@@ -355,7 +355,7 @@ test.describe('club B: points and tiers', () => {
     expect(row.lifetimePoints).toBeGreaterThanOrEqual(mid.minPoints)
     expect(row.tier).toBe(mid.key)
 
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('club-tier')).toContainText(mid.label)
     const after = tierProgress(cfg.tiers, row.lifetimePoints)
     await expect(page.getByTestId('club-progress')).toHaveAttribute('aria-valuenow', String(after.percent))
@@ -400,7 +400,7 @@ test.describe('club B: points and tiers', () => {
     await cancelDelivered(order.id)
     expect(await balanceOf(c.id)).toBe(0)
 
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('club-points')).toHaveText(fa(0))
     const card = page.getByTestId('reward-card').filter({ hasText: title })
     await expect(card).toHaveCount(1)
@@ -420,7 +420,7 @@ test.describe('club B: points and tiers', () => {
       data: { title, description: 'توضیح آزمون جایزه', pointsCost: 1234, couponType: 'PERCENT', couponValue: 7, couponValidDays: 11, isActive: true },
     })
 
-    await page.goto('/account/club')
+    await page.goto('/account/club', { waitUntil: 'domcontentloaded' })
     // How to earn: the numbers come from the saved config.
     const earn = page.getByRole('heading', { name: 'چطور امتیاز بگیرم؟' }).locator('xpath=following-sibling::ul[1]')
     await expect(earn.locator('li').filter({ hasText: 'ثبت اولین حیوان خانگی' })).toContainText(fa(cfg.firstPetBonus))

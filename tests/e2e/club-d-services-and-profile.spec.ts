@@ -71,7 +71,7 @@ async function shopProduct() {
   })
 }
 async function loginBySms(page: Page, phone: string) {
-  await page.goto('/account/login')
+  await page.goto('/account/login', { waitUntil: 'domcontentloaded' })
   await page.getByRole('tab', { name: 'ورود با کد پیامکی' }).click()
   await page.locator('input[inputmode="tel"]').fill(phone)
   await page.getByRole('button', { name: 'دریافت کد ورود' }).click()
@@ -103,7 +103,7 @@ test.describe('club: services and owner profile', () => {
     const c = await makeCustomer()
     const pet = await prisma.pet.create({ data: { customerId: c.id, name: `پوپک${TAG}`, species: 'DOG' } })
     await signInAdmin(context, baseURL)
-    await page.goto(`/admin/customers/${c.id}`)
+    await page.goto(`/admin/customers/${c.id}`, { waitUntil: 'domcontentloaded' })
     await page.getByRole('tab', { name: /^خدمات/ }).click()
     const form = page.getByTestId('visit-form')
     await expect(form).toBeVisible()
@@ -120,7 +120,7 @@ test.describe('club: services and owner profile', () => {
 
     await context.clearCookies()
     await signInCustomer(context, baseURL, c.id)
-    await page.goto('/account/services')
+    await page.goto('/account/services', { waitUntil: 'domcontentloaded' })
     const row = page.getByTestId('visit-row').filter({ hasText: `واکسن هاری ${TAG}` })
     await expect(row).toBeVisible()
     await expect(row).toContainText(pet.name)
@@ -137,7 +137,7 @@ test.describe('club: services and owner profile', () => {
       ],
     })
     await signInCustomer(context, baseURL, c.id)
-    await page.goto('/account')
+    await page.goto('/account', { waitUntil: 'domcontentloaded' })
     const soon = page.getByTestId('dashboard-reminder').filter({ hasText: `سه‌گانه ${TAG}` })
     await expect(soon).toBeVisible()
     await expect(soon).toContainText(pet.name)
@@ -150,7 +150,7 @@ test.describe('club: services and owner profile', () => {
   test('D03 the owner profile saves birthday, city and gender', async ({ page, context, baseURL }) => {
     const c = await makeCustomer()
     await signInCustomer(context, baseURL, c.id)
-    await page.goto('/account/profile')
+    await page.goto('/account/profile', { waitUntil: 'domcontentloaded' })
     await page.waitForFunction(() => {
       const el = document.querySelector('input[name="birthDate"]')?.closest('form')
       return !!el && Object.keys(el).some((k) => k.startsWith('__reactProps'))
@@ -175,7 +175,7 @@ test.describe('club: services and owner profile', () => {
   test('D04 the SMS marketing consent toggle persists and records when it changed', async ({ page, context, baseURL }) => {
     const c = await makeCustomer({ marketingSmsConsent: false, marketingConsentAt: null })
     await signInCustomer(context, baseURL, c.id)
-    await page.goto('/account/profile')
+    await page.goto('/account/profile', { waitUntil: 'domcontentloaded' })
     const box = page.getByTestId('pref-sms-consent')
     await expect(box).toBeEnabled()
     await expect(box).not.toBeChecked()
@@ -202,7 +202,7 @@ test.describe('club: services and owner profile', () => {
     couponCodes.add(code)
     await prisma.coupon.create({ data: { code, title: `هدیه آزمون ${TAG}`, type: 'FIXED', value: 30000, customerId: c.id, perCustomerLimit: 1, usageLimit: 1 } })
     await signInCustomer(context, baseURL, c.id)
-    await page.goto('/account')
+    await page.goto('/account', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('club-points')).toBeVisible()
     await expect(page.getByTestId('club-tier')).toBeVisible()
     await expect(page.getByTestId('club-progress')).toBeVisible()
@@ -214,7 +214,7 @@ test.describe('club: services and owner profile', () => {
   test('D06 the account menu reaches every club page and the old orders list lives at /account/orders', async ({ page, context, baseURL }) => {
     const c = await makeCustomer()
     await signInCustomer(context, baseURL, c.id)
-    await page.goto('/account')
+    await page.goto('/account', { waitUntil: 'domcontentloaded' })
     const nav = page.getByRole('navigation', { name: 'حساب کاربری' })
     const targets: [string, RegExp][] = [
       ['حیوانات خانگی', /\/account\/pets$/],
@@ -229,14 +229,14 @@ test.describe('club: services and owner profile', () => {
       await expect(page).toHaveURL(url)
       await expect(page.locator('h1').first()).toBeVisible()
     }
-    await page.goto('/account/orders')
+    await page.goto('/account/orders', { waitUntil: 'domcontentloaded' })
     await expect(nav.getByRole('link', { name: 'سفارش‌های من', exact: true })).toHaveAttribute('aria-current', 'page')
   })
 
   test('D07 a profile made by the clinic cannot be taken over with a password sign-up and is claimed by SMS code', async ({ page, context, baseURL }) => {
     const phone = uniquePhone()
     await signInAdmin(context, baseURL)
-    await page.goto('/admin/customers')
+    await page.goto('/admin/customers', { waitUntil: 'domcontentloaded' })
     await page.getByTestId('customer-create-toggle').click()
     const form = page.getByTestId('customer-create-form')
     await form.locator('input[name="firstName"]').fill('سارا')
@@ -252,7 +252,7 @@ test.describe('club: services and owner profile', () => {
 
     await context.clearCookies()
     // Typing the phone into the password sign-up must not hand over the clinic profile.
-    await page.goto('/account/login?mode=register')
+    await page.goto('/account/login?mode=register', { waitUntil: 'domcontentloaded' })
     await page.locator('input[name="firstName"]').fill('مهاجم')
     await page.locator('input[name="lastName"]').fill('آزمون')
     await page.locator('input[name="phone"]').fill(phone)
@@ -275,7 +275,7 @@ test.describe('club: services and owner profile', () => {
     const c = await makeCustomer()
     const product = await shopProduct()
     await signInCustomer(context, baseURL, c.id)
-    await page.goto(`/product/${encodeURIComponent(product.slugFa)}`)
+    await page.goto(`/product/${encodeURIComponent(product.slugFa)}`, { waitUntil: 'domcontentloaded' })
     await page.getByRole('button', { name: 'افزودن به سبد خرید' }).click()
     await expect.poll(() => prisma.cartSnapshot.findUnique({ where: { customerId: c.id } }), { timeout: 30000 }).not.toBeNull()
     const snap = await prisma.cartSnapshot.findUniqueOrThrow({ where: { customerId: c.id } })
@@ -291,11 +291,11 @@ test.describe('club: services and owner profile', () => {
     })
     const product = await shopProduct()
     await signInCustomer(context, baseURL, c.id)
-    await page.goto(`/product/${encodeURIComponent(product.slugFa)}`)
+    await page.goto(`/product/${encodeURIComponent(product.slugFa)}`, { waitUntil: 'domcontentloaded' })
     await page.getByRole('button', { name: 'افزودن به سبد خرید' }).click()
     await expect.poll(() => prisma.cartSnapshot.findUnique({ where: { customerId: c.id } }), { timeout: 30000 }).not.toBeNull()
 
-    await page.goto('/checkout')
+    await page.goto('/checkout', { waitUntil: 'domcontentloaded' })
     await expect(page.locator('h1')).toHaveText('تکمیل خرید')
     const cod = page.getByRole('radio', { name: /پرداخت در محل/ })
     await expect(cod).toBeEnabled()
@@ -313,13 +313,13 @@ test.describe('club: services and owner profile', () => {
     const pet = await prisma.pet.create({ data: { customerId: owner.id, name: `خصوصی${TAG}`, species: 'DOG' } })
     await prisma.serviceVisit.create({ data: { customerId: owner.id, petId: pet.id, serviceName: `ویزیت محرمانه ${TAG}`, visitedAt: new Date(), amount: 100000 } })
     await signInCustomer(context, baseURL, other.id)
-    const res = await page.goto(`/account/pets/${pet.id}`)
+    const res = await page.goto(`/account/pets/${pet.id}`, { waitUntil: 'domcontentloaded' })
     expect(res?.status()).toBe(404)
     await expect(page.getByTestId('pet-profile')).toHaveCount(0)
-    await page.goto('/account/services')
+    await page.goto('/account/services', { waitUntil: 'domcontentloaded' })
     await expect(page.getByText(`ویزیت محرمانه ${TAG}`)).toHaveCount(0)
     await expect(page.getByTestId('visit-row')).toHaveCount(0)
-    await page.goto('/account/pets')
+    await page.goto('/account/pets', { waitUntil: 'domcontentloaded' })
     await expect(page.getByText(`خصوصی${TAG}`)).toHaveCount(0)
   })
 })

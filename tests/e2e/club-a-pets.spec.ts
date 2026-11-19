@@ -114,7 +114,7 @@ test.describe('customer club: pets', () => {
     const birth = new Date()
     birth.setUTCMonth(birth.getUTCMonth() - 26)
 
-    await page.goto('/account/pets')
+    await page.goto('/account/pets', { waitUntil: 'domcontentloaded' })
     await expect(page.getByText('هنوز حیوان خانگی‌ای ثبت نکرده‌اید.')).toBeVisible()
     await openAddForm(page)
     await fillPet(page, { name: 'رکس', species: 'DOG', breed: 'شیتزو', sex: 'MALE', birth: birth.toISOString().slice(0, 10), weight: '7.5', food: 'رویال کنین' })
@@ -138,7 +138,7 @@ test.describe('customer club: pets', () => {
   test('A02 the pet form explains what is wrong and saves nothing until it is valid', async ({ page, context, baseURL }) => {
     const c = await makeCustomer('a02')
     await signIn(context, baseURL, c)
-    await page.goto('/account/pets')
+    await page.goto('/account/pets', { waitUntil: 'domcontentloaded' })
     await openAddForm(page)
 
     await page.getByTestId('pet-save').click() // no name
@@ -165,7 +165,7 @@ test.describe('customer club: pets', () => {
     await signIn(context, baseURL, c)
 
     for (const p of [{ name: 'پشمالو', species: 'CAT', breed: 'پرشین' }, { name: 'طوطی', species: 'BIRD', breed: 'کاکتیل' }]) {
-      await page.goto('/account/pets')
+      await page.goto('/account/pets', { waitUntil: 'domcontentloaded' })
       await openAddForm(page)
       await fillPet(page, p)
       await page.getByTestId('pet-save').click()
@@ -174,7 +174,7 @@ test.describe('customer club: pets', () => {
     // The profile of the bird has no photo: the species avatar stands in.
     await expect(page.getByTestId('pet-profile').getByRole('img', { name: 'پرنده' })).toBeVisible()
 
-    await page.goto('/account/pets')
+    await page.goto('/account/pets', { waitUntil: 'domcontentloaded' })
     const cards = page.getByTestId('pets-list').getByTestId('pet-card')
     await expect(cards).toHaveCount(2)
     await expect(cards.filter({ hasText: 'پشمالو' })).toContainText('گربه · پرشین')
@@ -188,7 +188,7 @@ test.describe('customer club: pets', () => {
     await signIn(context, baseURL, c)
     const pet = await seedPet(c.id, 'لیلی', 'CAT')
 
-    await page.goto(`/account/pets/${pet.id}`)
+    await page.goto(`/account/pets/${pet.id}`, { waitUntil: 'domcontentloaded' })
     const meter = page.getByTestId('pet-completeness').getByRole('progressbar')
     await expect(meter).toHaveAttribute('aria-valuenow', '0')
 
@@ -210,7 +210,7 @@ test.describe('customer club: pets', () => {
     const c = await makeCustomer('a05')
     await signIn(context, baseURL, c)
     const pet = await seedPet(c.id, 'بهار', 'DOG')
-    await page.goto(`/account/pets/${pet.id}`)
+    await page.goto(`/account/pets/${pet.id}`, { waitUntil: 'domcontentloaded' })
     await expect(page.getByText('هنوز سابقه‌ای ثبت نشده')).toBeVisible()
 
     await addRecord(page, { title: 'واکسن هاری', doneAt: isoDay(-100), nextDueAt: isoDay(-10) })
@@ -234,11 +234,11 @@ test.describe('customer club: pets', () => {
     await expect(fine).not.toContainText('(گذشته)')
 
     // The pets list highlights the overdue vaccine too.
-    await page.goto('/account/pets')
+    await page.goto('/account/pets', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('pet-card')).toContainText('واکسن هاری: موعد گذشته')
 
     // Refusals: next due before the date it was done, and a weight record without a weight.
-    await page.goto(`/account/pets/${pet.id}`)
+    await page.goto(`/account/pets/${pet.id}`, { waitUntil: 'domcontentloaded' })
     await addRecord(page, { title: 'معاینه', doneAt: isoDay(-1), nextDueAt: isoDay(-30) })
     await expect(page.getByRole('alert').filter({ hasText: 'موعد بعدی باید بعد از تاریخ انجام باشد' })).toBeVisible()
     await addRecord(page, { kind: 'WEIGHT', title: 'وزن‌کشی', doneAt: isoDay(-1) })
@@ -250,7 +250,7 @@ test.describe('customer club: pets', () => {
     const c = await makeCustomer('a06')
     await signIn(context, baseURL, c)
     const pet = await seedPet(c.id, 'پلنگ', 'CAT')
-    await page.goto(`/account/pets/${pet.id}`)
+    await page.goto(`/account/pets/${pet.id}`, { waitUntil: 'domcontentloaded' })
 
     await addRecord(page, { kind: 'WEIGHT', title: 'وزن‌کشی ماه قبل', doneAt: isoDay(-60), weight: '10' })
     await expect(page.getByTestId('pet-record-row')).toHaveCount(1, { timeout: 20_000 })
@@ -273,7 +273,7 @@ test.describe('customer club: pets', () => {
         { petId: pet.id, kind: 'CHECKUP', title: 'معاینه ب', doneAt: new Date(Date.now() - 20 * DAY), source: 'customer' },
       ],
     })
-    await page.goto(`/account/pets/${pet.id}`)
+    await page.goto(`/account/pets/${pet.id}`, { waitUntil: 'domcontentloaded' })
     const rows = page.getByTestId('pet-record-row')
     await expect(rows).toHaveCount(2)
     const target = rows.filter({ hasText: 'واکسن الف' })
@@ -300,7 +300,7 @@ test.describe('customer club: pets', () => {
     await expect(page).toHaveURL(/\/account\/pets$/, { timeout: 20_000 })
     await expect(page.getByText('هنوز حیوان خانگی‌ای ثبت نکرده‌اید.')).toBeVisible()
     expect((await prisma.pet.findUniqueOrThrow({ where: { id: pet.id } })).isActive).toBe(false)
-    const res = await page.goto(`/account/pets/${pet.id}`)
+    const res = await page.goto(`/account/pets/${pet.id}`, { waitUntil: 'domcontentloaded' })
     expect(res?.status()).toBe(404)
   })
 
@@ -317,14 +317,14 @@ test.describe('customer club: pets', () => {
       })),
     })
     await page.setViewportSize({ width: 360, height: 740 })
-    await page.goto('/account/pets')
+    await page.goto('/account/pets', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('pet-card')).toHaveCount(20)
     await expect(page.getByText('حداکثر ۲۰ حیوان خانگی قابل ثبت است.')).toBeVisible()
     await expect(page.getByTestId('pet-add')).toHaveCount(0)
     expect(await overflow(page)).toBeLessThanOrEqual(0)
 
     const first = await prisma.pet.findFirstOrThrow({ where: { customerId: c.id, name: long } })
-    await page.goto(`/account/pets/${first.id}`)
+    await page.goto(`/account/pets/${first.id}`, { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('pet-profile')).toBeVisible()
     expect(await overflow(page)).toBeLessThanOrEqual(0)
   })
@@ -335,19 +335,19 @@ test.describe('customer club: pets', () => {
     const pet = await seedPet(owner.id, 'گربه‌ی خصوصی', 'CAT', { medicalNotes: 'یادداشت محرمانه' })
 
     await signIn(context, baseURL, owner)
-    await page.goto(`/account/pets/${pet.id}`)
+    await page.goto(`/account/pets/${pet.id}`, { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('pet-profile')).toContainText('یادداشت محرمانه')
 
     await signIn(context, baseURL, intruder)
-    const res = await page.goto(`/account/pets/${pet.id}`)
+    const res = await page.goto(`/account/pets/${pet.id}`, { waitUntil: 'domcontentloaded' })
     expect(res?.status()).toBe(404)
     await expect(page.getByTestId('pet-profile')).toHaveCount(0)
     await expect(page.locator('body')).not.toContainText('یادداشت محرمانه')
-    await page.goto('/account/pets')
+    await page.goto('/account/pets', { waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('pet-card')).toHaveCount(0)
 
     await context.clearCookies()
-    await page.goto(`/account/pets/${pet.id}`)
+    await page.goto(`/account/pets/${pet.id}`, { waitUntil: 'domcontentloaded' })
     await expect(page).toHaveURL(/\/account\/login/)
     await expect(page.locator('body')).not.toContainText('یادداشت محرمانه')
   })
@@ -383,7 +383,7 @@ test.describe('customer club: pets', () => {
       await seedPet(c.id, 'لوبیا', species)
       await seedPet(c.id, 'غریبه', other)
       await signIn(context, baseURL, c)
-      await page.goto(`/product/${encodeURIComponent(slug)}`)
+      await page.goto(`/product/${encodeURIComponent(slug)}`, { waitUntil: 'domcontentloaded' })
       const chips = page.getByTestId('pet-fit')
       await expect(chips).toBeVisible({ timeout: 20_000 })
       await expect(chips).toContainText('مناسب برای لوبیا')
@@ -393,7 +393,7 @@ test.describe('customer club: pets', () => {
       await expect(page.getByTestId('pet-profile').getByRole('heading', { name: 'لوبیا' })).toBeVisible()
 
       await context.clearCookies()
-      await page.goto(`/product/${encodeURIComponent(slug)}`)
+      await page.goto(`/product/${encodeURIComponent(slug)}`, { waitUntil: 'domcontentloaded' })
       await page.waitForLoadState('networkidle')
       await expect(page.getByTestId('pet-fit')).toHaveCount(0)
     } finally {
