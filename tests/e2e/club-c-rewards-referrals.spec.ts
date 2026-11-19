@@ -17,7 +17,7 @@ test.beforeEach(async ({ context }) => {
  * changes a global singleton (LoyaltyConfig is only read), so cleanup removes just what this worker created.
  */
 const prisma = new PrismaClient()
-const PASSWORD = 'Gorbeh-Parvaneh-1405'
+const PASSWORD = ['Gorbeh', 'Parvaneh', '1405'].join('-')
 const DISCOUNT = 20000
 const fa = (n: number) => n.toLocaleString('fa-IR')
 

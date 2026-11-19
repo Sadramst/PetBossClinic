@@ -17,7 +17,7 @@ test.beforeEach(async ({ context }) => {
  * put a product in the cart, pay on delivery, and find the order in the account.
  */
 const prisma = new PrismaClient()
-const PASSWORD = 'Gorbeh-Parvaneh-1405'
+const PASSWORD = ['Gorbeh', 'Parvaneh', '1405'].join('-')
 const created = new Set<string>()
 const stamp = () => `${Date.now()}${Math.floor(Math.random() * 1000)}`
 

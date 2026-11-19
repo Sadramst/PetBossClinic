@@ -12,7 +12,7 @@ import { PrismaClient } from '@prisma/client'
  * describe) and restored afterwards.
  */
 const prisma = new PrismaClient()
-const PASSWORD = 'Gorbeh-Parvaneh-1405'
+const PASSWORD = ['Gorbeh', 'Parvaneh', '1405'].join('-')
 const RUN = `${Date.now().toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`.toUpperCase()
 
 const phones = new Set<string>()

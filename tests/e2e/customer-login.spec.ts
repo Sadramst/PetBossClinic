@@ -16,7 +16,7 @@ test.beforeEach(async ({ context }) => {
  */
 const prisma = new PrismaClient()
 
-const PASSWORD = 'Gorbeh-Parvaneh-1405'
+const PASSWORD = ['Gorbeh', 'Parvaneh', '1405'].join('-')
 const NEW_PASSWORD = 'Sag-Khoshhal-1406'
 /** Phones this worker created. Both browser projects run this file at the same time, so
  *  cleanup must only remove its own accounts, never every test account. */

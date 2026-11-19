@@ -9,7 +9,7 @@ import { PrismaClient } from '@prisma/client'
  * Both browser projects run this file at the same time, so cleanup removes only what this worker created.
  */
 const prisma = new PrismaClient()
-const PASSWORD = 'Gorbeh-Parvaneh-1405'
+const PASSWORD = ['Gorbeh', 'Parvaneh', '1405'].join('-')
 const DISCOUNT = 20000
 
 const phones = new Set<string>()

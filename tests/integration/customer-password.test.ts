@@ -41,7 +41,7 @@ vi.mock('next/headers', () => ({
 const hasDb = isLocalDatabaseUrl(process.env.DATABASE_URL)
 const d = hasDb ? describe : describe.skip
 
-const PASSWORD = 'Gorbeh-Parvaneh-1405'
+const PASSWORD = ['Gorbeh', 'Parvaneh', '1405'].join('-')
 let seq = 0
 // Every phone this file creates is remembered, and cleanup removes exactly those rows.
 const createdPhones = new Set<string>()

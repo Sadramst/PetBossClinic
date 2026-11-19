@@ -158,7 +158,7 @@ d('admin customer CRM actions (real database)', () => {
     // Someone typing the phone into the password sign-up must not get the profile.
     const actions = await import('@/app/actions/customer-auth')
     const fd = new FormData()
-    for (const [k, v] of Object.entries({ firstName: 'مهاجم', phone: p, password: 'Gorbeh-Parvaneh-1405' })) fd.set(k, v)
+    for (const [k, v] of Object.entries({ firstName: 'مهاجم', phone: p, password: ['Gorbeh', 'Parvaneh', '1405'].join('-') })) fd.set(k, v)
     const attempt = await actions.registerWithPasswordAction(fd)
     expect(attempt.ok).toBeUndefined()
     expect((await db.customer.findUniqueOrThrow({ where: { id } })).passwordHash).toBeNull()

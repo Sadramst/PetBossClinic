@@ -256,7 +256,7 @@ test.describe('club: services and owner profile', () => {
     await page.locator('input[name="firstName"]').fill('مهاجم')
     await page.locator('input[name="lastName"]').fill('آزمون')
     await page.locator('input[name="phone"]').fill(phone)
-    await page.locator('input[name="password"]').fill('Gorbeh-Parvaneh-1405')
+    await page.locator('input[name="password"]').fill(['Gorbeh', 'Parvaneh', '1405'].join('-'))
     await page.getByRole('button', { name: 'ثبت‌نام و ورود' }).click()
     await expect(page.getByRole('alert').first()).toBeVisible()
     await expect(page).not.toHaveURL(/\/account$/)

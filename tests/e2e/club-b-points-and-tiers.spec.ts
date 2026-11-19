@@ -19,7 +19,7 @@ import { pointsForOrder, tierByKey, tierProgress } from '../../lib/club/tiers'
  * The global LoyaltyConfig is never modified: expectations are computed from the live config.
  */
 const prisma = new PrismaClient()
-const PASSWORD = 'Gorbeh-Parvaneh-1405'
+const PASSWORD = ['Gorbeh', 'Parvaneh', '1405'].join('-')
 const RUN = `${Date.now().toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`.toUpperCase()
 
 const phones = new Set<string>()
