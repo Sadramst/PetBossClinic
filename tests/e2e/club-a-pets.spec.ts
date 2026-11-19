@@ -394,7 +394,7 @@ test.describe('customer club: pets', () => {
 
       await context.clearCookies()
       await page.goto(`/product/${encodeURIComponent(slug)}`, { waitUntil: 'domcontentloaded' })
-      await page.waitForLoadState('networkidle')
+      await page.waitForTimeout(1500)
       await expect(page.getByTestId('pet-fit')).toHaveCount(0)
     } finally {
       if (restore) await prisma.product.update({ where: { id: restore.id }, data: { forSpecies: restore.forSpecies } })
