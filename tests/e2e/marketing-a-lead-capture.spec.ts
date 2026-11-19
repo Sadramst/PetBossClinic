@@ -97,7 +97,7 @@ test.describe('lead capture and welcome code', () => {
     expect(snooze).toBeGreaterThan(Date.now() + 6 * 86_400_000)
 
     // Dismissed for a week: a reload and another page must not bring it back.
-    await page.reload()
+    await page.reload({ waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(Math.min(popupDelay + 3, 15) * 1000)
     await expect(page.getByTestId('welcome-popup')).toHaveCount(0)
     await page.goto('/shop', { waitUntil: 'domcontentloaded' })
@@ -358,7 +358,7 @@ test.describe('campaign config driven storefront (changes the shared config row,
 
       await banner.getByRole('button', { name: 'بستن اطلاعیه' }).click()
       await expect(banner).toHaveCount(0)
-      await page.reload()
+      await page.reload({ waitUntil: 'domcontentloaded' })
       await expect(page.getByTestId('promo-banner')).toHaveCount(0)
 
       // A new browser session sees it again.
@@ -381,7 +381,7 @@ test.describe('campaign config driven storefront (changes the shared config row,
         await p3.goto('/shop', { waitUntil: 'domcontentloaded' })
         await expect(p3.getByTestId('promo-banner')).toHaveCount(0)
         await prisma.marketingConfig.update({ where: { id: 'main' }, data: { bannerEndsAt: null, bannerEnabled: false } })
-        await p3.reload()
+        await p3.reload({ waitUntil: 'domcontentloaded' })
         await expect(p3.getByTestId('promo-banner')).toHaveCount(0)
         await expect(p3.locator('body')).toBeVisible()
       } finally {

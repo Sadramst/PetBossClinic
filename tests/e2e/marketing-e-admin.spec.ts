@@ -318,7 +318,7 @@ test.describe('marketing admin panel', () => {
     await page.getByTestId('coupon-form-submit').click()
     await expect.poll(async () => (await prisma.coupon.findUnique({ where: { id: coupon.id } }))?.value, { timeout: 20000 }).toBe(20)
     expect((await prisma.coupon.findUniqueOrThrow({ where: { id: coupon.id } })).title).toBe(newTitle)
-    expect(await prisma.auditLog.count({ where: { entity: 'COUPON', entityId: coupon.id, action: 'UPDATE', userId: admin.id } })).toBeGreaterThan(0)
+    await expect.poll(() => prisma.auditLog.count({ where: { entity: 'COUPON', entityId: coupon.id, action: 'UPDATE', userId: admin.id } }), { timeout: 15000 }).toBeGreaterThan(0)
 
     // The edited code works for a shopper.
     await fillCart(page, slug)
@@ -357,7 +357,7 @@ test.describe('marketing admin panel', () => {
     expect(copy).toMatchObject({ isActive: false, usedCount: 0, value: 12, type: 'PERCENT' })
     expect(copy.code).not.toBe(original.code)
     codes.add(copy.code)
-    expect(await prisma.auditLog.count({ where: { entity: 'COUPON', entityId: copy.id, action: 'CREATE', userId: admin.id } })).toBe(1)
+    await expect.poll(() => prisma.auditLog.count({ where: { entity: 'COUPON', entityId: copy.id, action: 'CREATE', userId: admin.id } }), { timeout: 15000 }).toBe(1)
 
     // Delete the copy: the confirmation dialog can be cancelled, then confirmed.
     await openTab(page, 'coupons', copy.code)
@@ -372,7 +372,7 @@ test.describe('marketing admin panel', () => {
     await copyRow.getByTestId('coupon-delete').click()
     await page.getByRole('dialog').getByRole('button', { name: 'حذف کد' }).click()
     await expect.poll(async () => prisma.coupon.count({ where: { id: copy.id } }), { timeout: 20000 }).toBe(0)
-    expect(await prisma.auditLog.count({ where: { entity: 'COUPON', entityId: copy.id, action: 'DELETE', userId: admin.id } })).toBe(1)
+    await expect.poll(() => prisma.auditLog.count({ where: { entity: 'COUPON', entityId: copy.id, action: 'DELETE', userId: admin.id } }), { timeout: 15000 }).toBe(1)
 
     // A code that was used in an order is protected: the panel says so and keeps it.
     await openTab(page, 'coupons', redeemed.code)
@@ -469,7 +469,7 @@ test.describe('marketing admin panel', () => {
     const card = page.locator(`[data-testid="group-card"][data-name="${groupName}"]`)
     await expect(card).toBeVisible({ timeout: 20000 })
     const group = await prisma.customerGroup.findUniqueOrThrow({ where: { name: groupName } })
-    expect(await prisma.auditLog.count({ where: { entity: 'CUSTOMER_GROUP', entityId: group.id, action: 'CREATE', userId: admin.id } })).toBe(1)
+    await expect.poll(() => prisma.auditLog.count({ where: { entity: 'CUSTOMER_GROUP', entityId: group.id, action: 'CREATE', userId: admin.id } }), { timeout: 15000 }).toBe(1)
 
     await card.getByTestId('group-manage').click()
     await card.getByTestId('group-add-input').fill(`${member.phone}\n09100000000`)
@@ -533,7 +533,7 @@ test.describe('marketing admin panel', () => {
     // CSV export contains the lead.
     const [download] = await Promise.all([page.waitForEvent('download', { timeout: 30000 }), page.getByTestId('contacts-export').click()])
     expect(fs.readFileSync((await download.path())!, 'utf8')).toContain(phone)
-    expect(await prisma.auditLog.count({ where: { entity: 'MARKETING_CONTACT', entityId: 'csv', action: 'EXPORT', userId: admin.id } })).toBeGreaterThan(0)
+    await expect.poll(() => prisma.auditLog.count({ where: { entity: 'MARKETING_CONTACT', entityId: 'csv', action: 'EXPORT', userId: admin.id } }), { timeout: 15000 }).toBeGreaterThan(0)
 
     // Unsubscribe, then subscribe again.
     await row.getByRole('button', { name: 'لغو عضویت' }).click()
@@ -543,7 +543,7 @@ test.describe('marketing admin panel', () => {
     // A success toast from the previous action can sit over the button on a phone: click through the DOM.
     await row.getByRole('button', { name: 'فعال‌سازی' }).evaluate((el) => (el as HTMLElement).click())
     await expect.poll(async () => (await prisma.marketingContact.findUnique({ where: { id: contact.id } }))?.unsubscribedAt, { timeout: 20000 }).toBeNull()
-    expect(await prisma.auditLog.count({ where: { entity: 'MARKETING_CONTACT', entityId: contact.id, userId: admin.id } })).toBe(2)
+    await expect.poll(() => prisma.auditLog.count({ where: { entity: 'MARKETING_CONTACT', entityId: contact.id, userId: admin.id } }), { timeout: 15000 }).toBe(2)
     await noHorizontalOverflow(page)
   })
 
@@ -595,7 +595,7 @@ test.describe('marketing admin panel', () => {
       await expect.poll(async () => (await prisma.marketingConfig.findUnique({ where: { id: 'main' } }))?.welcomeValue, { timeout: 20000 }).toBe(23)
       const saved = await prisma.marketingConfig.findUniqueOrThrow({ where: { id: 'main' } })
       expect(saved).toMatchObject({ popupTitle, bannerEnabled: true, bannerText, welcomeType: 'PERCENT' })
-      expect(await prisma.auditLog.count({ where: { entity: 'MARKETING_CONFIG', userId: admin.id, action: 'UPDATE' } })).toBeGreaterThan(0)
+      await expect.poll(() => prisma.auditLog.count({ where: { entity: 'MARKETING_CONFIG', userId: admin.id, action: 'UPDATE' } }), { timeout: 15000 }).toBeGreaterThan(0)
 
       // A visitor on the storefront sees the banner and the popup with the new copy, and gets a 23% code.
       await page.goto('/', { waitUntil: 'domcontentloaded' })

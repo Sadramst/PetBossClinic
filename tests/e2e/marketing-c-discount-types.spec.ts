@@ -224,7 +224,7 @@ test.describe('marketing C: discount types in cart and checkout', () => {
       },
       [p.id]
     )
-    await page.reload()
+    await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('cart-total')).toContainText(fmt(min))
     await applyCode(page, c.code)
     await expect(page.getByTestId('coupon-applied')).toBeVisible()
@@ -269,7 +269,7 @@ test.describe('marketing C: discount types in cart and checkout', () => {
     await expect(page.getByTestId('discount-line')).toContainText(fmt(off))
     expect(await page.evaluate(() => localStorage.getItem('pb_coupon_v1'))).toBe(c.code)
 
-    await page.reload()
+    await page.reload({ waitUntil: 'domcontentloaded' })
     await expect(page.getByTestId('coupon-applied')).toContainText(c.code)
     await expect(page.getByTestId('discount-line')).toContainText(fmt(off))
     await expect(page.getByTestId('cart-total')).toContainText(fmt(p.price - off))
@@ -333,7 +333,7 @@ test.describe('marketing C: discount types in cart and checkout', () => {
       },
       [a.id]
     )
-    await page.reload()
+    await page.reload({ waitUntil: 'domcontentloaded' })
     await applyCode(page, byProduct.code)
     await expect(page.locator('#coupon-error')).toContainText('برای کالاهای سبد شما معتبر نیست')
   })

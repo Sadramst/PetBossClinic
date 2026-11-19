@@ -30,7 +30,7 @@ function customerToken(customerId: string, version: number): string {
 
 /** Waits until the page has loaded and its fonts are in (text width depends on them). */
 async function settle(page: Page) {
-  await page.waitForLoadState('load')
+  await page.waitForLoadState('domcontentloaded')
   await page.evaluate(() => document.fonts.ready)
 }
 
