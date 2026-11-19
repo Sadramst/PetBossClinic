@@ -1,7 +1,8 @@
 'use client'
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useState, useTransition } from 'react'
+import React, { useEffect, useRef, useState, useTransition } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   createProductAction,
   updateProductAction,
@@ -60,15 +61,37 @@ export interface ProductItem {
   } | null
 }
 
+export interface ProductListFilters {
+  q: string
+  cat: string
+  status: string
+  page: number
+  size: number
+}
+
+export interface ProductListStats {
+  total: number
+  active: number
+  inactive: number
+  inStock: number
+  outOfStock: number
+  featured: number
+}
+
 interface Props {
+  /** Only the current page, already filtered and sorted by the server. */
   products: ProductItem[]
   categories: ProductCategoryItem[]
   isEn: boolean
+  /** Number of products matching the filters (all pages). */
+  filteredTotal: number
+  stats: ProductListStats
+  filters: ProductListFilters
 }
 
 export type ProductStatusFilter = 'ALL' | 'ACTIVE' | 'INACTIVE' | 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'FEATURED'
 
-export function ProductsManager({ products, categories, isEn }: Props) {
+export function ProductsManager({ products, categories, isEn, filteredTotal, stats, filters }: Props) {
   const [isPending, startTransition] = useTransition()
   const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products')
 
@@ -79,12 +102,45 @@ export function ProductsManager({ products, categories, isEn }: Props) {
     setTimeout(() => setMessage(null), 5000)
   }
 
-  // Filters & Pagination
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('ALL')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<ProductStatusFilter>('ALL')
-  const [currentPage, setCurrentPage] = useState<number>(1)
-  const [pageSize, setPageSize] = useState<number>(50)
+  // Filters & pagination live in the URL: the server filters, sorts and slices, so the browser only
+  // ever receives one page of products (700+ products used to be sent on every visit).
+  const router = useRouter()
+  const pathname = usePathname()
+  const [navigating, startNavigation] = useTransition()
+  const navigate = (patch: Partial<ProductListFilters>) => {
+    const next = { ...filters, ...patch }
+    const qs = new URLSearchParams()
+    if (next.q) qs.set('q', next.q)
+    if (next.cat && next.cat !== 'ALL') qs.set('cat', next.cat)
+    if (next.status && next.status !== 'ALL') qs.set('status', next.status)
+    if (next.page > 1) qs.set('page', String(next.page))
+    if (next.size !== 50) qs.set('size', String(next.size))
+    const query = qs.toString()
+    startNavigation(() => router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false }))
+  }
+  const selectedCategoryFilter = filters.cat
+  const statusFilter = filters.status as ProductStatusFilter
+  const currentPage = filters.page
+  const pageSize = filters.size
+  const setSelectedCategoryFilter = (cat: string) => navigate({ cat, page: 1 })
+  const setStatusFilter = (status: ProductStatusFilter) => navigate({ status, page: 1 })
+  const setCurrentPage = (update: number | ((p: number) => number)) =>
+    navigate({ page: typeof update === 'function' ? update(filters.page) : update })
+  const setPageSize = (size: number) => navigate({ size, page: 1 })
+
+  // Search is typed locally and sent to the server after a short pause.
+  const [searchQuery, setSearchInput] = useState(filters.q)
+  const lastSentQuery = useRef(filters.q)
+  useEffect(() => {
+    if (searchQuery.trim() === lastSentQuery.current) return
+    const t = setTimeout(() => {
+      lastSentQuery.current = searchQuery.trim()
+      navigate({ q: searchQuery.trim(), page: 1 })
+    }, 350)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery])
+  const setSearchQuery = setSearchInput
 
   // Product Modal State
   const [productModalOpen, setProductModalOpen] = useState(false)
@@ -278,40 +334,14 @@ export function ProductsManager({ products, categories, isEn }: Props) {
     })
   }
 
-  // Filtered products with SKU, category, name, and status filter
-  const filteredProducts = products.filter((p) => {
-    const matchesCat = selectedCategoryFilter === 'ALL' || p.categoryId === selectedCategoryFilter
-    const q = searchQuery.toLowerCase().trim()
-    const matchesSearch =
-      !q ||
-      p.nameFa.toLowerCase().includes(q) ||
-      (p.nameEn && p.nameEn.toLowerCase().includes(q)) ||
-      (p.sku && p.sku.toLowerCase().includes(q)) ||
-      (p.category && p.category.nameFa.toLowerCase().includes(q)) ||
-      (p.shortDescFa && p.shortDescFa.toLowerCase().includes(q))
-
-    let matchesStatus = true
-    if (statusFilter === 'ACTIVE') matchesStatus = p.isActive
-    else if (statusFilter === 'INACTIVE') matchesStatus = !p.isActive
-    else if (statusFilter === 'IN_STOCK') matchesStatus = p.stockStatus === 'IN_STOCK'
-    else if (statusFilter === 'LOW_STOCK') matchesStatus = p.stockStatus === 'LOW_STOCK'
-    else if (statusFilter === 'OUT_OF_STOCK') matchesStatus = p.stockStatus === 'OUT_OF_STOCK'
-    else if (statusFilter === 'FEATURED') matchesStatus = Boolean(p.isFeatured)
-
-    return matchesCat && matchesSearch && matchesStatus
-  })
-
-  // Pagination calculation
-  const totalPages = pageSize === -1 ? 1 : Math.max(1, Math.ceil(filteredProducts.length / pageSize))
-  const paginatedProducts = pageSize === -1
-    ? filteredProducts
-    : filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-
-  const activeCount = products.filter((p) => p.isActive).length
-  const inactiveCount = products.filter((p) => !p.isActive).length
-  const inStockCount = products.filter((p) => p.stockStatus === 'IN_STOCK').length
-  const outOfStockCount = products.filter((p) => p.stockStatus === 'OUT_OF_STOCK').length
-  const featuredCount = products.filter((p) => p.isFeatured).length
+  // The server already applied the filters and the page window.
+  const paginatedProducts = products
+  const totalPages = pageSize === -1 ? 1 : Math.max(1, Math.ceil(filteredTotal / pageSize))
+  const activeCount = stats.active
+  const inactiveCount = stats.inactive
+  const inStockCount = stats.inStock
+  const outOfStockCount = stats.outOfStock
+  const featuredCount = stats.featured
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -338,8 +368,8 @@ export function ProductsManager({ products, categories, isEn }: Props) {
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
             {isEn
-              ? `${products.length} Products synchronized across ${categories.length} Defined Market Categories`
-              : `${products.length} محصول همگام‌شده در ${categories.length} دسته‌بندی تخصصی بازار`}
+              ? `${stats.total} Products synchronized across ${categories.length} Defined Market Categories`
+              : `${stats.total} محصول همگام‌شده در ${categories.length} دسته‌بندی تخصصی بازار`}
           </p>
         </div>
 
@@ -357,7 +387,7 @@ export function ProductsManager({ products, categories, isEn }: Props) {
             <span>📦</span>
             <span>{isEn ? 'Products' : 'محصولات پت‌شاپ'}</span>
             <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-black/20 font-mono">
-              {products.length}
+              {stats.total}
             </span>
           </button>
 
@@ -396,7 +426,7 @@ export function ProductsManager({ products, categories, isEn }: Props) {
               }`}
             >
               <div className="text-[10px] font-bold uppercase tracking-wider">{isEn ? 'Total Products' : 'کل موجودی انبار'}</div>
-              <div className="text-xl font-black text-foreground mt-0.5">{products.length}</div>
+              <div className="text-xl font-black text-foreground mt-0.5">{stats.total}</div>
               <div className="text-[10px] text-emerald-400 font-semibold mt-0.5">100% {isEn ? 'Synced' : 'همگام در پنل'}</div>
             </button>
 
@@ -566,7 +596,7 @@ export function ProductsManager({ products, categories, isEn }: Props) {
                 {selectedCategoryFilter !== 'ALL' ? `[دسته‌بندی: ${categories.find((c) => c.id === selectedCategoryFilter)?.nameFa}] ` : ''}
                 {statusFilter !== 'ALL' ? `[وضعیت: ${statusFilter}] ` : ''}
                 {searchQuery ? `[جستجو: "${searchQuery}"] ` : ''}
-                ({filteredProducts.length} محصول یافت شد)
+                ({filteredTotal} محصول یافت شد)
               </span>
               <button
                 type="button"
@@ -585,7 +615,7 @@ export function ProductsManager({ products, categories, isEn }: Props) {
 
           {/* Products Table */}
           <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
+            <div className={`overflow-x-auto transition-opacity ${navigating ? "opacity-50" : ""}`} aria-busy={navigating}>
               <table className="w-full text-xs text-start">
                 <thead className="bg-surface-elevated text-muted-foreground uppercase text-[10px] tracking-wider border-b border-border">
                   <tr>
@@ -761,13 +791,13 @@ export function ProductsManager({ products, categories, isEn }: Props) {
             </div>
 
             {/* Pagination Controls */}
-            {filteredProducts.length > 0 && (
+            {filteredTotal > 0 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-surface-elevated/40 border-t border-border text-xs">
                 <div className="text-muted-foreground flex items-center gap-2">
                   <span>
                     {isEn
-                      ? `Showing ${pageSize === -1 ? 1 : Math.min((currentPage - 1) * pageSize + 1, filteredProducts.length)} to ${pageSize === -1 ? filteredProducts.length : Math.min(currentPage * pageSize, filteredProducts.length)} of ${filteredProducts.length} filtered items (Total DB inventory: ${products.length} products)`
-                      : `نمایش ${pageSize === -1 ? 1 : Math.min((currentPage - 1) * pageSize + 1, filteredProducts.length)} تا ${pageSize === -1 ? filteredProducts.length : Math.min(currentPage * pageSize, filteredProducts.length)} از ${filteredProducts.length} محصول (کل موجودی انبار: ${products.length} کالا)`}
+                      ? `Showing ${pageSize === -1 ? 1 : Math.min((currentPage - 1) * pageSize + 1, filteredTotal)} to ${pageSize === -1 ? filteredTotal : Math.min(currentPage * pageSize, filteredTotal)} of ${filteredTotal} filtered items (Total DB inventory: ${stats.total} products)`
+                      : `نمایش ${pageSize === -1 ? 1 : Math.min((currentPage - 1) * pageSize + 1, filteredTotal)} تا ${pageSize === -1 ? filteredTotal : Math.min(currentPage * pageSize, filteredTotal)} از ${filteredTotal} محصول (کل موجودی انبار: ${stats.total} کالا)`}
                   </span>
                 </div>
 
