@@ -4,10 +4,11 @@ import { getLoyaltyConfig } from '@/lib/club/config';
 import { CustomersManager } from '@/components/admin/customers-manager';
 import { formatJalaliDate } from '@/lib/shop/expiry';
 import { normalizeFa } from '@/lib/text/persian';
+import { listStaffOptions } from '@/lib/crm/staff';
 
 export const dynamic = 'force-dynamic';
 
-type SP = { q?: string; tier?: string; species?: string; tag?: string; city?: string; orders?: string; consent?: string; sort?: string; dir?: string; page?: string };
+type SP = { q?: string; tier?: string; species?: string; tag?: string; city?: string; orders?: string; consent?: string; sort?: string; dir?: string; page?: string; owner?: string; lifecycle?: string; churn?: string };
 const SORTS: CustomerSort[] = ['joined', 'points', 'spend', 'lastOrder', 'orders'];
 
 export default async function AdminCustomersPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<SP> }) {
@@ -23,18 +24,22 @@ export default async function AdminCustomersPage({ params, searchParams }: { par
     city: sp.city?.slice(0, 40) || undefined,
     hasOrders: sp.orders === 'yes' ? true : sp.orders === 'no' ? false : undefined,
     consent: sp.consent === 'yes' ? true : sp.consent === 'no' ? false : undefined,
+    owner: sp.owner?.slice(0, 40) || undefined,
+    lifecycle: sp.lifecycle?.slice(0, 20) || undefined,
+    churn: (['LOW', 'MEDIUM', 'HIGH'].includes(sp.churn ?? '') ? sp.churn : undefined) as 'LOW' | 'MEDIUM' | 'HIGH' | undefined,
     sort: (SORTS as string[]).includes(sp.sort ?? '') ? (sp.sort as CustomerSort) : ('joined' as CustomerSort),
     dir: sp.dir === 'asc' ? ('asc' as const) : ('desc' as const),
     page: Math.max(1, Number.parseInt(sp.page ?? '1', 10) || 1),
   };
-  const [list, cfg] = await Promise.all([listCustomers(filters), getLoyaltyConfig()]);
+  const [list, cfg, staff] = await Promise.all([listCustomers(filters), getLoyaltyConfig(), listStaffOptions()]);
   const isAdmin = session.role === 'ADMIN' || session.role === 'SUPER_ADMIN';
 
   return (
     <CustomersManager
       isAdmin={isAdmin}
+      staff={staff}
       tiers={cfg.tiers.map((t) => ({ key: t.key, label: t.label, color: t.color }))}
-      filters={{ q: filters.q, tier: filters.tier ?? '', species: filters.species ?? '', tag: filters.tag ?? '', city: filters.city ?? '', orders: sp.orders ?? '', consent: sp.consent ?? '', sort: filters.sort, dir: filters.dir }}
+      filters={{ q: filters.q, tier: filters.tier ?? '', species: filters.species ?? '', tag: filters.tag ?? '', city: filters.city ?? '', orders: sp.orders ?? '', consent: sp.consent ?? '', owner: sp.owner ?? '', lifecycle: sp.lifecycle ?? '', churn: sp.churn ?? '', sort: filters.sort, dir: filters.dir }}
       total={list.total}
       page={list.page}
       pages={list.pages}
@@ -54,6 +59,10 @@ export default async function AdminCustomersPage({ params, searchParams }: { par
         isBlocked: c.isBlocked,
         createdByAdmin: c.createdByAdmin,
         pets: c.pets.map((p) => p.name),
+        lifecycle: c.lifecycleStage,
+        health: c.healthScore,
+        churn: c.churnRisk,
+        ownerId: c.ownerId,
       }))}
     />
   );

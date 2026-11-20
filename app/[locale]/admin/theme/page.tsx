@@ -9,7 +9,7 @@ export default async function AdminThemePage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  await requireAdmin('VIEWER', locale);
+  await requireAdmin('ADMIN', locale);
 
   return <ThemeStudio />;
 }

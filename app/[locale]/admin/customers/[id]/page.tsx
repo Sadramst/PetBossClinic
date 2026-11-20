@@ -11,6 +11,10 @@ import { formatJalaliDate } from '@/lib/shop/expiry';
 import { formatJalaliDateTime } from '@/components/admin/format';
 import { dueStatus } from '@/lib/club/pet-math';
 import { Customer360, type C360Props } from '@/components/admin/customer-360';
+import { getCustomerTimeline } from '@/lib/crm/timeline';
+import { listStaffOptions } from '@/lib/crm/staff';
+import { CustomerHealthCard } from '@/components/admin/crm/customer-health-card';
+import { Timeline } from '@/components/admin/crm/timeline';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,10 +26,15 @@ export default async function AdminCustomer360Page({ params }: { params: Promise
   const data = await getCustomer360(id);
   if (!data) notFound();
   const { customer: c, pets, visits, orders, ledger, coupons, notes, cart, messages } = data;
-  const [cfg, insights, services] = await Promise.all([
+  const [cfg, insights, services, staff, timeline, openTasks, openLeads, openTickets] = await Promise.all([
     getLoyaltyConfig(),
     buildInsights(id),
     db.service.findMany({ select: { id: true, nameFa: true }, orderBy: { nameFa: 'asc' }, take: 300 }),
+    listStaffOptions(),
+    getCustomerTimeline(id, { take: 30 }),
+    db.crmTask.count({ where: { customerId: id, status: { in: ['OPEN', 'IN_PROGRESS'] } } }),
+    db.lead.count({ where: { customerId: id, stage: { notIn: ['WON', 'LOST'] } } }),
+    db.contactMessage.count({ where: { customerId: id, status: { in: ['OPEN', 'PENDING'] } } }),
   ]);
   const tier = tierByKey(cfg.tiers, c.tier);
   const prog = tierProgress(cfg.tiers, c.lifetimePoints);
@@ -130,7 +139,27 @@ export default async function AdminCustomer360Page({ params }: { params: Promise
         <span aria-hidden> / </span>
         <span>{[c.firstName, c.lastName].filter(Boolean).join(' ') || c.phone}</span>
       </nav>
+      <CustomerHealthCard
+        customerId={c.id}
+        lifecycle={c.lifecycleStage}
+        health={c.healthScore}
+        churn={c.churnRisk}
+        ownerId={c.ownerId}
+        lastContactedAt={c.lastContactedAt ? c.lastContactedAt.toISOString() : null}
+        staff={staff}
+        counts={{ openTasks, openLeads, openTickets }}
+      />
       <Customer360 {...props} />
+      <section className="space-y-3 rounded-2xl border border-border bg-surface p-4" aria-labelledby="timeline-title">
+        <h2 id="timeline-title" className="text-base font-extrabold">
+          تاریخچهٔ یکپارچه
+        </h2>
+        <Timeline
+          customerId={c.id}
+          initialCursor={timeline.nextCursor}
+          initial={timeline.items.map((i) => ({ key: i.key, type: i.type, label: i.label, summary: i.summary, occurredAt: i.occurredAt.toISOString(), href: i.href }))}
+        />
+      </section>
     </div>
   );
 }

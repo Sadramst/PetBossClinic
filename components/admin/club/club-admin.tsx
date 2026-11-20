@@ -12,6 +12,7 @@ import { Field } from '@/components/ui/field'
 import { Input, Select, Textarea } from '@/components/ui/input'
 import { Tabs } from '@/components/ui/tabs'
 import { faNum, toman } from '@/components/admin/format'
+import { PageHeader } from '@/components/admin/kit'
 import { Card, Empty, Stat, TableWrap, td, th, useAct } from '@/components/admin/club/kit'
 
 interface Config {
@@ -60,10 +61,7 @@ export function ClubAdmin({ config, tiers, rewards, report, canEditConfig }: { c
   const tierLabel = (k: string) => tiers.find((t) => t.key === k)?.label ?? k
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <div>
-        <h1 className="text-xl font-extrabold">باشگاه مشتریان</h1>
-        <p className="mt-1 text-sm text-muted-foreground">قوانین امتیاز، سطح‌ها و جوایز را تنظیم کنید و وضعیت باشگاه را ببینید.</p>
-      </div>
+      <PageHeader title="باشگاه مشتریان" breadcrumbs={[{ label: 'فروش و مشتریان' }, { label: 'باشگاه مشتریان' }]} subtitle="قوانین امتیاز، سطح‌ها و جوایز را تنظیم کنید و وضعیت باشگاه را ببینید." />
       <Tabs
         label="بخش‌های باشگاه"
         variant="pills"

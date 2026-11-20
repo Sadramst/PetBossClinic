@@ -37,15 +37,18 @@ test.describe('Admin Control to Public Site Synchronization (Phase 1 Acceptance)
 
     // 3. Verify Admin Modules are present (Phase 1 modules)
     const isDesktop = (page.viewportSize()?.width ?? 1280) >= 1024
+    // The sidebar has one item per group; the merged sections (menus, social, testimonials, staff) are tabs inside their parents.
     if (isDesktop) {
       await expect(page.locator('a[href*="/admin/homepage"]').first()).toBeVisible()
-      await expect(page.locator('a[href*="/admin/social"]').first()).toBeVisible()
-      await expect(page.locator('a[href*="/admin/menus"]').first()).toBeVisible()
-      await expect(page.locator('a[href*="/admin/testimonials"]').first()).toBeVisible()
-      await expect(page.locator('a[href*="/admin/staff"]').first()).toBeVisible()
+      await expect(page.locator('a[href*="/admin/services"]').first()).toBeVisible()
+      await expect(page.locator('a[href*="/admin/faqs"]').first()).toBeVisible()
     } else {
       await expect(page.locator('a[href*="/admin/homepage"]').first()).toBeAttached()
-      await expect(page.locator('a[href*="/admin/staff"]').first()).toBeAttached()
+      await expect(page.locator('a[href*="/admin/services"]').first()).toBeAttached()
+    }
+    for (const [parent, tabs] of [['homepage', ['menus', 'social']], ['services', ['divisions', 'staff']], ['faqs', ['testimonials']]] as const) {
+      await page.goto(`/admin/${parent}`, { waitUntil: 'domcontentloaded' })
+      for (const t of tabs) await expect(page.getByTestId(`section-tab-${t}`)).toBeVisible()
     }
 
     // 4. Navigate to Homepage Manager

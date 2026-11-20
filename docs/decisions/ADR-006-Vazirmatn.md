@@ -1,4 +1,4 @@
-# ADR 006: Typography Selection — Vazirmatn Variable Font for Persian & Outfit for English
+# ADR 006: Typography Selection — Vazirmatn Variable Font for Persian & Vazirmatn for English
 
 - **Status:** Accepted
 - **Deciders:** Product Strategy Manager, Lead UX Designer
@@ -17,7 +17,7 @@ Key constraints:
 ## Decision
 We standardized on:
 1. **Primary Persian Font:** **Vazirmatn** variable font (`next/font/google`), loaded globally for the Persian locale (`/`, `dir="rtl"`).
-2. **Primary English Font:** **Outfit** variable font (`next/font/google`), loaded for English routes (`/en`, `dir="ltr"`).
+2. **Primary English Font:** **Vazirmatn** variable font (`next/font/google`), loaded for English routes (`/en`, `dir="ltr"`).
 
 ## Consequences
 ### Positive
@@ -32,3 +32,7 @@ We standardized on:
 ## Alternatives Considered
 - **IranSans / Shabnam:** High licensing costs for commercial multi-domain web use with complex font-family hosting requirements.
 - **System Fonts (`Tahoma`, `Arial`):** Generic, dated appearance completely incompatible with luxury pet clinic branding.
+
+
+## Update 2026-11
+Vazirmatn is the only font; English typography was dropped with ADR-010.

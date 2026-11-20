@@ -7,6 +7,9 @@ import { StockStatus } from '@prisma/client'
 import { logAdminChange } from '@/lib/audit'
 import { normalizeFa, slugifyFa } from '@/lib/text/persian'
 import { detectBrand } from '@/lib/shop/brands'
+import { z } from 'zod'
+import { checkRateLimit } from '@/lib/utils/rate-limit'
+import { MAX_PRICE, previewPriceAdjust, validatePriceAdjust, type PriceAdjust, type PricePreviewRow } from '@/lib/shop/price-adjust'
 
 /** Brand id for a product name (brand rows are created by scripts/assign-brands.ts). */
 async function brandIdFor(name: string): Promise<string | null> {
@@ -690,3 +693,87 @@ export async function deleteCategoryAction(categoryId: string): Promise<Category
   }
 }
 
+/* ------------------------------------------------------------------ bulk and quick edits */
+
+const idsSchema = z.array(z.string().trim().min(1).max(40)).min(1, 'حداقل یک محصول انتخاب کنید.').max(200, 'در هر بار حداکثر ۲۰۰ محصول.')
+
+async function bulkGuard(bucket: string, min: 'EDITOR' | 'ADMIN' = 'EDITOR') {
+  const session = await getSessionWithRole(min)
+  if (!session) return { error: 'دسترسی غیرمجاز.' as const }
+  if (!checkRateLimit(`prod-${bucket}:${session.userId}`, 30, 60_000).allowed) return { error: 'تعداد درخواست‌ها زیاد است؛ کمی صبر کنید.' as const }
+  return { session }
+}
+
+/** Shows or hides many products at once. */
+export async function bulkSetProductsActiveAction(ids: unknown, isActive: boolean): Promise<ProductActionState> {
+  const g = await bulkGuard('bulk')
+  if ('error' in g) return { error: g.error }
+  const parsed = idsSchema.safeParse(ids)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  const res = await db.product.updateMany({ where: { id: { in: parsed.data }, deletedAt: null }, data: { isActive } })
+  await logAdminChange({ action: 'BULK_UPDATE', entity: 'PRODUCT', entityId: parsed.data[0], details: { field: 'isActive', value: isActive, count: res.count, ids: parsed.data } })
+  revalidateCatalog()
+  return { success: true, message: `${res.count.toLocaleString('fa-IR')} محصول ${isActive ? 'فعال' : 'مخفی'} شد.` }
+}
+
+/** Moves many products to one category. */
+export async function bulkSetProductsCategoryAction(ids: unknown, categoryId: string): Promise<ProductActionState> {
+  const g = await bulkGuard('bulk')
+  if ('error' in g) return { error: g.error }
+  const parsed = idsSchema.safeParse(ids)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  const cat = await db.productCategory.findUnique({ where: { id: String(categoryId) }, select: { id: true, nameFa: true } })
+  if (!cat) return { error: 'دسته‌بندی پیدا نشد.' }
+  const res = await db.product.updateMany({ where: { id: { in: parsed.data }, deletedAt: null }, data: { categoryId: cat.id } })
+  await logAdminChange({ action: 'BULK_UPDATE', entity: 'PRODUCT', entityId: parsed.data[0], details: { field: 'categoryId', value: cat.id, count: res.count, ids: parsed.data } })
+  revalidateCatalog()
+  return { success: true, message: `${res.count.toLocaleString('fa-IR')} محصول به «${cat.nameFa}» منتقل شد.` }
+}
+
+export interface PriceAdjustResult extends ProductActionState {
+  preview?: PricePreviewRow[]
+}
+
+/** Bulk price change. `dryRun` (default) only returns the before and after table; ADMIN to apply. */
+export async function bulkAdjustPricesAction(ids: unknown, adjust: PriceAdjust, dryRun = true): Promise<PriceAdjustResult> {
+  const g = await bulkGuard(dryRun ? 'price-preview' : 'price', dryRun ? 'EDITOR' : 'ADMIN')
+  if ('error' in g) return { error: g.error }
+  const parsed = idsSchema.safeParse(ids)
+  if (!parsed.success) return { error: parsed.error.issues[0].message }
+  const bad = validatePriceAdjust(adjust)
+  if (bad) return { error: bad }
+  const rows = await db.product.findMany({ where: { id: { in: parsed.data }, deletedAt: null }, select: { id: true, nameFa: true, price: true } })
+  const preview = previewPriceAdjust(rows.map((r) => ({ id: r.id, name: r.nameFa, price: r.price })), adjust)
+  if (dryRun) return { success: true, preview }
+  const invalid = preview.filter((p) => p.after == null)
+  if (invalid.length) return { error: `قیمت جدید ${invalid.length.toLocaleString('fa-IR')} محصول معتبر نیست؛ مقدار را اصلاح کنید.`, preview }
+  await db.$transaction(preview.map((p) => db.product.update({ where: { id: p.id }, data: { price: p.after! } })))
+  // One audit row per product so each product's price history is complete.
+  for (const p of preview) {
+    await logAdminChange({ action: 'BULK_UPDATE', entity: 'PRODUCT', entityId: p.id, before: { price: p.before }, after: { price: p.after }, details: { field: 'price', adjust, count: preview.length } })
+  }
+  revalidateCatalog()
+  return { success: true, message: `قیمت ${preview.length.toLocaleString('fa-IR')} محصول به‌روزرسانی شد.`, preview }
+}
+
+/** Inline edit from the list: price and/or stock status. */
+export async function quickUpdateProductAction(productId: string, patch: { price?: number; stockStatus?: string }): Promise<ProductActionState> {
+  const g = await bulkGuard('quick')
+  if ('error' in g) return { error: g.error }
+  const data: { price?: number; stockStatus?: StockStatus; isPurchasable?: boolean } = {}
+  if (patch.price !== undefined) {
+    if (!Number.isInteger(patch.price) || patch.price < 1 || patch.price > MAX_PRICE) return { error: 'قیمت باید عدد صحیح مثبت باشد.' }
+    data.price = patch.price
+  }
+  if (patch.stockStatus !== undefined) {
+    if (!['IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK', 'ON_BACKORDER'].includes(patch.stockStatus)) return { error: 'وضعیت موجودی نامعتبر است.' }
+    data.stockStatus = patch.stockStatus as StockStatus
+  }
+  if (!Object.keys(data).length) return { error: 'تغییری ارسال نشد.' }
+  const before = await db.product.findUnique({ where: { id: productId }, select: { price: true, stockStatus: true, deletedAt: true } })
+  if (!before || before.deletedAt) return { error: 'محصول پیدا نشد.' }
+  const next = await db.product.update({ where: { id: productId }, data })
+  await logAdminChange({ action: 'UPDATE', entity: 'PRODUCT', entityId: productId, before, after: { price: next.price, stockStatus: next.stockStatus } })
+  revalidateCatalog()
+  return { success: true, message: 'ذخیره شد.' }
+}

@@ -15,7 +15,7 @@ Key constraints:
 - Client-side rendering (CSR) must be strictly confined to interactive UI elements (theme toggler, interactive tabs, form validations).
 
 ## Decision
-All public customer-facing routes (`/`, `/services`, `/services/[slug]`, `/about`, `/contact`, `/faq`, `/shop`, `/blog`, `/lp/[slug]`) are rendered using **Server-Side Rendering (SSR)** or **Static Site Generation (SSG)** with Incremental Static Regeneration (ISR).
+All public customer-facing routes (`/`, `/services`, `/services/[slug]`, `/about`, `/contact`, `/faq`, `/shop`, `/blog`, `landing pages/[slug]`) are rendered using **Server-Side Rendering (SSR)** or **Static Site Generation (SSG)** with Incremental Static Regeneration (ISR).
 
 Administrative back-office routes (`/admin/*`) explicitly enforce dynamic rendering (`export const dynamic = 'force-dynamic'`) to guarantee real-time data freshness without static generation errors.
 
@@ -31,3 +31,7 @@ Administrative back-office routes (`/admin/*`) explicitly enforce dynamic render
 
 ## Alternatives Considered
 - **Client-Side Rendering (SPA):** Disqualified immediately; Googlebot and Persian search engines exhibit significant indexing delays or complete failures when evaluating dynamic JavaScript-dependent content.
+
+
+## Update 2026-11
+The site is Farsi only (no hreflang). Public `/lp/[slug]` landing pages are NOT built. Dynamic sitemap, Torob/Google feeds, RSS and IndexNow exist; see docs/seo-and-ads-playbook.md.

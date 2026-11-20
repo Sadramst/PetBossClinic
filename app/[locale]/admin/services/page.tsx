@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { ServicesManager } from "@/components/admin/services-manager";
+import { SectionTabs } from "@/components/admin/section-tabs";
 import { requireAdmin } from "@/lib/auth/guard";
 
 export const dynamic = 'force-dynamic';
@@ -30,10 +31,13 @@ export default async function AdminServicesPage({
   ]);
 
   return (
-    <ServicesManager
-      services={services}
-      divisions={divisions}
-      isEn={isEn}
-    />
+    <>
+      <SectionTabs group="clinic" current="services" />
+      <ServicesManager
+        services={services}
+        divisions={divisions}
+        isEn={isEn}
+      />
+    </>
   );
 }

@@ -119,6 +119,19 @@ const MIGRATIONS = [
       );
     },
   },
+  {
+    dir: '20261123_crm_v2',
+    applied: async () =>
+      (await columnExists('Lead', 'stage')) &&
+      (await columnExists('Customer', 'healthScore')) &&
+      (await columnExists('ContactMessage', 'status')) &&
+      (await tableExists('Contact')) &&
+      (await tableExists('CrmTask')) &&
+      (await tableExists('CrmActivity')) &&
+      (await tableExists('ExpiryConfig')) &&
+      (await indexExists('CrmTask_dedupeKey_key')) &&
+      (await indexExists('CrmActivity_type_refType_refId_key')),
+  },
 ];
 
 try {
@@ -152,6 +165,7 @@ try {
   // One-time data steps (each script is idempotent; these guards just avoid re-running them every build).
   const brandCount = Number((await client.query('select count(*) from "Brand"')).rows[0].count);
   const postCount = Number((await client.query('select count(*) from "Post"')).rows[0].count);
+  const contactCount = Number((await client.query('select count(*) from "Contact"')).rows[0].count);
   await client.end();
 
   const run = (script, ...args) => {
@@ -163,6 +177,14 @@ try {
     run('assign-brands.ts', '--apply');
   }
   if (postCount === 0) run('seed-blog-drafts.ts');
+  // CRM v2: link existing customers, leads and messages to the contact spine once. Idempotent and non-fatal.
+  if (contactCount === 0) {
+    try {
+      run('backfill-crm.ts');
+    } catch (err) {
+      console.warn('[release-db] warning: CRM backfill did not finish; rerun with: npx tsx scripts/backfill-crm.ts', err?.message ?? '');
+    }
+  }
 
   console.log('[release-db] database ready for this release.');
 } catch (err) {

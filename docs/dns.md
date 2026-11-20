@@ -35,7 +35,7 @@ Configure the following records in the VentraIP VIPControl DNS Management Consol
 - **Certificate Provider:** Let's Encrypt / DigiCert via Vercel
 - **Renewal Process:** 100% automated 30 days prior to expiry
 - **Protocols Supported:** TLS 1.2, TLS 1.3
-- **Security Headers Injected at Edge:**
+- **Security headers (set by the app in `next.config.ts`, not at the Vercel edge; check CSP and Permissions-Policy there):**
   - `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
   - `X-Content-Type-Options: nosniff`
   - `X-Frame-Options: SAMEORIGIN`
@@ -60,3 +60,11 @@ dig +short CNAME www.petbossclinic.com
 curl -I http://petbossclinic.com
 # Expected: HTTP/1.1 308 Permanent Redirect -> Location: https://www.petbossclinic.com/
 ```
+
+
+## Verify before relying on this file
+- The A record `76.76.21.21` is Vercel's classic value; Vercel now shows per-project values in the domain settings, so re-check.
+- Apex to www redirect: confirm in Vercel domain config.
+- Mail records (SPF `_spf.google.com`, DMARC `p=none`) assume Google Workspace; confirm, and tighten DMARC later.
+- Verification codes (Search Console, eNamad, Torob) are entered in Admin, Settings.
+- Vercel serves from `fra1`; expect added latency for Iranian visitors.

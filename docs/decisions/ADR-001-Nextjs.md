@@ -7,12 +7,12 @@
 ---
 
 ## Context
-Pet Boss Clinic requires a bilingual (Farsi-first, English-second) high-performance web platform combining medical clinic service discovery, pet shop e-commerce showcase, lead generation, and an internal administrative back office. 
+Pet Boss Clinic requires a Farsi-only (RTL) high-performance web platform combining medical clinic service discovery, pet shop e-commerce showcase, lead generation, and an internal administrative back office. 
 
 Key constraints:
 - Must achieve fast First Contentful Paint (FCP) and Largest Contentful Paint (LCP) for mobile visitors in Iran and abroad.
 - Must render full semantic HTML for Google and Persian search engines without relying on client-side hydration.
-- Must seamlessly support localized dynamic routing with RTL (Right-to-Left) and LTR (Left-to-Right) layout trees.
+- Must seamlessly support localized dynamic routing with RTL layout trees.
 
 ## Decision
 We adopted **Next.js 15** utilizing the **App Router (`app/[locale]/...`)** and React 19 Server Components.
@@ -31,3 +31,7 @@ We adopted **Next.js 15** utilizing the **App Router (`app/[locale]/...`)** and 
 ## Alternatives Considered
 - **Vite + React SPA:** Rejected due to poor SEO crawler execution in regional Persian search engines and lack of edge SSR.
 - **Remix / React Router 7:** Viable, but Next.js offered superior native edge deployment integration on Vercel and better ecosystem documentation.
+
+
+## Update 2026-11
+The site is now Farsi only (ADR-010). The `[locale]` segment stays with `localePrefix: never`; `/en` and `/fa` are redirected by middleware.

@@ -31,3 +31,7 @@ We adopted **PostgreSQL 16** as the relational database engine, paired with **Pr
 ## Alternatives Considered
 - **MongoDB / Document Store:** Rejected due to weak multi-table relational guarantees for billing, orders, and veterinary patient records.
 - **Drizzle ORM:** Excellent lightweight alternative, but Prisma provided superior tooling for declarative schema modeling and rapid prototyping.
+
+
+## Update 2026-11
+The e-commerce, customer, club, marketing and CRM models have shipped (about 100 models). Migration policy: additive and idempotent SQL in `prisma/migrations/*`, registered and applied by `scripts/release-db.mjs` (ADR-015).

@@ -29,14 +29,65 @@ export function daysUntil(expiry: Date | string, now: Date = new Date()): number
   return Math.floor((e.getTime() - now.getTime()) / DAY);
 }
 
-export function expiryState(expiry: Date | string | null, now: Date = new Date()): ExpiryState {
+/** Admin-tunable thresholds (singleton `ExpiryConfig`); these are the defaults. */
+export type ExpiryConfigValues = {
+  soonDays: number;
+  criticalDays: number;
+  minShelfLifeDays: number;
+  discountStartDays: number;
+  discountPercent: number;
+};
+
+export const DEFAULT_EXPIRY_CONFIG: ExpiryConfigValues = {
+  soonDays: EXPIRY_SOON_DAYS,
+  criticalDays: EXPIRY_CRITICAL_DAYS,
+  minShelfLifeDays: 7,
+  discountStartDays: 60,
+  discountPercent: 20,
+};
+
+export interface ExpiryThresholds {
+  soonDays: number;
+  criticalDays: number;
+}
+
+/**
+ * State of a batch. Accepts the legacy `(date, now)` call and the configurable
+ * `(date, thresholds, now)` call; thresholds default to 90 / 30 days.
+ */
+export function expiryState(expiry: Date | string | null, now?: Date): ExpiryState;
+export function expiryState(expiry: Date | string | null, cfg?: Partial<ExpiryThresholds>, now?: Date): ExpiryState;
+export function expiryState(
+  expiry: Date | string | null,
+  arg2?: Date | Partial<ExpiryThresholds>,
+  arg3?: Date
+): ExpiryState {
   const e = toDate(expiry);
   if (!e) return 'none';
+  const legacy = arg2 instanceof Date;
+  const cfg = legacy ? {} : (arg2 ?? {});
+  const now = legacy ? arg2 : (arg3 ?? new Date());
+  const soon = cfg.soonDays ?? EXPIRY_SOON_DAYS;
+  const critical = cfg.criticalDays ?? EXPIRY_CRITICAL_DAYS;
   const days = daysUntil(e, now);
   if (days < 0) return 'expired';
-  if (days <= EXPIRY_CRITICAL_DAYS) return 'critical';
-  if (days <= EXPIRY_SOON_DAYS) return 'soon';
+  if (days <= critical) return 'critical';
+  if (days <= soon) return 'soon';
   return 'ok';
+}
+
+/** «حدود ۱۴ ماه دیگر» / «کمتر از یک ماه دیگر» / «۳ ماه پیش»: quiet secondary text for a date. */
+export function relativeMonthsFa(date: Date | string, now: Date = new Date()): string {
+  const e = toDate(date);
+  if (!e) return '';
+  const days = daysUntil(e, now);
+  const fa = (n: number) => n.toLocaleString('fa-IR');
+  if (days < 0) {
+    const m = Math.round(-days / 30);
+    return m < 1 ? 'چند روز پیش' : `حدود ${fa(m)} ماه پیش`;
+  }
+  if (days < 30) return days === 0 ? 'امروز' : `${fa(days)} روز دیگر`;
+  return `حدود ${fa(Math.round(days / 30))} ماه دیگر`;
 }
 
 /**

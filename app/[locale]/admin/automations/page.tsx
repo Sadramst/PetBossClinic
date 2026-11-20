@@ -4,6 +4,7 @@ import { normalizeCouponTemplate } from '@/lib/club/messaging/personalize';
 import { senderStatus } from '@/lib/club/messaging/sender';
 import { Alert } from '@/components/ui/alert';
 import { formatJalaliDateTime } from '@/components/admin/format';
+import { PageHeader } from '@/components/admin/kit';
 import { AutomationsManager } from '@/components/admin/club/automations-manager';
 
 export const dynamic = 'force-dynamic';
@@ -15,10 +16,7 @@ export default async function AdminAutomationsPage({ params }: { params: Promise
   const status = senderStatus();
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <div>
-        <h1 className="text-xl font-extrabold">پیام‌های خودکار</h1>
-        <p className="mt-1 text-sm text-muted-foreground">هر قانون که روشن شود، سیستم هر ساعت مشتریان مناسب را پیدا می‌کند و پیام را در صف می‌گذارد. همه قوانین در ابتدا خاموش‌اند و فقط به مشتریانی که رضایت پیامک دارند ارسال می‌شود.</p>
-      </div>
+      <PageHeader title="پیام‌های خودکار" breadcrumbs={[{ label: 'ارتباطات' }, { label: 'پیام‌های خودکار' }]} subtitle="هر قانون که روشن شود، سیستم هر ساعت مشتریان مناسب را پیدا می‌کند و پیام را در صف می‌گذارد. همه قوانین در ابتدا خاموش‌اند و فقط به مشتریانی که رضایت پیامک دارند ارسال می‌شود." />
       {status.message && <Alert tone="warning" title="سرویس پیامک متصل نیست">{status.message}</Alert>}
       <AutomationsManager
         rules={rules.map((r) => {

@@ -28,10 +28,10 @@ node scripts/import-october-inventory.js && npx tsx scripts/assign-brands.ts --a
 | --- | --- | --- |
 | Typecheck, lint | `tsc`, `eslint` | Everything compiles; no unused code or unsafe patterns. |
 | Unit | `tests/unit`, `__tests__` | Pure logic: expiry, Jalali dates, Persian text, filters, brands, shipping, cart input, passwords, session tokens, ZarinPal client, article renderer, JSON-LD escaping. |
-| Integration (real DB) | `tests/integration` | Concurrency: an order's stock is taken once even when called in parallel; parallel OTP and password guesses are capped; password login, lock-out, "squatter" takeover, logout and password change invalidating sessions. |
+| Integration (real DB) | `tests/integration` | Concurrency: an order's stock is taken once even when called in parallel; parallel OTP and password guesses are capped; CRM merge and import races, inventory adjust races, password login, lock-out, "squatter" takeover, logout and password change invalidating sessions. |
 | Build | `npm run build` | Every page compiles and prerenders against the real schema. |
 | E2E (browser) | `tests/e2e` | Real browser, desktop and phone: navigation and redirects, shop search/filters/pagination, product/category/brand pages, SEO tags, feeds and sitemap, blog, **customer register / logout / login / change password**, cart → checkout → cash-on-delivery order → stock, admin login, **no horizontal overflow at 360px** on public, account, cart and checkout pages. |
-| CI | `.github/workflows` | The same checks on every pull request, plus Lighthouse. |
+| CI | `.github/workflows` | The same checks on every pull request, plus e2e and Lighthouse; CI uses a `postgres:16` service. |
 
 Rules of thumb: a bug found by hand gets a test in the cheapest layer that can catch it (the 360px overflow
 guard exists because the account pages once stretched past a phone's width).
@@ -49,7 +49,7 @@ Run after a deploy, or when a change touches the shop. "Phone" = a real phone, o
 | G3 | `/shop` → a category → filter (cat, price range, in stock only) → sort. | URL reflects the filters; results and counts update; chips remove filters. |
 | G4 | Open a product. | Price, stock, expiry date of the batch that ships, brand link, related products. |
 | G5 | Add to cart, change quantity, remove, close the browser and reopen. | Cart persists; totals are right; stock limits are respected. |
-| G6 | Open `/en/shop`. | 301 redirect to `/shop`. |
+| G6 | Open `/en/shop`. | 301 redirect to `/shop` (the site is Farsi only). |
 | G7 | Open a made-up URL. | Farsi 404 page with search, status 404. |
 
 ### Customer
@@ -91,7 +91,29 @@ Run after a deploy, or when a change touches the shop. "Phone" = a real phone, o
 | Daily expiry job | Call `/api/cron/expiry` with `Authorization: Bearer $CRON_SECRET`; without the header it returns 401. |
 | Release step | A production deploy logs `[release-db] … applied / already applied` and `database ready`. |
 
-## 5. Smoke checklists
+## 5. CRM, club and marketing QA
+
+Automated: `tests/e2e/club-a..f`, `marketing-a..e`, `crm-a..c`, `admin-*`; integration `tests/integration/crm-data-core.test.ts`, `inventory-admin.test.ts`, `products-bulk.test.ts`; unit `crm-core`, `crm-ui-labels`, `inventory-rules`, `audit-view`, `admin-shell-nav`, `expiry`. Playwright has two projects (desktop Chrome and Pixel 5, locale fa-IR). Vitest suites: `tests/unit`, `tests/integration`, `__tests__/components`. There is no coverage script yet.
+
+| # | Steps | Expected |
+| --- | --- | --- |
+| K1 | Customer: add a pet, earn points on an order, climb a tier, redeem a reward, use a referral link `/r/<code>`. | Ledger and balance agree; coupon from reward works once. |
+| K2 | Marketing: create a coupon, a segment and an SMS campaign; run with `SMS_PROVIDER=console`. | Outbox rows QUEUED then SENT; a STOP reply skips later marketing sends. |
+| K3 | Automations: enable a rule and trigger it (order or due date). | One outbox row, deduplicated. |
+| K4 | Leads: submit the public lead form, open the lead, move through stages, mark LOST without a reason. | Illegal move and missing reason are refused; WON converts to a customer once. |
+| K5 | Tasks: create, snooze, complete; check overdue tab. | Counts on the tabs and dashboard match. |
+| K6 | Inbox: open a ticket, reply by SMS, add an internal note, change status. | Reply creates an outbox row; legal transitions only; SLA badge shows. |
+| K7 | Customer 360: timeline filters, owner, quick note, health card. | New events appear once, newest first. |
+| K8 | Duplicates: create two customers with `+98` and `09` forms of one phone, merge (dry run, then confirm as ADMIN). | Pets, points, orders move; loser is a blocked shell; audit row written. |
+| K9 | Import a CSV with a bad row and a duplicate. | Preview counts are right; commit is idempotent. |
+| K10 | Saved views and exports. | Admin shares a view; editor cannot; exports are audited. |
+| K11 | Role gating: log in as EDITOR, ADMIN, SUPER_ADMIN. | Nav and pages match the role matrix in `admin-panel.md`; audit, theme, club, marketing need ADMIN. |
+| K12 | Cron: call `/api/cron/club` and `/api/cron/expiry` with and without the Bearer secret. | 200 with, 401 without; digest notification appears when stock is expired or critical. |
+| K13 | Inbound SMS webhook with `SMS_INBOUND_SECRET`. | Wrong secret refused; STOP revokes consent. |
+| K14 | Expiry: product page shows the date once (`product-expiry`), near-expiry gets the gold badge; inventory board states, add batch, adjust, write off. | One expiry element per page; states match the thresholds in settings. |
+| K15 | Phone width 360px on admin dashboard, leads, inventory. | No horizontal scroll; tables become cards. |
+
+## 6. Smoke checklists
 
 **Before deploying:** `npm run test:all` green; migrations in `prisma/migrations` are additive; `AUTH_SECRET` and
 `CRON_SECRET` set in Vercel; the preview deployment opens.

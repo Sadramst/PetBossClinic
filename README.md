@@ -1,4 +1,4 @@
-# Pet Boss Clinic (پت‌باس) — Web Platform & Admin Panel
+# Pet Boss Clinic (پت‌باس)
 
 [![CI](https://github.com/Sadramst/PetBossClinic/actions/workflows/ci.yml/badge.svg)](https://github.com/Sadramst/PetBossClinic/actions/workflows/ci.yml)
 [![E2E Tests](https://github.com/Sadramst/PetBossClinic/actions/workflows/e2e.yml/badge.svg)](https://github.com/Sadramst/PetBossClinic/actions/workflows/e2e.yml)
@@ -9,211 +9,65 @@
 [![TailwindCSS](https://img.shields.io/badge/Tailwind-v4-38bdf8?logo=tailwind-css)](https://tailwindcss.com/)
 [![Prisma](https://img.shields.io/badge/Prisma-6-2d3748?logo=prisma)](https://www.prisma.io/)
 
-> **Production-grade bilingual (Farsi-first / English-second) veterinary clinic and luxury pet shop website for Pet Boss Clinic (کلینیک و پت‌شاپ پت‌باس), located in Gheitariyeh, Tehran, Iran.**
+Farsi-only (RTL) website for an Iranian veterinary clinic in Gheitariyeh, Tehran, combined with an online pet shop and a full CRM. Brand: charcoal and gold luxury theme.
 
----
+## What it is
+| Area | What exists |
+|---|---|
+| Public site | Services, divisions, staff, FAQ, blog, legal pages, SEO feeds (sitemap, Torob, Google, RSS, IndexNow) |
+| Shop | Catalogue, brands, cart, checkout, ZarinPal and cash on delivery, coupons, expiry-aware stock (FEFO batches) |
+| Customer portal `/account` | Phone and password login with SMS OTP, orders, addresses, pets, club points and tiers, rewards, referrals, coupons |
+| CRM | One identity per person (Contact), leads pipeline, tasks, support inbox with SLA, customer 360 with timeline, health and churn, duplicates and merge, CSV import and export, saved views, reports |
+| Marketing | Segments, SMS campaigns, automations, outbox with consent and STOP, abandoned carts, AI suggestions (optional) |
+| Admin `/admin` | About 25 modules in 6 groups, command palette (Ctrl+K), notifications, role-based dashboard, audit log, theme studio |
 
-## 📌 Prototype Status Note
+Not built yet: online appointment booking, admin 2FA, roles RECEPTION and VET, clearance pricing, product reviews. See `docs/roadmap.md`.
 
-> [!NOTE]
-> **Current Milestone**: This project is currently in the **Phase 1 Working Prototype & Architectural Scaffold** stage. The frontend, theme engine, and admin panel at `/admin` represent a fully functional, interactive prototype connected to PostgreSQL and Prisma with realistic Tehran-market seed data. Real doctor licenses, finalized photographs, and payment gateway activation will be connected during the Phase 1 hardening and Phase 2 e-commerce transition.
+## Stack
+Next.js 15 (App Router), React 19, TypeScript, Tailwind v4, Prisma 6 on PostgreSQL, next-intl (Farsi only, no URL prefix), zod, server actions. Hosting: Vercel (region fra1, daily crons). Tests: Vitest and Playwright.
 
----
-
-## 🌟 Key Highlights & Features
-
-1. **Luxury Brand Identity (Matching Physical Mockup)**:
-   - Deep matte charcoal slate (`#181A20`, `#222630`) and polished metallic gold (`#C5A059`, `#D4AF37`, `#E5C06E`) aesthetic directly mirroring the branding in `RelatedPhotos/petbossclinic.jpeg`.
-   - Crowned Lion brand emblem vector component (`<PetBossLogo />`) with cat and dog silhouettes.
-   - Signature golden pill badges (`<LuxuryPillBadge />`): `مراقبت با عشق`, `جراحی تخصصی`, `دندانپزشکی`, `بیماری‌های داخلی`, `بستری و پانسیون`, `لوازم لوکس`.
-
-2. **Dynamic Theming with Live Admin Control**:
-   - Client Theme Engine with zero FOUC/hydration flash via server cookie synchronization (`petboss_theme`).
-   - 4 Predefined Luxury Themes:
-     - **Pet Boss Luxury Dark (Signature)** (Default)
-     - **Pet Boss Luxury Light**
-     - **Emerald Prestige**
-     - **Royal Obsidian**
-   - Admin Theme Manager at `/admin/theme` with real-time interactive preview.
-
-3. **Bilingual & Farsi-First Localization**:
-   - **Farsi (`fa-IR`) default at root (`/`)**: RTL layout with **Vazirmatn** variable font.
-   - **English (`en`) at `/en`**: LTR layout with **Outfit** variable font.
-   - Middleware-driven routing with `localePrefix: 'as-needed'`.
-
-4. **Three Top-Level Divisions**:
-   - **Clinical / Internal Medicine & Surgery** (بخش درمانی، داخلی و جراحی)
-   - **Grooming & Hygiene** (بخش آرایش، شستوشو و بهداشت)
-   - **Pet Shop** (پت‌شاپ)
-
-5. **Complete Admin Back Office Prototype (`/admin`)**:
-   - Dashboard with live metrics, lead inquiries, and inbox messages.
-   - Services Manager (Toman pricing, duration, division categories).
-   - Divisions Manager (Clinical, Grooming, Shop).
-   - Staff & Doctors Manager (medical council license tracking).
-   - Pet Shop Product Catalog (Phase 1 browse mode).
-   - Inquiries & Appointments tracker (`/admin/leads`).
-   - Contact Messages inbox (`/admin/messages`).
-   - FAQ & Knowledge Manager (`/admin/faqs`).
-   - Clinic General Settings (`/admin/settings`).
-
-6. **Automated Testing Suite**:
-   - 15 Vitest component and unit tests covering badges, theme switches, cards, buttons, and admin configuration.
-   - 100% clean TypeScript typechecking (`npm run typecheck`).
-   - ESLint compliance with 0 errors (`npm run lint`).
-   - Static prerendering of all 36 application routes (`npx next build`).
-
----
-
-## 🛠️ Technology Stack
-
-| Layer | Technology | Details |
-|---|---|---|
-| **Framework** | Next.js 15 (App Router) | Server Components, Server Actions, Route Handlers |
-| **Runtime / UI** | React 19 + TypeScript | Strict mode, full type-safety |
-| **Styling** | Tailwind CSS v4 | CSS Custom Properties tokens in `styles/tokens.css` |
-| **Components** | Radix UI primitives | Accessible, keyboard-navigable, RTL-ready |
-| **Database** | PostgreSQL 16 | Hosted on Vultr with pgBouncer pooling |
-| **ORM** | Prisma 6 | 1223-line schema, full relations, soft deletes |
-| **i18n** | next-intl | Namespaced JSON dictionaries in `messages/` |
-| **Typography** | Vazirmatn + Outfit | Self-hosted variable Google fonts |
-| **Testing** | Vitest + Playwright | JSDOM component testing, E2E mobile testing |
-| **Hosting** | Vercel | Auto-deploy from `main` branch |
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js `^20.17.0 || >=22.0.0`
-- npm `10+` (or pnpm `9+`)
-
-### 1. Clone & Install
+## Quick start
 ```bash
-git clone https://github.com/Sadramst/PetBossClinic.git
-cd PetBossClinic
 npm install
-```
-
-### 2. Configure Environment
-Create `.env` based on `.env.example`:
-```bash
-DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST:-localhost}:5432/${DB_NAME:-petboss}?schema=public"
-DIRECT_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST:-localhost}:5432/${DB_NAME:-petboss}?schema=public"
-AUTH_SECRET="your-random-32-character-secret"
-```
-
-### 3. Setup Database
-```bash
-# Generate Prisma Client
+cp .env.example .env          # fill DATABASE_URL, DIRECT_URL, AUTH_SECRET, INITIAL_ADMIN_*
 npx prisma generate
+npx prisma db push            # local dev database only
+npm run db:seed               # DEV ONLY: it deletes and recreates content tables
+npm run dev                   # http://localhost:3000, admin at /admin
+```
+Catalogue import: `node scripts/import-october-inventory.js` then `npx tsx scripts/assign-brands.ts --apply`.
 
-# Push schema to database
-npm run db:push
+## Scripts
+| Command | Purpose |
+|---|---|
+| `npm run dev` / `build` / `start` | Develop, production build (runs `scripts/release-db.mjs`), serve |
+| `npm run typecheck` / `lint` | tsc and eslint |
+| `npm test` | Vitest unit and integration (integration needs a local Postgres) |
+| `npm run test:e2e` | Playwright (desktop and Pixel 5, locale fa-IR) |
+| `npm run test:all` | typecheck, lint, tests, build, e2e in order (`-- --skip-e2e` for fast checks) |
+| `npm run seo:indexnow` | Ping IndexNow with all URLs |
 
-# Seed realistic Tehran clinic data
-npm run db:seed
+## Environment
+Copy `.env.example`. Key variables: `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `CRON_SECRET`, `INITIAL_ADMIN_EMAIL`, `INITIAL_ADMIN_PASSWORD`, `SMS_PROVIDER` (kavenegar, smsir, console) with provider keys, `SMS_INBOUND_SECRET`, `ZARINPAL_MERCHANT_ID`, `ZARINPAL_SANDBOX`, `SHIPPING_*`, optional `ANTHROPIC_API_KEY`, optional analytics ids. Never commit real values. Details in `docs/infra.md`.
+
+## Project map
+```
+app/[locale]/(shop|account|content|legal|marketing|clinic)/  public site and portal
+app/[locale]/admin/            admin and CRM pages
+app/actions/                   'use server' actions (requireAdmin + zod + logAdminChange)
+app/api/                       cron/{club,expiry}, indexnow, media/[key], payment/zarinpal, sms/inbound
+components/ui, components/admin/kit   design system
+lib/crm lib/club lib/marketing lib/shop lib/customer lib/sms lib/payments lib/seo   domain logic
+prisma/                        schema, SQL migrations, seed
+scripts/                       release-db, test-all, imports
+tests/{unit,integration,e2e}   plus __tests__/components
 ```
 
-### 4. Run Development Server
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) for Farsi or [http://localhost:3000/en](http://localhost:3000/en) for English.
-Access the prototype admin panel at [http://localhost:3000/admin](http://localhost:3000/admin).
+## Documentation
+Start at `docs/README.md`. Product docs: `docs/product/`. Owner guide: `docs/owner-checklist.md`.
 
----
-
-## 🧪 Verification & Testing Commands
-
-```bash
-# Run Vitest test suite
-npm test
-
-# Run TypeScript type check
-npm run typecheck
-
-# Run ESLint check
-npm run lint
-
-# Build production bundle
-npm run build
-```
-
----
-
-## 📂 Project Structure
-
-```
-PetBossClinic/
-├── app/
-│   ├── [locale]/
-│   │   ├── (clinic)/services/     # Services catalog & details
-│   │   ├── (marketing)/about/     # Clinic story, mission & team
-│   │   ├── (marketing)/contact/   # Contact form, coordinates & hours
-│   │   ├── (marketing)/faq/       # Categorized FAQ accordion
-│   │   ├── admin/                 # Custom Admin Back Office suite
-│   │   │   ├── theme/             # Dynamic theme switcher with live preview
-│   │   │   ├── services/          # Services management
-│   │   │   ├── divisions/         # Clinic divisions
-│   │   │   ├── staff/             # Doctors and veterinary licenses
-│   │   │   ├── products/          # Pet shop catalog
-│   │   │   ├── leads/             # Appointment requests
-│   │   │   ├── messages/          # Contact messages inbox
-│   │   │   ├── faqs/              # FAQ management
-│   │   │   └── settings/          # Clinic phone, GPS coordinates, hours
-│   │   ├── layout.tsx             # Root layout with ThemeProvider & fonts
-│   │   └── page.tsx               # Luxury branded homepage
-│   ├── feed.xml/                  # RSS feed route
-│   ├── robots.ts                  # Search engine robots config
-│   └── sitemap.ts                 # Dynamic XML sitemap
-├── components/
-│   ├── layout/                    # Header, Footer, Mobile bar
-│   ├── shared/                    # PetBossLogo vector component
-│   └── ui/                        # LuxuryPillBadge, Button, Card, Input
-├── lib/
-│   ├── db/                        # Prisma client singleton
-│   └── theme/                     # ThemeProvider, presets, types, hooks
-├── messages/
-│   ├── fa.json                    # Persian translations dictionary
-│   └── en.json                    # English translations dictionary
-├── prisma/
-│   ├── schema.prisma              # Database schema (1223 lines)
-│   └── seed.ts                    # Tehran seed data script
-├── styles/
-│   ├── tokens.css                 # Master luxury charcoal/gold tokens
-│   ├── globals.css                # Tailwind v4 theme & utility classes
-│   └── rtl.css                    # RTL layout overrides
-├── docs/                          # Comprehensive architectural documentation
-├── infra/                         # Docker compose & database backup script
-└── __tests__/                     # Vitest component and UI unit tests
-```
-
----
-
-## 📖 Documentation Directory (`/docs`)
-
-- [Architecture & Tech Stack](./docs/architecture.md)
-- [Data Model & Prisma Schema](./docs/data-model.md)
-- [Admin Panel Specification](./docs/admin-panel.md)
-- [Theming & Luxury Brand Identity](./docs/theming.md)
-- [Internationalization (i18n)](./docs/i18n.md)
-- [Phase 1 to Phase 2 Roadmap](./docs/roadmap.md)
-- [SEO & Google Ads Playbook](./docs/seo-and-ads-playbook.md)
-- [Testing Strategy & Test Suite](./docs/testing.md)
-- [Infrastructure & Hosting](./docs/infra.md)
-- [DNS & Domain Setup](./docs/dns.md)
-- [Operations Runbook](./docs/runbook.md)
-- [Contributing Guidelines](./docs/contributing.md)
-
----
-
-## 📍 Clinic Physical Details
-
-- **Name**: کلینیک دامپزشکی و پت شاپ پت باس (Pet Boss Veterinary Clinic & Pet Shop)
-- **Tagline**: مراقبت با عشق ("Care with love")
-- **Address**: تهران، خیابان شریعتی، بالاتر از پل صدر، نرسیده به ایستگاه مترو قیطریه، پلاک ۱۷۳۳
-- **GPS Coordinates**: `35.790937, 51.4350853`
-- **Working Hours**: همه روزه ۱۰:۰۰ صبح الی ۲۲:۰۰ شب (بدون تعطیلی)
-- **Contact Phone**: `+982126429715`
-- **Designed & Developed by**: [Appilico](https://www.appilico.com.au/)
+## Clinic details
+- Address: تهران، خیابان شریعتی، بالاتر از پل صدر، نرسیده به ایستگاه مترو قیطریه، پلاک ۱۷۳۳
+- GPS: `35.790937, 51.4350853`
+- Hours: همه روزه ۱۰:۰۰ تا ۲۲:۰۰
+- Phone: `+982126429715`

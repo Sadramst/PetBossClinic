@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { StaffManager } from "@/components/admin/staff-manager";
+import { SectionTabs } from "@/components/admin/section-tabs";
 import { requireAdmin } from "@/lib/auth/guard";
 
 export const dynamic = 'force-dynamic';
@@ -18,9 +19,12 @@ export default async function AdminStaffPage({
   });
 
   return (
-    <StaffManager
-      staff={staff}
-      isEn={isEn}
-    />
+    <>
+      <SectionTabs group="clinic" current="staff" />
+      <StaffManager
+        staff={staff}
+        isEn={isEn}
+      />
+    </>
   );
 }

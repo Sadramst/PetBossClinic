@@ -6,8 +6,7 @@ done; the items in **“Only the owner can do”** need the clinic’s own accou
 
 Site-internal work that is already live:
 
-- 777 URLs in `sitemap.xml` (home, shop, 16 categories, 21 brands, 723 products,
-  10 service pages, 7 static pages)
+- Every public URL is in `sitemap.xml` (see `/sitemap.xml` for live counts): home, shop, categories, brands, products, blog posts and service pages.
 - `robots.txt`, RSS (`/feed.xml`), Torob API (`/feeds/torob`),
   Google product feed (`/feeds/products.xml`)
 - JSON-LD: VeterinaryCare/LocalBusiness, Organization, WebSite + SearchAction,
@@ -46,8 +45,7 @@ comes from **Google Business Profile**, not from the website.
 
 ### 1.3 Google Merchant Center
 Add `https://www.petbossclinic.com/feeds/products.xml` as a scheduled feed.
-It currently contains the 546 priced products; fix the 177 unpriced ones first
-(see `docs/seo-audit-2026-11.md`).
+It contains only priced products; unpriced ones are skipped, so fix missing prices first (see docs/roadmap.md, catalogue quality).
 
 ## 2. Bing / Yandex / other search engines
 
@@ -124,7 +122,7 @@ authentic pet food, open daily 10:00–22:00.
    litter, joint supplements). Link to the category and 3–6 products.
 4. **Collect reviews** — after 10–20 real Google reviews, add `AggregateRating`
    to Product/Service schema (never invent reviews).
-5. **Fix the 177 products without a price** — they are invisible in Google
+5. **Fix products without a price** — they are invisible in Google
    Shopping and cannot produce product rich results.
 
 ## 6. Weekly 15-minute routine
@@ -143,3 +141,11 @@ authentic pet food, open daily 10:00–22:00.
   phone verification).
 - Collect real customer reviews.
 - Approve veterinary content before publishing.
+
+
+## Notes added with the CRM release
+- The site itself is Farsi only; English NAP lines above are for directories only.
+- Edit the clinic NAP in Admin, Settings (single source of truth), not in this file.
+- Review collection: use an SMS automation (Admin, Automations) after an order or visit with the Google review link.
+- Use `utm_source`, `utm_medium`, `utm_campaign` on every link you publish (Torob, Google Business Profile, SMS) so leads are attributable.
+- Referral links `/r/[code]` and `/account`, `/cart`, `/checkout` must stay out of the index.

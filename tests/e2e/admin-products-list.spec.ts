@@ -35,20 +35,20 @@ test.describe('admin products list', () => {
   test('shows one page of products, pages and filters through the URL, and stays light', async ({ page }) => {
     const res = await page.goto('/admin/products', { waitUntil: 'domcontentloaded' })
     expect((await res!.body()).length).toBeLessThan(700 * 1024)
-    const firstPageRows = await page.locator('tbody tr').count()
+    const firstPageRows = await page.getByTestId('data-row').count()
     expect(firstPageRows).toBeGreaterThan(0)
     expect(firstPageRows).toBeLessThanOrEqual(50)
-    const firstName = await page.locator('tbody tr').first().locator('p.font-bold').first().innerText()
+    const firstName = await page.getByTestId('data-row').first().locator('button.font-bold').first().innerText()
 
     // Per-page size comes from the URL
     await page.goto('/admin/products?size=25', { waitUntil: 'domcontentloaded' })
-    expect(await page.locator('tbody tr').count()).toBeLessThanOrEqual(25)
+    expect(await page.getByTestId('data-row').count()).toBeLessThanOrEqual(25)
 
     // A search narrows the list (server side) and an impossible one shows the empty state
     await page.goto('/admin/products?q=' + encodeURIComponent(firstName.slice(0, 6)), { waitUntil: 'domcontentloaded' })
-    await expect(page.locator('tbody tr').first()).toContainText(firstName.slice(0, 6))
+    await expect(page.getByTestId('data-row').first()).toContainText(firstName.slice(0, 6))
     await page.goto('/admin/products?q=zzzz-no-such-product-9999', { waitUntil: 'domcontentloaded' })
-    await expect(page.getByText('هیچ محصولی با این مشخصات یافت نشد.')).toBeVisible()
+    await expect(page.getByText('محصولی پیدا نشد')).toBeVisible()
 
     // Garbage parameters never break the page
     const bad = await page.goto('/admin/products?page=-5&size=abc&status=NOPE&cat=missing', { waitUntil: 'domcontentloaded' })
@@ -57,10 +57,10 @@ test.describe('admin products list', () => {
 
   test('typing in the search box filters through the server', async ({ page }) => {
     await page.goto('/admin/products', { waitUntil: 'domcontentloaded' })
-    const box = page.getByPlaceholder(/جستجوی نام/)
-    await page.waitForFunction(() => Object.keys(document.querySelector('input[type="text"]') ?? {}).some((k) => k.startsWith('__reactProps')))
+    const box = page.getByTestId('filter-search')
+    await page.waitForFunction(() => Object.keys(document.querySelector('[data-testid="filter-search"]') ?? {}).some((k) => k.startsWith('__reactProps')))
     await box.fill('zzzz-no-such-product-9999')
     await expect(page).toHaveURL(/q=zzzz-no-such-product-9999/)
-    await expect(page.getByText('هیچ محصولی با این مشخصات یافت نشد.')).toBeVisible()
+    await expect(page.getByText('محصولی پیدا نشد')).toBeVisible()
   })
 })

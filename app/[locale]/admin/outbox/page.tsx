@@ -6,6 +6,7 @@ import { senderStatus } from '@/lib/club/messaging/sender';
 import { Alert } from '@/components/ui/alert';
 import { Pagination } from '@/components/ui/pagination';
 import { faNum, formatJalaliDateTime } from '@/components/admin/format';
+import { PageHeader, StatCard } from '@/components/admin/kit';
 import { OutboxManager } from '@/components/admin/club/outbox-manager';
 import { MESSAGE_KIND, MESSAGE_STATUS } from '@/components/admin/club/status';
 
@@ -36,10 +37,7 @@ export default async function AdminOutboxPage({ params, searchParams }: { params
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <div>
-        <h1 className="text-xl font-extrabold">صف پیامک‌ها</h1>
-        <p className="mt-1 text-sm text-muted-foreground">همه پیام‌های کمپین، خودکار و دستی اینجا ثبت می‌شوند. ارسال هر ساعت خودکار انجام می‌شود.</p>
-      </div>
+      <PageHeader title="صف پیامک‌ها" breadcrumbs={[{ label: 'ارتباطات' }, { label: 'صف پیامک' }]} subtitle="همه پیام‌های کمپین، خودکار و دستی اینجا ثبت می‌شوند. ارسال هر ساعت خودکار انجام می‌شود." />
       {sender.message && !sender.configured && (
         <Alert tone="warning" title="در انتظار اتصال سرویس پیامک" data-testid="sender-banner">
           {sender.message} پیام‌ها در صف می‌مانند و هیچ‌کدام از بین نمی‌روند.
@@ -50,10 +48,15 @@ export default async function AdminOutboxPage({ params, searchParams }: { params
           {sender.message}
         </Alert>
       )}
-      <div className="flex flex-wrap gap-2" role="group" aria-label="فیلتر وضعیت">
-        <Link href={qs({ status: undefined, page: undefined })} className={`btn btn-sm ${!status ? 'btn-gold' : 'btn-ghost'}`}>همه</Link>
-        {STATUSES.map((s) => (
-          <Link key={s} href={qs({ status: s, page: undefined })} className={`btn btn-sm ${status === s ? 'btn-gold' : 'btn-ghost'}`}>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" role="group" aria-label="فیلتر وضعیت" data-testid="outbox-stats">
+        <StatCard statKey="all" label="همه پیام‌ها" value={faNum(STATUSES.reduce((n, s) => n + counts[s], 0))} href={qs({ status: undefined, page: undefined })} active={!status} />
+        <StatCard statKey="queued" label={MESSAGE_STATUS.QUEUED.label} value={faNum(counts.QUEUED)} tone="warn" href={qs({ status: 'QUEUED', page: undefined })} active={status === 'QUEUED'} />
+        <StatCard statKey="sent" label={MESSAGE_STATUS.SENT.label} value={faNum(counts.SENT)} tone="ok" href={qs({ status: 'SENT', page: undefined })} active={status === 'SENT'} />
+        <StatCard statKey="failed" label={MESSAGE_STATUS.FAILED.label} value={faNum(counts.FAILED)} tone={counts.FAILED > 0 ? 'danger' : 'neutral'} hint={counts.FAILED > 0 ? 'نیاز به بررسی' : undefined} href={qs({ status: 'FAILED', page: undefined })} active={status === 'FAILED'} />
+      </div>
+      <div className="flex flex-wrap gap-2 text-xs" role="group" aria-label="وضعیت‌های دیگر">
+        {(['SENDING', 'SKIPPED', 'CANCELLED'] as const).map((s) => (
+          <Link key={s} href={qs({ status: s, page: undefined })} className={`rounded-full border px-3 py-1 ${status === s ? 'border-primary text-primary' : 'border-border'}`}>
             {MESSAGE_STATUS[s].label} ({faNum(counts[s])})
           </Link>
         ))}

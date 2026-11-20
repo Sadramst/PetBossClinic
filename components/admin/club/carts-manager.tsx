@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { faNum, toman } from '@/components/admin/format'
+import { EmptyState, PageHeader, StatCard } from '@/components/admin/kit';
 import { Card, Empty, TableWrap, td, th, useAct } from '@/components/admin/club/kit'
 
 interface CartRow {
@@ -26,15 +27,23 @@ export function CartsManager({ carts, top, abandoned, idleHours, total }: { cart
   const [pct, setPct] = useState('10')
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-extrabold">سبدهای خرید مشتریان</h1>
-          <p className="mt-1 text-sm text-muted-foreground">آنچه مشتریان وارد شده به سبد می‌گذارند؛ سبدهای رهاشده فرصت فروش‌اند. {faNum(total)} سبد.</p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/admin/carts" className={`btn btn-sm ${abandoned ? 'btn-gold' : 'btn-ghost'}`}>رهاشده (بیش از {faNum(idleHours)} ساعت)</Link>
-          <Link href="/admin/carts?view=all" className={`btn btn-sm ${!abandoned ? 'btn-gold' : 'btn-ghost'}`}>همه سبدها</Link>
-        </div>
+      <PageHeader
+        title="سبدهای خرید مشتریان"
+        breadcrumbs={[{ label: 'فروش و مشتریان' }, { label: 'سبدهای رهاشده' }]}
+        subtitle="آنچه مشتریان وارد شده به سبد می‌گذارند؛ سبدهای رهاشده فرصت فروش‌اند."
+        tabs={{
+          label: 'نوع سبد',
+          value: abandoned ? 'abandoned' : 'all',
+          items: [
+            { id: 'abandoned', label: `رهاشده (بیش از ${faNum(idleHours)} ساعت)`, href: '/admin/carts' },
+            { id: 'all', label: 'همه سبدها', href: '/admin/carts?view=all' },
+          ],
+        }}
+      />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" data-testid="carts-stats">
+        <StatCard statKey="carts" label={abandoned ? 'سبد رهاشده' : 'سبد فعال'} value={faNum(total)} tone="gold" />
+        <StatCard statKey="value" label="ارزش سبدهای این صفحه" value={toman(carts.reduce((n, c) => n + c.subtotal, 0))} />
+        <StatCard statKey="consent" label="دارای رضایت پیامک" value={faNum(carts.filter((c) => c.consent).length)} tone="ok" hint="قابل یادآوری" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
@@ -45,7 +54,7 @@ export function CartsManager({ carts, top, abandoned, idleHours, total }: { cart
             <span className="text-xs text-muted-foreground">۰ = بدون کد. فقط به مشتریان با رضایت پیامک ارسال می‌شود.</span>
           </div>
           {carts.length === 0 ? (
-            <Empty>سبد {abandoned ? 'رهاشده‌ای' : 'فعالی'} وجود ندارد.</Empty>
+            <EmptyState title={`سبد ${abandoned ? 'رهاشده‌ای' : 'فعالی'} وجود ندارد`} description="وقتی مشتری کالایی در سبد بگذارد و خرید را کامل نکند، اینجا می‌بینید." />
           ) : (
             <TableWrap>
               <table className="w-full min-w-[42rem] text-sm" data-testid="carts-table">

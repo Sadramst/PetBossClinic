@@ -32,3 +32,7 @@ We adopted a **Hybrid Cloud Model**:
 ## Alternatives Considered
 - **All-in-Vercel (Vercel Postgres / Neon):** Rejected due to serverless database cold starts and recurring usage-based pricing models.
 - **All-in-Vultr (Self-hosted Node.js + Postgres):** Rejected because maintaining global Anycast CDN, automatic SSL certificates, and zero-downtime atomic deployments manually would significantly increase DevOps overhead.
+
+
+## Update 2026-11
+Vercel region is `fra1`; daily crons are declared in `vercel.json` (Hobby plan allows daily only). The exact production database host is not recorded in the repo; confirm with the owner and record it in private ops notes (see docs/infra.md).
