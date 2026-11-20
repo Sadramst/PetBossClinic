@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { faNum } from '@/components/admin/format'
+import { PageHeader } from '@/components/admin/kit'
 import { Card, Empty, useAct } from '@/components/admin/club/kit'
 import { RulesBuilder, SegmentPreviewBox } from '@/components/admin/club/rules-builder'
 
@@ -37,13 +38,12 @@ export function SegmentsManager({ segments, tiers }: { segments: Row[]; tiers: {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-extrabold">گروه‌های مشتریان</h1>
-          <p className="mt-1 text-sm text-muted-foreground">مخاطبان هدف را با شرط‌های دقیق (نوع حیوان، برند غذا، آخرین خرید، سطح و ...) ذخیره کنید و در کمپین‌ها استفاده کنید.</p>
-        </div>
-        <Button variant="gold" size="sm" onClick={() => open('new')} data-testid="segment-new">گروه جدید</Button>
-      </div>
+      <PageHeader
+        title="گروه‌های مشتریان"
+        breadcrumbs={[{ label: 'ارتباطات' }, { label: 'بخش‌بندی‌ها' }]}
+        subtitle="مخاطبان هدف را با شرط‌های دقیق (نوع حیوان، برند غذا، آخرین خرید، سطح و ...) ذخیره کنید و در کمپین‌ها استفاده کنید."
+        actions={<Button variant="gold" size="sm" onClick={() => open('new')} data-testid="segment-new">گروه جدید</Button>}
+      />
 
       {editing && (
         <Card title={editing === 'new' ? 'گروه جدید' : 'ویرایش گروه'}>

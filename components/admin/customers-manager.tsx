@@ -15,6 +15,9 @@ import { toast } from '@/components/ui/toaster'
 import { SPECIES_LABEL } from '@/lib/club/pet-math'
 import { faNum, toman } from '@/components/admin/format'
 import { Empty, TIER_TONE, TableWrap, td, th } from '@/components/admin/club/kit'
+import { BulkBar, lifecycleBadge, churnBadge, LIFECYCLE_FA } from '@/components/admin/kit'
+import { SavedViews } from '@/components/admin/crm/saved-views'
+import { bulkAssignCustomersAction, bulkTagCustomersAction } from '@/app/actions/crm-customers'
 
 export interface AdminCustomerRow {
   id: string
@@ -32,6 +35,10 @@ export interface AdminCustomerRow {
   isBlocked: boolean
   createdByAdmin: boolean
   pets: string[]
+  lifecycle: string | null
+  health: number | null
+  churn: string | null
+  ownerId: string | null
 }
 
 interface Filters {
@@ -42,6 +49,9 @@ interface Filters {
   city: string
   orders: string
   consent: string
+  owner: string
+  lifecycle: string
+  churn: string
   sort: string
   dir: string
 }
@@ -54,6 +64,7 @@ export function CustomersManager({
   pages,
   tiers,
   isAdmin,
+  staff,
 }: {
   customers: AdminCustomerRow[]
   filters: Filters
@@ -62,6 +73,7 @@ export function CustomersManager({
   pages: number
   tiers: { key: string; label: string; color: string }[]
   isAdmin: boolean
+  staff: { id: string; name: string }[]
 }) {
   const router = useRouter()
   const [f, setF] = useState(filters)
@@ -71,6 +83,8 @@ export function CustomersManager({
   // Shown once, right after a reset; leaves the screen on reload and is never stored.
   const [temp, setTemp] = useState<{ name: string; phone: string; password: string } | null>(null)
   const tierMap = Object.fromEntries(tiers.map((t) => [t.key, t]))
+  const staffMap = Object.fromEntries(staff.map((m) => [m.id, m.name]))
+  const [selected, setSelected] = useState<string[]>([])
 
   const qs = (over: Partial<Filters> & { page?: number } = {}) => {
     const merged: Record<string, string> = { ...filters, ...over } as unknown as Record<string, string>
@@ -118,6 +132,9 @@ export function CustomersManager({
         city: filters.city || undefined,
         hasOrders: filters.orders === 'yes' ? true : filters.orders === 'no' ? false : undefined,
         consent: filters.consent === 'yes' ? true : filters.consent === 'no' ? false : undefined,
+        owner: filters.owner || undefined,
+        lifecycle: filters.lifecycle || undefined,
+        churn: (filters.churn || undefined) as 'LOW' | 'MEDIUM' | 'HIGH' | undefined,
       })
       if (!r.ok || !r.data) return void toast.error(r.error ?? 'خروجی ساخته نشد')
       const url = URL.createObjectURL(new Blob([r.data.csv], { type: 'text/csv;charset=utf-8' }))
@@ -127,6 +144,32 @@ export function CustomersManager({
       a.click()
       URL.revokeObjectURL(url)
     })
+
+  const [bulkTag, setBulkTag] = useState('')
+  const [bulkOwner, setBulkOwner] = useState('')
+
+  const afterBulk = (n: number, what: string) => {
+    toast.success(`${faNum(n)} مشتری ${what}`)
+    setSelected([])
+    router.refresh()
+  }
+
+  const bulkAssign = () =>
+    start(async () => {
+      const r = await bulkAssignCustomersAction(selected, bulkOwner === '__none' ? null : bulkOwner)
+      if (!r.ok) return void toast.error(r.error)
+      afterBulk(r.data.updated, 'به مسئول سپرده شد')
+    })
+
+  const bulkTagRun = (mode: 'add' | 'remove') =>
+    start(async () => {
+      const r = await bulkTagCustomersAction(selected, bulkTag, mode)
+      if (!r.ok) return void toast.error(r.error)
+      afterBulk(r.data.updated, mode === 'add' ? 'برچسب خورد' : 'برچسبش برداشته شد')
+    })
+
+  const toggleAll = () => setSelected((cur) => (cur.length === customers.length ? [] : customers.map((c) => c.id)))
+  const toggleOne = (id: string) => setSelected((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))
 
   const submitCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -160,6 +203,14 @@ export function CustomersManager({
           <p className="mt-1 text-sm text-muted-foreground">{faNum(total)} مشتری؛ پروفایل کامل، حیوانات، خدمات و امتیاز هر نفر را از ردیف او ببینید.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href="/admin/customers/duplicates" className="btn btn-secondary btn-sm" data-testid="customers-duplicates-link">
+            تکراری‌ها
+          </Link>
+          {isAdmin && (
+            <Link href="/admin/customers/import" className="btn btn-secondary btn-sm" data-testid="customers-import-link">
+              ورود از فایل
+            </Link>
+          )}
           <Button variant="secondary" size="sm" onClick={exportCsv} disabled={pending} data-testid="customers-export">
             خروجی CSV
           </Button>
@@ -256,6 +307,29 @@ export function CustomersManager({
           <option value="yes">رضایت دارد</option>
           <option value="no">رضایت ندارد</option>
         </Select>
+        <Select aria-label="مرحلهٔ چرخهٔ مشتری" value={f.lifecycle} onChange={(e) => setF({ ...f, lifecycle: e.target.value })} data-testid="customers-filter-lifecycle">
+          <option value="">مرحله: همه</option>
+          {Object.entries(LIFECYCLE_FA).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
+        </Select>
+        <Select aria-label="ریسک ریزش" value={f.churn} onChange={(e) => setF({ ...f, churn: e.target.value })} data-testid="customers-filter-churn">
+          <option value="">ریزش: همه</option>
+          <option value="HIGH">ریسک بالا</option>
+          <option value="MEDIUM">ریسک متوسط</option>
+          <option value="LOW">ریسک کم</option>
+        </Select>
+        <Select aria-label="مسئول" value={f.owner} onChange={(e) => setF({ ...f, owner: e.target.value })} data-testid="customers-filter-owner">
+          <option value="">مسئول: همه</option>
+          <option value="none">بدون مسئول</option>
+          {staff.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
+          ))}
+        </Select>
         <Input aria-label="برچسب" placeholder="برچسب" value={f.tag} onChange={(e) => setF({ ...f, tag: e.target.value })} />
         <Input aria-label="شهر" placeholder="شهر" value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} />
         <div className="flex gap-2">
@@ -267,6 +341,40 @@ export function CustomersManager({
           </Link>
         </div>
       </form>
+
+      <SavedViews
+        entity="CUSTOMER"
+        canShare={isAdmin}
+        current={{ q: filters.q, tier: filters.tier, species: filters.species, tag: filters.tag, city: filters.city, orders: filters.orders, consent: filters.consent, owner: filters.owner, lifecycle: filters.lifecycle, churn: filters.churn }}
+        onApply={(v) => router.push(qs({ q: '', tier: '', species: '', tag: '', city: '', orders: '', consent: '', owner: '', lifecycle: '', churn: '', ...v, page: 1 }))}
+      />
+
+      {selected.length > 0 && (
+        <div className="space-y-2" data-testid="customers-bulk">
+          <BulkBar count={selected.length} onClear={() => setSelected([])} actions={[]} />
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface p-3">
+            <Select aria-label="مسئول گروهی" controlSize="sm" className="w-44" value={bulkOwner} onChange={(e) => setBulkOwner(e.target.value)} data-testid="bulk-owner">
+              <option value="">انتخاب مسئول…</option>
+              <option value="__none">بدون مسئول</option>
+              {staff.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </Select>
+            <Button size="sm" variant="secondary" disabled={pending || !bulkOwner} onClick={bulkAssign} data-testid="bulk-assign">
+              سپردن به مسئول
+            </Button>
+            <Input aria-label="برچسب گروهی" controlSize="sm" className="w-36" placeholder="برچسب" value={bulkTag} onChange={(e) => setBulkTag(e.target.value)} data-testid="bulk-tag" />
+            <Button size="sm" variant="secondary" disabled={pending || !bulkTag.trim()} onClick={() => bulkTagRun('add')} data-testid="bulk-tag-add">
+              افزودن برچسب
+            </Button>
+            <Button size="sm" variant="ghost" disabled={pending || !bulkTag.trim()} onClick={() => bulkTagRun('remove')}>
+              برداشتن برچسب
+            </Button>
+          </div>
+        </div>
+      )}
 
       {temp && (
         <Alert tone="warning" title={`رمز موقت ${temp.name} (${temp.phone})`}>
@@ -292,10 +400,16 @@ export function CustomersManager({
         <Empty>مشتری‌ای با این فیلترها پیدا نشد.</Empty>
       ) : (
         <TableWrap>
-          <table className="w-full min-w-[56rem] text-sm" data-testid="customers-table">
+          <table className="w-full min-w-[72rem] text-sm" data-testid="customers-table">
             <thead>
               <tr className="border-b border-border">
+                <th className={th}>
+                  <input type="checkbox" aria-label="انتخاب همه" checked={selected.length === customers.length && customers.length > 0} onChange={toggleAll} data-testid="customers-select-all" />
+                </th>
                 <th className={th}>مشتری</th>
+                <th className={th}>مرحله</th>
+                <th className={th}>سلامت</th>
+                <th className={th}>مسئول</th>
                 <th className={th}>حیوانات</th>
                 <th className={th}>سطح</th>
                 <th className={th}>{sortLink('points', 'امتیاز')}</th>
@@ -309,6 +423,9 @@ export function CustomersManager({
             <tbody className="divide-y divide-border">
               {customers.map((c) => (
                 <tr key={c.id} className={c.isBlocked ? 'opacity-60' : ''} data-testid="customer-row">
+                  <td className={td}>
+                    <input type="checkbox" aria-label={`انتخاب ${c.name}`} checked={selected.includes(c.id)} onChange={() => toggleOne(c.id)} data-testid="customer-select" />
+                  </td>
                   <td className={td}>
                     <Link href={`/admin/customers/${c.id}`} className="font-bold text-primary hover:underline">
                       {c.name}
@@ -334,6 +451,18 @@ export function CustomersManager({
                       )}
                     </div>
                   </td>
+                  <td className={td}>{c.lifecycle ? lifecycleBadge(c.lifecycle as keyof typeof LIFECYCLE_FA) : <span className="text-muted-foreground">—</span>}</td>
+                  <td className={td}>
+                    {c.health === null ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5" data-testid="customer-health">
+                        <b>{faNum(c.health)}</b>
+                        {c.churn && churnBadge(c.churn)}
+                      </span>
+                    )}
+                  </td>
+                  <td className={td}>{c.ownerId ? staffMap[c.ownerId] ?? 'کاربر حذف‌شده' : <span className="text-muted-foreground">—</span>}</td>
                   <td className={td}>{c.pets.length ? c.pets.join('، ') : <span className="text-muted-foreground">—</span>}</td>
                   <td className={td}>
                     <span className="rounded-full border px-2 py-0.5 text-xs font-bold" style={TIER_TONE(tierMap[c.tier]?.color ?? '#999')}>

@@ -22,7 +22,10 @@ import { brandPath, categoryPath, decodeSlug, productPath } from '@/lib/shop/url
 import { PetFit } from '@/components/shop/pet-fit';
 import { SHIPPING } from '@/lib/shop/shipping';
 import { zarinpalConfigured } from '@/lib/payments/zarinpal';
-import { expiryState, formatJalaliDate, nextShippingExpiry, sellableQuantity } from '@/lib/shop/expiry';
+import { expiryState, nextShippingExpiry, sellableQuantity } from '@/lib/shop/expiry';
+import { getExpiryConfig } from '@/lib/shop/expiry-config';
+import { buildExpiryStrip } from '@/lib/shop/expiry-strip';
+import { ExpiryStrip } from '@/components/shop/expiry-strip';
 
 export const revalidate = 300;
 
@@ -72,9 +75,10 @@ export default async function ProductPage({ params }: { params: Params }) {
   const product = await getProductBySlug(decodeSlug(slug));
   if (!product) notFound();
 
-  const [related, nap] = await Promise.all([
+  const [related, nap, expiryCfg] = await Promise.all([
     getRelatedProducts(product.id, product.categoryId),
     getClinicNAP(),
+    getExpiryConfig(),
   ]);
 
   const now = new Date();
@@ -84,7 +88,8 @@ export default async function ProductPage({ params }: { params: Params }) {
 
   const hasBatches = product.inventory.length > 0;
   const shipExpiry = nextShippingExpiry(product.inventory, now);
-  const shipState = expiryState(shipExpiry, now);
+  const shipState = expiryState(shipExpiry, expiryCfg, now);
+  const expiryModel = buildExpiryStrip({ date: shipExpiry, state: shipState, tracksExpiry: product.tracksExpiry, now, cfg: expiryCfg });
   // Once batches are recorded they are the source of truth: only expired/empty stock left = out of stock.
   const stockStatus =
     hasBatches && sellableQuantity(product.inventory, now) === 0 ? 'OUT_OF_STOCK' : product.stockStatus;
@@ -226,24 +231,8 @@ export default async function ProductPage({ params }: { params: Params }) {
               {stockLabel}
             </p>
 
-            {/* 3. Expiry: the date of the batch the customer will actually receive (FEFO) */}
-            {shipExpiry ? (
-              <div
-                className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${
-                  shipState === 'critical' ? 'border-amber-500/40 bg-amber-500/10' : 'border-border bg-surface'
-                }`}
-              >
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <InfoIcon name="calendar" className="h-4 w-4 text-primary" />
-                  تاریخ انقضای کالای ارسالی
-                </span>
-                <b>{formatJalaliDate(shipExpiry)}</b>
-              </div>
-            ) : product.tracksExpiry ? (
-              <div className="rounded-xl border border-border bg-surface px-4 py-3 text-xs text-muted-foreground">
-                تاریخ انقضای این کالا پیش از ارسال توسط دامپزشک کنترل و به شما اعلام می‌شود.
-              </div>
-            ) : null}
+            {/* 3. Expiry: one date, the batch the customer will actually receive (FEFO) */}
+            <ExpiryStrip model={expiryModel} />
 
             {/* 4. Buy / enquire (watched by the sticky mobile bar) */}
             <div id="buy-actions" className="scroll-mt-header space-y-3">
@@ -352,7 +341,6 @@ export default async function ProductPage({ params }: { params: Params }) {
                       {product.attributes.map((a) => (
                         <Spec key={a.id} label={a.nameFa} value={a.valueFa} />
                       ))}
-                      {shipExpiry && <Spec label="انقضا" value={formatJalaliDate(shipExpiry)} />}
                     </dl>
                   </>
                 ),

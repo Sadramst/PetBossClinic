@@ -70,7 +70,7 @@ const rawTheme = cookieStore.get('petboss_theme')?.value as ThemePreset | undefi
 const initialTheme: ThemePreset = rawTheme || 'petboss-luxury-dark';
 
 return (
-  <html lang={locale} dir={dir} data-theme={initialTheme} suppressHydrationWarning>
+  <html lang="fa-IR" dir="rtl" data-theme={initialTheme} suppressHydrationWarning>
     <ThemeProvider initialTheme={initialTheme}>
       {children}
     </ThemeProvider>
@@ -89,3 +89,10 @@ Administrators can preview and toggle themes live:
 - View color swatches for each palette.
 - Inspect real-time rendering of sample cards, pill badges, buttons, and typography.
 - Activate the theme with one click.
+
+
+## Update (CRM release)
+- Farsi only: `<html lang="fa-IR" dir="rtl">` is fixed; Vazirmatn is the only font.
+- Admins manage presets in the Theme Studio at `/admin/theme` (ADMIN and above).
+- The admin UI uses the kit in `components/admin/kit/*` (PageHeader, DataTable, FilterBar, StatusBadge, ExpiryBadge, Drawer). Use it for every new admin list.
+- Expiry badges use gold and amber for near expiry, never red for sellable stock; see `docs/product/EXPIRY-UX.md`.

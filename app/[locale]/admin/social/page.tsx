@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { SocialManager } from "@/components/admin/social-manager";
+import { SectionTabs } from "@/components/admin/section-tabs";
 import { requireAdmin } from "@/lib/auth/guard";
 
 export const dynamic = 'force-dynamic';
@@ -18,16 +19,19 @@ export default async function AdminSocialPage({
   });
 
   return (
-    <SocialManager
-      socialLinks={socialLinks.map((s) => ({
-        id: s.id,
-        platform: s.platform,
-        url: s.url,
-        icon: s.icon,
-        isActive: s.isActive,
-        sortOrder: s.sortOrder,
-      }))}
-      isEn={isEn}
-    />
+    <>
+      <SectionTabs group="site" current="social" />
+      <SocialManager
+        socialLinks={socialLinks.map((s) => ({
+          id: s.id,
+          platform: s.platform,
+          url: s.url,
+          icon: s.icon,
+          isActive: s.isActive,
+          sortOrder: s.sortOrder,
+        }))}
+        isEn={isEn}
+      />
+    </>
   );
 }

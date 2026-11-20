@@ -9,6 +9,7 @@ import { ContactsManager } from '@/components/admin/marketing/contacts-manager'
 import { ConfigForm } from '@/components/admin/marketing/config-form'
 import { ReportView } from '@/components/admin/marketing/report-view'
 import { Alert } from '@/components/ui/alert'
+import { PageHeader } from '@/components/admin/kit'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +27,7 @@ type SP = { tab?: string; q?: string; status?: string; type?: string; source?: s
 export default async function AdminMarketingPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<SP> }) {
   const { locale } = await params
   // Campaign data includes phone numbers and emails of leads: staff only, like orders.
-  await requireAdmin('EDITOR', locale)
+  await requireAdmin('ADMIN', locale)
   const sp = await searchParams
   const tab: TabId = TABS.some((t) => t.id === sp.tab) ? (sp.tab as TabId) : 'coupons'
   const page = Math.max(1, Number.parseInt(sp.page ?? '1', 10) || 1)
@@ -83,10 +84,7 @@ export default async function AdminMarketingPage({ params, searchParams }: { par
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-bold">بازاریابی و تخفیف‌ها</h1>
-        <p className="mt-1 text-sm text-muted-foreground">کد تخفیف، گروه مشتریان، مخاطبان جمع‌آوری‌شده و تنظیمات کمپین خوش‌آمد.</p>
-      </div>
+      <PageHeader title="بازاریابی و تخفیف‌ها" breadcrumbs={[{ label: 'کوپن و تخفیف' }]} subtitle="کد تخفیف، گروه مشتریان، مخاطبان جمع‌آوری‌شده و تنظیمات کمپین خوش‌آمد." />
       <nav aria-label="بخش‌های بازاریابی" className="-mx-1 flex gap-1 overflow-x-auto border-b border-border px-1" data-testid="marketing-tabs">
         {TABS.map((t) => (
           <Link

@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { FaqsManager } from "@/components/admin/faqs-manager";
+import { SectionTabs } from "@/components/admin/section-tabs";
 import { requireAdmin } from "@/lib/auth/guard";
 
 export const dynamic = 'force-dynamic';
@@ -30,10 +31,13 @@ export default async function AdminFaqsPage({
   ]);
 
   return (
-    <FaqsManager
-      faqs={faqs}
-      categories={categories}
-      isEn={isEn}
-    />
+    <>
+      <SectionTabs group="community" current="faqs" />
+      <FaqsManager
+        faqs={faqs}
+        categories={categories}
+        isEn={isEn}
+      />
+    </>
   );
 }

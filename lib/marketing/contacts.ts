@@ -7,6 +7,7 @@ import { normalizeFa } from '@/lib/text/persian'
 import { createCouponWithUniqueCode } from '@/lib/marketing/coupons'
 import { describeOffer } from '@/lib/marketing/coupon-rules'
 import { getMarketingConfig } from '@/lib/marketing/config'
+import { resolveContact } from '@/lib/crm/contacts'
 
 export interface CaptureInput {
   email?: string | null
@@ -107,6 +108,14 @@ export async function captureContact(input: CaptureInput, now = new Date()): Pro
       data.consentAt = now
     }
     if (Object.keys(data).length) contact = await db.marketingContact.update({ where: { id: contact.id }, data })
+  }
+
+  // CRM: tie this capture to the one Contact for the person (never blocks the offer).
+  try {
+    const crm = await resolveContact({ phone: contact.phone, email: contact.email, name: contact.name })
+    if (crm && contact.contactId !== crm.id) await db.marketingContact.update({ where: { id: contact.id }, data: { contactId: crm.id } })
+  } catch {
+    /* the CRM link is best-effort */
   }
 
   const config = await getMarketingConfig()

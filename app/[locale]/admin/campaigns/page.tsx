@@ -7,6 +7,7 @@ import { senderStatus } from '@/lib/club/messaging/sender';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { formatJalaliDateTime, faNum } from '@/components/admin/format';
+import { EmptyState, PageHeader, StatCard } from '@/components/admin/kit';
 import { CampaignsShell } from '@/components/admin/club/campaigns-shell';
 import { CAMPAIGN_STATUS } from '@/components/admin/club/status';
 
@@ -21,10 +22,19 @@ export default async function AdminCampaignsPage({ params, searchParams }: { par
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
+      <PageHeader title="کمپین‌ها" breadcrumbs={[{ label: 'ارتباطات' }, { label: 'کمپین‌ها' }]} subtitle="پیامک تبلیغاتی به بخش‌های مشتریان، با نتیجه‌ی ارسال و خرید." />
+      {campaigns.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-testid="campaign-stats">
+          <StatCard statKey="campaigns" label="کمپین" value={faNum(campaigns.length)} />
+          <StatCard statKey="recipients" label="مخاطب" value={faNum(campaigns.reduce((n, c) => n + c.recipientsCount, 0))} />
+          <StatCard statKey="sent" label="ارسال‌شده" value={faNum(campaigns.reduce((n, c) => n + c.sentCount, 0))} tone="ok" />
+          <StatCard statKey="converted" label="منجر به خرید" value={faNum(campaigns.reduce((n, c) => n + c.convertedCount, 0))} tone="gold" />
+        </div>
+      )}
       {status.message && <Alert tone="warning" title="سرویس پیامک متصل نیست">{status.message}</Alert>}
       <CampaignsShell segments={segments} tiers={cfg.tiers.map((t) => ({ key: t.key, label: t.label }))} initialSegmentId={sp.segment && segments.some((s) => s.id === sp.segment) ? sp.segment : undefined} />
       {campaigns.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">هنوز کمپینی نساخته‌اید.</p>
+        <EmptyState title="هنوز کمپینی نساخته‌اید" description="از فرم بالا اولین کمپین را بسازید." />
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="campaigns-list">
           {campaigns.map((c) => {

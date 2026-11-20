@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { MenusManager } from "@/components/admin/menus-manager";
+import { SectionTabs } from "@/components/admin/section-tabs";
 import { requireAdmin } from "@/lib/auth/guard";
 
 export const dynamic = 'force-dynamic';
@@ -22,22 +23,25 @@ export default async function AdminMenusPage({
   });
 
   return (
-    <MenusManager
-      menus={menus.map((m) => ({
-        id: m.id,
-        name: m.name,
-        items: m.items.map((i) => ({
-          id: i.id,
-          menuId: i.menuId,
-          parentId: i.parentId,
-          labelFa: i.labelFa,
-          labelEn: i.labelEn,
-          url: i.url,
-          isActive: i.isActive,
-          sortOrder: i.sortOrder,
-        })),
-      }))}
-      isEn={isEn}
-    />
+    <>
+      <SectionTabs group="site" current="menus" />
+      <MenusManager
+        menus={menus.map((m) => ({
+          id: m.id,
+          name: m.name,
+          items: m.items.map((i) => ({
+            id: i.id,
+            menuId: i.menuId,
+            parentId: i.parentId,
+            labelFa: i.labelFa,
+            labelEn: i.labelEn,
+            url: i.url,
+            isActive: i.isActive,
+            sortOrder: i.sortOrder,
+          })),
+        }))}
+        isEn={isEn}
+      />
+    </>
   );
 }

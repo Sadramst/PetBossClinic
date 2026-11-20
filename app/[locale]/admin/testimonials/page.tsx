@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { TestimonialsManager } from "@/components/admin/testimonials-manager";
+import { SectionTabs } from "@/components/admin/section-tabs";
 import { requireAdmin } from "@/lib/auth/guard";
 
 export const dynamic = 'force-dynamic';
@@ -18,18 +19,21 @@ export default async function AdminTestimonialsPage({
   });
 
   return (
-    <TestimonialsManager
-      testimonials={testimonials.map((t) => ({
-        id: t.id,
-        nameFa: t.nameFa,
-        nameEn: t.nameEn,
-        contentFa: t.contentFa,
-        contentEn: t.contentEn,
-        rating: t.rating,
-        isActive: t.isActive,
-        sortOrder: t.sortOrder,
-      }))}
-      isEn={isEn}
-    />
+    <>
+      <SectionTabs group="community" current="testimonials" />
+      <TestimonialsManager
+        testimonials={testimonials.map((t) => ({
+          id: t.id,
+          nameFa: t.nameFa,
+          nameEn: t.nameEn,
+          contentFa: t.contentFa,
+          contentEn: t.contentEn,
+          rating: t.rating,
+          isActive: t.isActive,
+          sortOrder: t.sortOrder,
+        }))}
+        isEn={isEn}
+      />
+    </>
   );
 }

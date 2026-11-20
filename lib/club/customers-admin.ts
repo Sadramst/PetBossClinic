@@ -138,6 +138,10 @@ export interface CustomerFilters {
   city?: string
   hasOrders?: boolean
   consent?: boolean
+  /** A staff user id, or 'none' for customers nobody owns. */
+  owner?: string
+  lifecycle?: string
+  churn?: 'LOW' | 'MEDIUM' | 'HIGH'
   sort?: CustomerSort
   dir?: 'asc' | 'desc'
   page?: number
@@ -145,7 +149,8 @@ export interface CustomerFilters {
 }
 
 export function buildCustomerWhere(f: CustomerFilters): Prisma.CustomerWhereInput {
-  const and: Prisma.CustomerWhereInput[] = []
+  // Merged-away shells never show up in lists; their data lives on the survivor.
+  const and: Prisma.CustomerWhereInput[] = [{ mergedIntoId: null }]
   const q = f.q?.trim().slice(0, 60)
   if (q) {
     const phoneNeedle = normalizeMobile(q) ?? q.replace(/\D/g, '')
@@ -165,6 +170,10 @@ export function buildCustomerWhere(f: CustomerFilters): Prisma.CustomerWhereInpu
   if (f.city) and.push({ city: { contains: f.city.trim().slice(0, 40), mode: 'insensitive' } })
   if (f.hasOrders !== undefined) and.push(f.hasOrders ? { ordersCount: { gt: 0 } } : { ordersCount: 0 })
   if (f.consent !== undefined) and.push({ marketingSmsConsent: f.consent })
+  if (f.owner === 'none') and.push({ ownerId: null })
+  else if (f.owner) and.push({ ownerId: f.owner.slice(0, 40) })
+  if (f.lifecycle) and.push({ lifecycleStage: f.lifecycle as never })
+  if (f.churn) and.push({ churnRisk: f.churn })
   return and.length ? { AND: and } : {}
 }
 

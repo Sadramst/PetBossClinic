@@ -56,6 +56,8 @@ test.describe('internal links', () => {
       for (const href of hrefs) {
         // Admin and machine endpoints are not part of the public link graph.
         if (href.startsWith('//') || href.startsWith('/admin') || href.startsWith('/api')) continue
+        // Rows other specs create (and delete) while this one crawls are not part of the real site.
+        if (/\/e2e-/.test(href) || decodeURIComponent(href).includes('کالای-فرم-')) continue
         links.add(href.split('#')[0] || '/')
       }
     }

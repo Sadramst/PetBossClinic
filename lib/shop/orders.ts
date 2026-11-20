@@ -111,6 +111,8 @@ export interface AllocationResult {
 export interface BatchTake {
   batchId: string;
   quantity: number;
+  /** ISO expiry date of the batch at allocation time. Absent on orders placed before this field existed. */
+  expiryDate?: string | null;
 }
 
 /** Thrown inside a transaction (strict mode) so everything rolls back. */
@@ -127,9 +129,14 @@ export function parseAllocations(value: unknown): BatchTake[] | null {
   const out: BatchTake[] = [];
   for (const v of value) {
     if (!v || typeof v !== 'object') continue;
-    const { batchId, quantity } = v as { batchId?: unknown; quantity?: unknown };
+    const { batchId, quantity, expiryDate } = v as { batchId?: unknown; quantity?: unknown; expiryDate?: unknown };
     const q = Math.floor(Number(quantity));
-    if (typeof batchId === 'string' && batchId && Number.isFinite(q) && q > 0) out.push({ batchId, quantity: q });
+    if (typeof batchId === 'string' && batchId && Number.isFinite(q) && q > 0) {
+      const take: BatchTake = { batchId, quantity: q };
+      if (typeof expiryDate === 'string' && !Number.isNaN(new Date(expiryDate).getTime())) take.expiryDate = expiryDate;
+      else if (expiryDate === null) take.expiryDate = null;
+      out.push(take);
+    }
   }
   return out;
 }
@@ -169,7 +176,7 @@ export async function allocateOrderStockTx(
     const batches = await tx.inventory.findMany({
       where: { productId: item.productId, quantity: { gt: 0 }, OR: [{ expiryDate: null }, { expiryDate: { gte: cutoff } }] },
       orderBy: [{ expiryDate: { sort: 'asc', nulls: 'last' } }, { receivedAt: 'asc' }],
-      select: { id: true },
+      select: { id: true, expiryDate: true },
     });
     for (const b of batches) {
       // Retry a few times if another order took units from this batch meanwhile.
@@ -183,7 +190,7 @@ export async function allocateOrderStockTx(
         });
         if (res.count === 1) {
           remaining -= take;
-          taken.push({ batchId: b.id, quantity: take });
+          taken.push({ batchId: b.id, quantity: take, expiryDate: b.expiryDate ? b.expiryDate.toISOString() : null });
           break;
         }
       }

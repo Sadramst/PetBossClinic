@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toaster'
 import { faNum } from '@/components/admin/format'
-import { Empty, TableWrap, td, th, useAct } from '@/components/admin/club/kit'
+import { EmptyState } from '@/components/admin/kit';
+import { TableWrap, td, th, useAct } from '@/components/admin/club/kit'
 import { MESSAGE_STATUS } from '@/components/admin/club/status'
 
 interface Row {
@@ -48,7 +49,7 @@ export function OutboxManager({ rows, configured, queued }: { rows: Row[]; confi
       </div>
       {!configured && <p className="text-xs text-amber-400">تا اتصال سرویس پیامک، دکمه‌ی ارسال فقط پیام راهنما نشان می‌دهد.</p>}
       {rows.length === 0 ? (
-        <Empty>پیامی با این فیلتر وجود ندارد.</Empty>
+        <EmptyState title="پیامی با این فیلتر وجود ندارد" description="فیلتر وضعیت یا نوع را تغییر دهید." />
       ) : (
         <TableWrap>
           <table className="w-full min-w-[44rem] text-sm" data-testid="outbox-table">

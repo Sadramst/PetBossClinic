@@ -17,3 +17,7 @@ In WS-0, the in-memory limiter acts as an immediate **best-effort stopgap** prev
 2. Use `@upstash/ratelimit` with sliding-window algorithm.
 3. Key format: `ratelimit:leads:${ip}`.
 4. Fallback gracefully to in-memory limiter if Redis connection is unavailable.
+
+
+## Status update 2026-11
+Proposed, NOT implemented. `lib/utils/rate-limit.ts` is still in-memory per instance. Tracked in docs/roadmap.md.

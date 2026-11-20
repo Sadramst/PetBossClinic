@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { DivisionsManager } from "@/components/admin/divisions-manager";
+import { SectionTabs } from "@/components/admin/section-tabs";
 import { requireAdmin } from "@/lib/auth/guard";
 
 export const dynamic = 'force-dynamic';
@@ -23,9 +24,12 @@ export default async function AdminDivisionsPage({
   });
 
   return (
-    <DivisionsManager
-      divisions={divisions}
-      isEn={isEn}
-    />
+    <>
+      <SectionTabs group="clinic" current="divisions" />
+      <DivisionsManager
+        divisions={divisions}
+        isEn={isEn}
+      />
+    </>
   );
 }

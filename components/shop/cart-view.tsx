@@ -356,7 +356,7 @@ export function CartView({
             <p className="text-[11px] leading-6 text-muted-foreground">پرداخت آنلاین به‌زودی فعال می‌شود.</p>
           </div>
         )}
-        <p className="text-[11px] leading-6 text-muted-foreground">تاریخ انقضای اقلام خوراکی پیش از ارسال توسط دامپزشک کنترل می‌شود.</p>
+        <p className="text-[11px] leading-6 text-muted-foreground">تاریخ انقضا بعد از تأیید سفارش در فاکتور درج می‌شود و پیش از ارسال توسط دامپزشک کنترل می‌شود.</p>
       </aside>
 
       {/* Mobile: total and the main action stay in reach above the bottom navigation. */}

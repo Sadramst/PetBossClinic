@@ -330,7 +330,7 @@ async function abandonedCartCandidates(now: Date, params: Record<string, number>
       item: top?.name ?? 'محصولات انتخابی شما',
       dedupeKey: `cart:${c.customerId}:${c.updatedAt.getTime()}`,
       // Conditional: only stamp the snapshot we reminded about, not a cart changed meanwhile.
-      onQueued: () => db.cartSnapshot.updateMany({ where: { id: c.id, updatedAt: c.updatedAt }, data: { lastReminderAt: new Date(), updatedAt: c.updatedAt } }),
+      onQueued: () => db.cartSnapshot.updateMany({ where: { id: c.id, updatedAt: c.updatedAt }, data: { lastReminderAt: now, updatedAt: c.updatedAt } }),
     })
   }
   return out

@@ -2,6 +2,10 @@ import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { ProductsManager } from "@/components/admin/products-manager";
 import { requireAdmin } from "@/lib/auth/guard";
+import { hasRoleAccess } from "@/lib/auth";
+import { nearestExpiryByProduct, stateWhere } from "@/lib/shop/inventory-admin";
+import { getExpiryConfig } from "@/lib/shop/expiry-config";
+import { daysUntil } from "@/lib/shop/expiry";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -22,12 +26,12 @@ export default async function AdminProductsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale } = await params;
-  await requireAdmin('VIEWER', locale);
-  const isEn = locale === 'en';
+  const session = await requireAdmin('VIEWER', locale);
 
   const sp = await searchParams;
   const q = one(sp.q).trim().slice(0, 80);
   const cat = one(sp.cat) || 'ALL';
+  const expiryParam = (['expired', 'critical', 'soon', 'none'] as const).find((s) => s === one(sp.expiry));
   const status = (STATUSES as readonly string[]).includes(one(sp.status)) ? one(sp.status) : 'ALL';
   const size = [25, 50, 100, -1].includes(Number(one(sp.size))) ? Number(one(sp.size)) : 50;
   const requestedPage = Math.max(1, Math.floor(Number(one(sp.page))) || 1);
@@ -47,6 +51,15 @@ export default async function AdminProductsPage({
       { shortDescFa: { contains: q, mode: 'insensitive' } },
       { category: { nameFa: { contains: q, mode: 'insensitive' } } },
     ];
+  }
+
+  const cfg = await getExpiryConfig();
+  if (expiryParam === 'none') {
+    where.tracksExpiry = true;
+    where.inventory = { none: { quantity: { gt: 0 }, expiryDate: { not: null } } };
+  } else if (expiryParam) {
+    where.tracksExpiry = true;
+    where.inventory = { some: { AND: [{ quantity: { gt: 0 } }, stateWhere(expiryParam, cfg)] } };
   }
 
   const filteredTotal = await db.product.count({ where });
@@ -75,6 +88,7 @@ export default async function AdminProductsPage({
         shortDescEn: true,
         isActive: true,
         isFeatured: true,
+        tracksExpiry: true,
         ogImageId: true,
         category: {
           select: { id: true, nameFa: true, nameEn: true, slugFa: true },
@@ -111,14 +125,21 @@ export default async function AdminProductsPage({
     db.product.count({ where: { isFeatured: true } }),
   ]);
 
+  const near = await nearestExpiryByProduct(products.filter((p) => p.tracksExpiry).map((p) => p.id));
+  const now = new Date();
+  const expiry = Object.fromEntries(
+    Object.entries(near).map(([id, n]) => [id, { state: n.state, date: n.date?.toISOString() ?? null, daysLeft: n.date ? daysUntil(n.date, now) : null }])
+  );
+
   return (
     <ProductsManager
       products={products}
       categories={categories}
-      isEn={isEn}
       filteredTotal={filteredTotal}
       stats={{ total, active, inactive: total - active, inStock, outOfStock, featured }}
       filters={{ q, cat, status, page, size }}
+      expiry={expiry}
+      canAdmin={hasRoleAccess(session.role, 'ADMIN')}
     />
   );
 }

@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { HomepageManager } from "@/components/admin/homepage-manager";
+import { SectionTabs } from "@/components/admin/section-tabs";
 import { requireAdmin } from "@/lib/auth/guard";
 
 export const dynamic = 'force-dynamic';
@@ -49,25 +50,28 @@ export default async function AdminHomepageSectionsPage({
   }
 
   return (
-    <HomepageManager
-      sections={sections.map((s) => ({
-        id: s.id,
-        key: s.key,
-        titleFa: s.titleFa,
-        titleEn: s.titleEn,
-        subtitleFa: s.subtitleFa,
-        subtitleEn: s.subtitleEn,
-        eyebrowFa: s.eyebrowFa,
-        eyebrowEn: s.eyebrowEn,
-        badgeFa: s.badgeFa,
-        badgeEn: s.badgeEn,
-        ctaLabelFa: s.ctaLabelFa,
-        ctaLabelEn: s.ctaLabelEn,
-        ctaHref: s.ctaHref,
-        isVisible: s.isVisible,
-        sortOrder: s.sortOrder,
-      }))}
-      isEn={isEn}
-    />
+    <>
+      <SectionTabs group="site" current="homepage" />
+      <HomepageManager
+        sections={sections.map((s) => ({
+          id: s.id,
+          key: s.key,
+          titleFa: s.titleFa,
+          titleEn: s.titleEn,
+          subtitleFa: s.subtitleFa,
+          subtitleEn: s.subtitleEn,
+          eyebrowFa: s.eyebrowFa,
+          eyebrowEn: s.eyebrowEn,
+          badgeFa: s.badgeFa,
+          badgeEn: s.badgeEn,
+          ctaLabelFa: s.ctaLabelFa,
+          ctaLabelEn: s.ctaLabelEn,
+          ctaHref: s.ctaHref,
+          isVisible: s.isVisible,
+          sortOrder: s.sortOrder,
+        }))}
+        isEn={isEn}
+      />
+    </>
   );
 }

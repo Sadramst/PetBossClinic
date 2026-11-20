@@ -1,6 +1,12 @@
 import { db } from '@/lib/db'
 import { getLoyaltyConfig } from '@/lib/club/config'
 import { awardPoints, orderPointsFor, reversePoints } from '@/lib/club/points'
+import { linkCustomerToContact } from '@/lib/crm/contacts'
+import { recordActivity } from '@/lib/crm/activity'
+import { promoteLeadsForCustomer } from '@/lib/crm/promote'
+import { notifyStaff } from '@/lib/crm/notify'
+import { recomputeLifecycle } from '@/lib/crm/lifecycle'
+import { recomputeCustomerHealth } from '@/lib/crm/health'
 import { attachReferral, creditReferralOnFirstOrder, ensureReferralCode, reverseReferralForOrder } from '@/lib/club/referrals'
 
 /**
@@ -18,6 +24,12 @@ async function safely<T>(label: string, fn: () => Promise<T>): Promise<T | null>
 
 /** New customer: referral code, signup bonus, optional referral link. */
 export async function onCustomerCreated(customerId: string, opts: { referralCode?: unknown; createdByAdmin?: boolean } = {}): Promise<void> {
+  // CRM: one contact for this person, and any lead with the same phone has now won.
+  await safely('customerContact', async () => {
+    const contactId = await linkCustomerToContact(customerId)
+    await promoteLeadsForCustomer(customerId)
+    await recomputeLifecycle(contactId)
+  })
   await safely('customerCreated', async () => {
     await ensureReferralCode(customerId)
     if (opts.createdByAdmin) return
@@ -64,6 +76,27 @@ export async function onOrderDelivered(orderId: string): Promise<void> {
       await awardPoints(db, { customerId: order.customerId, kind: 'ORDER', points, refType: 'order', refId: await orderCycleRef(order.customerId, order.id), note: `خرید سفارش ${order.number}` })
     }
     await creditReferralOnFirstOrder(db, order.customerId, order.id)
+  })
+  await safely('crmDelivered', async () => {
+    const order = await db.order.findUnique({ where: { id: orderId }, select: { id: true, number: true, customerId: true, status: true, total: true } })
+    if (!order || order.status !== 'DELIVERED') return
+    const contactId = await linkCustomerToContact(order.customerId)
+    await recordActivity({ type: 'ORDER_DELIVERED', summary: `تحویل سفارش ${order.number}`, customerId: order.customerId, contactId, refType: 'order', refId: order.id })
+    await promoteLeadsForCustomer(order.customerId)
+    await recomputeCustomerHealth(order.customerId)
+    await recomputeLifecycle(contactId)
+  })
+}
+
+/** Order created (paid or awaiting payment): timeline entry, lead promotion and the bell. Call after the order is stored. */
+export async function onOrderPlaced(orderId: string): Promise<void> {
+  await safely('orderPlaced', async () => {
+    const order = await db.order.findUnique({ where: { id: orderId }, select: { id: true, number: true, customerId: true, total: true, createdAt: true } })
+    if (!order) return
+    const contactId = await linkCustomerToContact(order.customerId)
+    await recordActivity({ type: 'ORDER_PLACED', summary: `ثبت سفارش ${order.number}`, customerId: order.customerId, contactId, refType: 'order', refId: order.id, occurredAt: order.createdAt })
+    await promoteLeadsForCustomer(order.customerId)
+    await notifyStaff({ kind: 'NEW_ORDER', title: `سفارش جدید ${order.number}`, body: `${order.total.toLocaleString('en-US')} تومان`, href: `/admin/orders/${order.id}`, dedupeKey: `order:${order.id}` })
   })
 }
 

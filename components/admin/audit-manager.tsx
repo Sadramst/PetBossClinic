@@ -1,6 +1,21 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
+import { PageHeader, FilterBar, DataTable, Pager, Drawer, StatusBadge, EmptyState, JalaliDateField, useUrlState, type FilterDef } from '@/components/admin/kit'
+import { faNum, formatJalaliDateTime } from '@/components/admin/format'
+import type { BadgeTone } from '@/components/ui/badge'
+import {
+  AUDIT_ACTION_FA,
+  AUDIT_ENTITY_FA,
+  actorOf,
+  auditActionLabel,
+  auditActionTone,
+  auditEntityLabel,
+  diffAudit,
+  fmtAuditValue,
+  isSensitivePath,
+  type AuditQuery,
+} from '@/lib/admin/audit-view'
 
 export interface AuditLogItem {
   id: string
@@ -11,369 +26,238 @@ export interface AuditLogItem {
   ip: string | null
   location: string | null
   userAgent: string | null
-  createdAt: string | Date
+  createdAt: string
   before: unknown
   after: unknown
-  user?: {
-    id: string
-    name: string | null
-    email: string | null
-  } | null
+  user?: { id: string; name: string | null; email: string | null } | null
 }
 
 interface Props {
   logs: AuditLogItem[]
-  isEn: boolean
+  total: number
+  query: AuditQuery
+  entities: string[]
+  users: { id: string; label: string }[]
 }
 
-export function AuditManager({ logs, isEn }: Props) {
-  const [selectedEntity, setSelectedEntity] = useState<string>('ALL')
-  const [selectedAction, setSelectedAction] = useState<string>('ALL')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [activeLogModal, setActiveLogModal] = useState<AuditLogItem | null>(null)
+const DEFAULTS = { q: '', entity: '', action: '', user: '', from: '', to: '', page: 1, size: 50 }
+const dayToIso = (d: string) => (d ? `${d}T12:00:00.000Z` : null)
+const TONE: Record<string, BadgeTone> = { ok: 'success', warn: 'warning', danger: 'danger', info: 'info', neutral: 'neutral' }
 
-  const getActionBadge = (action: string) => {
-    switch (action) {
-      case 'CREATE':
-        return (
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-            {isEn ? 'CREATE' : 'ایجاد / ثبت'}
-          </span>
-        )
-      case 'UPDATE':
-        return (
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-            {isEn ? 'UPDATE' : 'ویرایش'}
-          </span>
-        )
-      case 'DELETE':
-        return (
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-500/15 text-red-400 border border-red-500/30">
-            {isEn ? 'DELETE' : 'حذف'}
-          </span>
-        )
-      case 'BULK_DELETE':
-        return (
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30">
-            {isEn ? 'BULK DELETE' : 'حذف دسته‌ای'}
-          </span>
-        )
-      default:
-        return (
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-400 border border-blue-500/30">
-            {action}
-          </span>
-        )
-    }
+function actorLabel(log: AuditLogItem): { name: string; email: string } {
+  const a = actorOf(log.after)
+  return {
+    name: log.user?.name || a?.name || 'سیستم',
+    email: log.user?.email || a?.email || '',
   }
+}
 
-  const getEntityIcon = (entity: string) => {
-    switch (entity) {
-      case 'PRODUCT':
-        return '📦 ' + (isEn ? 'Product' : 'محصول')
-      case 'PRODUCT_CATEGORY':
-        return '🏷️ ' + (isEn ? 'Category' : 'دسته‌بندی')
-      case 'SERVICE':
-        return '💊 ' + (isEn ? 'Service' : 'خدمت')
-      case 'DIVISION':
-        return '🏥 ' + (isEn ? 'Division' : 'بخش درمانی')
-      case 'STAFF':
-        return '👨‍⚕️ ' + (isEn ? 'Staff' : 'کادر درمانی')
-      case 'SITE_SETTING':
-        return '⚙️ ' + (isEn ? 'Site Settings' : 'تنظیمات سایت')
-      case 'THEME':
-        return '🎨 ' + (isEn ? 'Theme' : 'پوسته')
-      case 'FAQ':
-        return '❓ ' + (isEn ? 'FAQ' : 'پرسش متداول')
-      default:
-        return '📄 ' + entity
-    }
-  }
+function ActionBadge({ action }: { action: string }) {
+  return <StatusBadge tone={TONE[auditActionTone(action)]}>{auditActionLabel(action)}</StatusBadge>
+}
 
-  const formatTimestamp = (dateInput: string | Date) => {
-    const d = new Date(dateInput)
-    if (isNaN(d.getTime())) return String(dateInput)
+function DiffView({ log }: { log: AuditLogItem }) {
+  const rows = diffAudit(log.before, log.after)
+  if (rows.length === 0) return <p className="text-sm text-muted-foreground">تغییر قابل نمایشی ثبت نشده است.</p>
+  const KIND = { added: 'افزوده', removed: 'حذف‌شده', changed: 'تغییر کرد' } as const
+  return (
+    <ul data-testid="audit-diff" className="space-y-2">
+      {rows.map((r) => {
+        const hidden = isSensitivePath(r.path)
+        return (
+          <li key={r.path} className="rounded-xl border border-border bg-surface-elevated p-3 text-xs">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <span dir="ltr" className="font-mono font-bold text-foreground">
+                {r.path}
+              </span>
+              <StatusBadge tone={r.kind === 'added' ? 'success' : r.kind === 'removed' ? 'danger' : 'warning'}>{KIND[r.kind]}</StatusBadge>
+            </div>
+            {hidden ? (
+              <p className="text-muted-foreground">مقدار محرمانه است و نمایش داده نمی‌شود.</p>
+            ) : (
+              <div className="grid gap-1.5 sm:grid-cols-2">
+                {r.kind !== 'added' && (
+                  <p className="break-words rounded-lg bg-danger/10 px-2 py-1.5 text-danger">
+                    <span className="me-1 font-bold">قبل:</span>
+                    {fmtAuditValue(r.before)}
+                  </p>
+                )}
+                {r.kind !== 'removed' && (
+                  <p className="break-words rounded-lg bg-success/10 px-2 py-1.5 text-success">
+                    <span className="me-1 font-bold">بعد:</span>
+                    {fmtAuditValue(r.after)}
+                  </p>
+                )}
+              </div>
+            )}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
 
-    const dateStr = d.toLocaleDateString(isEn ? 'en-US' : 'fa-IR', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-    const timeStr = d.toLocaleTimeString(isEn ? 'en-US' : 'fa-IR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    })
+export function AuditManager({ logs, total, query, entities, users }: Props) {
+  const [state, patch] = useUrlState(DEFAULTS)
+  const [active, setActive] = useState<AuditLogItem | null>(null)
 
-    return `${dateStr} - ${timeStr}`
-  }
-
-  const filteredLogs = logs.filter((l) => {
-    const matchesEntity = selectedEntity === 'ALL' || l.entity === selectedEntity
-    const matchesAction = selectedAction === 'ALL' || l.action === selectedAction
-    const q = searchQuery.toLowerCase().trim()
-    const matchesSearch =
-      !q ||
-      l.entity.toLowerCase().includes(q) ||
-      l.action.toLowerCase().includes(q) ||
-      (l.entityId && l.entityId.toLowerCase().includes(q)) ||
-      (l.location && l.location.toLowerCase().includes(q)) ||
-      (l.ip && l.ip.includes(q))
-
-    return matchesEntity && matchesAction && matchesSearch
-  })
+  const entityOptions = [...new Set([...Object.keys(AUDIT_ENTITY_FA), ...entities])].sort((a, b) =>
+    auditEntityLabel(a).localeCompare(auditEntityLabel(b), 'fa'),
+  )
+  const filters: FilterDef[] = [
+    {
+      key: 'entity',
+      label: 'همه بخش‌ها',
+      type: 'select',
+      value: state.entity,
+      testId: 'audit-filter-entity',
+      options: entityOptions.map((e) => ({ value: e, label: auditEntityLabel(e) })),
+    },
+    {
+      key: 'action',
+      label: 'همه عملیات',
+      type: 'select',
+      value: state.action,
+      testId: 'audit-filter-action',
+      options: Object.keys(AUDIT_ACTION_FA).map((a) => ({ value: a, label: AUDIT_ACTION_FA[a] })),
+    },
+    {
+      key: 'user',
+      label: 'همه کاربران',
+      type: 'select',
+      value: state.user,
+      testId: 'audit-filter-user',
+      options: users.map((u) => ({ value: u.id, label: u.label })),
+    },
+  ]
+  const dirty = Boolean(state.q || state.entity || state.action || state.user || state.from || state.to)
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-foreground flex items-center gap-2">
-            <span>📜</span>
-            <span>{isEn ? 'Audit History & Location Stamp Log' : 'تاریخچه تغییرات و لاگ مکانی-زمانی ادمین'}</span>
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            {isEn
-              ? 'Immutable chronological audit trail recording exact timestamps, IP addresses, geo-locations, and actor identifiers for every modification.'
-              : 'ثبت خودکار و لحظه‌ای تمام تغییرات سایت با مُهر زمانی، موقعیت جغرافیایی، IP کاربری و مشخصات ویرایشگر جهت نظارت دقیق و شفاف.'}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1.5 rounded-xl bg-surface-elevated border border-border text-xs font-mono text-primary font-bold">
-            {logs.length} {isEn ? 'Total Events' : 'رکورد ثبت شده'}
-          </span>
-        </div>
-      </div>
-
-      {/* Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-        <div className="flex flex-wrap items-center gap-2 flex-1">
-          {/* Entity Filter */}
-          <select
-            value={selectedEntity}
-            onChange={(e) => setSelectedEntity(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-surface-elevated border border-border text-xs text-foreground outline-none focus:border-primary"
-          >
-            <option value="ALL">{isEn ? 'All Entities' : 'همه بخش‌ها'}</option>
-            <option value="PRODUCT">{isEn ? 'Products' : 'محصولات'}</option>
-            <option value="PRODUCT_CATEGORY">{isEn ? 'Categories' : 'دسته‌بندی‌ها'}</option>
-            <option value="SERVICE">{isEn ? 'Services' : 'خدمات'}</option>
-            <option value="DIVISION">{isEn ? 'Divisions' : 'بخش‌های درمانی'}</option>
-            <option value="STAFF">{isEn ? 'Staff' : 'کادر درمان'}</option>
-            <option value="SITE_SETTING">{isEn ? 'Site Settings' : 'تنظیمات سایت'}</option>
-            <option value="THEME">{isEn ? 'Theme' : 'پوسته سایت'}</option>
-            <option value="FAQ">{isEn ? 'FAQs' : 'پرسش‌ها'}</option>
-          </select>
-
-          {/* Action Filter */}
-          <select
-            value={selectedAction}
-            onChange={(e) => setSelectedAction(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-surface-elevated border border-border text-xs text-foreground outline-none focus:border-primary"
-          >
-            <option value="ALL">{isEn ? 'All Actions' : 'همه عملیات‌ها'}</option>
-            <option value="CREATE">{isEn ? 'Created' : 'ثبت / ایجاد'}</option>
-            <option value="UPDATE">{isEn ? 'Updated' : 'ویرایش'}</option>
-            <option value="DELETE">{isEn ? 'Deleted' : 'حذف'}</option>
-            <option value="BULK_DELETE">{isEn ? 'Bulk Delete' : 'حذف دسته‌ای'}</option>
-          </select>
-
-          {/* Search Box */}
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={isEn ? 'Search IP, entity, ID...' : 'جستجو در آدرس IP، شناسه، بخش...'}
-            className="px-3 py-2 rounded-xl bg-surface-elevated border border-border text-xs text-foreground outline-none focus:border-primary flex-1 min-w-[200px]"
-          />
-        </div>
-      </div>
-
-      {/* Audit Log Table */}
-      <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-start">
-            <thead className="bg-surface-elevated text-muted-foreground uppercase text-[10px] tracking-wider border-b border-border">
-              <tr>
-                <th className="p-3.5 text-start">{isEn ? 'Timestamp' : 'زمان دقیق'}</th>
-                <th className="p-3.5 text-start">{isEn ? 'Action' : 'عملیات'}</th>
-                <th className="p-3.5 text-start">{isEn ? 'Entity' : 'موجودیت'}</th>
-                <th className="p-3.5 text-start">{isEn ? 'Location & IP' : 'موقعیت مکانی و IP'}</th>
-                <th className="p-3.5 text-start">{isEn ? 'Actor (Who)' : 'ویرایشگر'}</th>
-                <th className="p-3.5 text-center">{isEn ? 'Details' : 'جزئیات'}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filteredLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                    {isEn ? 'No audit records found.' : 'هیچ رکوردی برای نمایش وجود ندارد.'}
-                  </td>
-                </tr>
-              ) : (
-                filteredLogs.map((log) => {
-                  const afterData = log.after as Record<string, unknown> | null
-                  const actorInfo = afterData?._actor as { id?: string; email?: string; name?: string } | undefined
-                  const actorName = actorInfo?.name || log.user?.name || (isEn ? 'System Administrator' : 'مدیر سیستم')
-                  const actorEmail = actorInfo?.email || log.user?.email || 'admin@petbossclinic.com'
-
-                  return (
-                    <tr key={log.id} className="hover:bg-surface-elevated/40 transition-colors">
-                      {/* Timestamp */}
-                      <td className="p-3.5 whitespace-nowrap font-mono text-[11px] text-foreground">
-                        {formatTimestamp(log.createdAt)}
-                      </td>
-
-                      {/* Action */}
-                      <td className="p-3.5 whitespace-nowrap">
-                        {getActionBadge(log.action)}
-                      </td>
-
-                      {/* Entity */}
-                      <td className="p-3.5 whitespace-nowrap">
-                        <span className="font-semibold text-foreground">
-                          {getEntityIcon(log.entity)}
-                        </span>
-                        <span className="block text-[10px] text-muted-foreground font-mono truncate max-w-[150px]">
-                          {log.entityId}
-                        </span>
-                      </td>
-
-                      {/* Location & IP */}
-                      <td className="p-3.5">
-                        <div className="flex flex-col">
-                          <span className="font-medium text-foreground flex items-center gap-1">
-                            <span>📍</span>
-                            <span>{log.location || (isEn ? 'Tehran, IR' : 'تهران، ایران')}</span>
-                          </span>
-                          <span className="text-[10px] font-mono text-muted-foreground">
-                            IP: {log.ip || '127.0.0.1'}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Actor */}
-                      <td className="p-3.5">
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-foreground">
-                            {actorName}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground font-mono">
-                            {actorEmail}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Inspect Button */}
-                      <td className="p-3.5 text-center whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => setActiveLogModal(log)}
-                          className="px-2.5 py-1 rounded-lg bg-surface-elevated hover:bg-primary/20 text-foreground hover:text-primary text-[11px] font-medium border border-border transition-colors cursor-pointer"
-                        >
-                          👁️ {isEn ? 'Inspect' : 'مشاهده'}
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Modal: View Details */}
-      {activeLogModal && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-surface border border-primary/30 rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                <span>🔍</span>
-                <span>{isEn ? 'Audit Record Details' : 'مشخصات کامل رکورد فعالیت'}</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setActiveLogModal(null)}
-                className="text-muted-foreground hover:text-foreground text-sm"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Overview Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-surface-elevated border border-border text-xs">
-              <div>
-                <span className="text-muted-foreground block mb-0.5">{isEn ? 'Action' : 'نوع عملیات'}</span>
-                <div>{getActionBadge(activeLogModal.action)}</div>
-              </div>
-              <div>
-                <span className="text-muted-foreground block mb-0.5">{isEn ? 'Entity' : 'بخش مربوطه'}</span>
-                <span className="font-bold text-foreground">{getEntityIcon(activeLogModal.entity)}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block mb-0.5">{isEn ? 'Record ID' : 'شناسه رکورد'}</span>
-                <span className="font-mono text-primary truncate block">{activeLogModal.entityId}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block mb-0.5">{isEn ? 'Timestamp' : 'تاریخ و زمان'}</span>
-                <span className="font-mono text-foreground">{formatTimestamp(activeLogModal.createdAt)}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block mb-0.5">{isEn ? 'Location' : 'موقعیت مکانی'}</span>
-                <span className="text-foreground">{activeLogModal.location || 'تهران، ایران'}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground block mb-0.5">{isEn ? 'IP Address' : 'آدرس IP'}</span>
-                <span className="font-mono text-foreground">{activeLogModal.ip || '127.0.0.1'}</span>
-              </div>
-            </div>
-
-            {/* Changes: Before / After */}
-            <div className="space-y-3">
-              {activeLogModal.before ? (
-                <div>
-                  <h4 className="text-xs font-bold text-muted-foreground uppercase mb-1">
-                    {isEn ? 'State Before Modification' : 'وضعیت قبلی (Before)'}
-                  </h4>
-                  <pre
-                    className="p-3 rounded-xl bg-charcoal-950 text-emerald-400 font-mono text-[11px] overflow-x-auto border border-border"
-                    dir="ltr"
-                  >
-                    {JSON.stringify(activeLogModal.before, null, 2)}
-                  </pre>
-                </div>
-              ) : null}
-
-              {activeLogModal.after ? (
-                <div>
-                  <h4 className="text-xs font-bold text-muted-foreground uppercase mb-1">
-                    {isEn ? 'State After Modification' : 'وضعیت جدید (After)'}
-                  </h4>
-                  <pre
-                    className="p-3 rounded-xl bg-charcoal-950 text-amber-300 font-mono text-[11px] overflow-x-auto border border-border"
-                    dir="ltr"
-                  >
-                    {JSON.stringify(activeLogModal.after, null, 2)}
-                  </pre>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="flex justify-end pt-3 border-t border-border">
-              <button
-                type="button"
-                onClick={() => setActiveLogModal(null)}
-                className="px-4 py-2 rounded-xl bg-surface-elevated hover:bg-surface-hover text-foreground text-xs font-bold"
-              >
-                {isEn ? 'Close' : 'بستن'}
-              </button>
-            </div>
+    <div className="p-4 sm:p-6" data-testid="audit-log">
+      <PageHeader
+        title="گزارش تغییرات"
+        subtitle="هر تغییر در پنل با زمان، کاربر و نشانی شبکه ثبت می‌شود و پاک نمی‌شود. روی هر ردیف بزنید تا مقدار قبل و بعد را ببینید."
+        breadcrumbs={[{ label: 'تنظیمات' }, { label: 'گزارش تغییرات' }]}
+      />
+      <FilterBar
+        search={{ value: state.q, placeholder: 'جستجو در شناسه، نشانی IP یا شهر' }}
+        filters={filters}
+        dirty={dirty}
+        onChange={(p) => patch(p as Record<string, string>)}
+        onReset={() => patch({ q: '', entity: '', action: '', user: '', from: '', to: '' })}
+        views={
+          <div className="flex flex-wrap items-end gap-2">
+            <JalaliDateField label="از تاریخ" value={dayToIso(state.from)} onChange={(iso) => patch({ from: iso ? iso.slice(0, 10) : '' })} data-testid="audit-from" />
+            <JalaliDateField label="تا تاریخ" value={dayToIso(state.to)} onChange={(iso) => patch({ to: iso ? iso.slice(0, 10) : '' })} data-testid="audit-to" />
           </div>
-        </div>
-      )}
+        }
+      />
+
+      <DataTable
+        columns={[
+          { key: 'time', header: 'زمان', cell: (l) => <span className="whitespace-nowrap text-xs">{formatJalaliDateTime(l.createdAt)}</span> },
+          { key: 'action', header: 'عملیات', cell: (l) => <ActionBadge action={l.action} /> },
+          {
+            key: 'entity',
+            header: 'بخش',
+            cell: (l) => (
+              <div>
+                <span className="font-bold">{auditEntityLabel(l.entity)}</span>
+                <span dir="ltr" className="block max-w-[160px] truncate font-mono text-[10px] text-muted-foreground">
+                  {l.entityId}
+                </span>
+              </div>
+            ),
+          },
+          {
+            key: 'actor',
+            header: 'کاربر',
+            cell: (l) => {
+              const a = actorLabel(l)
+              return (
+                <div>
+                  <span className="font-bold">{a.name}</span>
+                  {a.email && (
+                    <span dir="ltr" className="block text-[10px] text-muted-foreground">
+                      {a.email}
+                    </span>
+                  )}
+                </div>
+              )
+            },
+          },
+          {
+            key: 'net',
+            header: 'شبکه',
+            cell: (l) => (
+              <div className="text-xs">
+                <span>{l.location || '—'}</span>
+                <span dir="ltr" className="block font-mono text-[10px] text-muted-foreground">
+                  {l.ip || '—'}
+                </span>
+              </div>
+            ),
+          },
+        ]}
+        rows={logs}
+        rowKey={(l) => l.id}
+        onRowClick={(l) => setActive(l)}
+        caption="فهرست تغییرات ثبت‌شده"
+        mobileCard={(l) => (
+          <button type="button" onClick={() => setActive(l)} className="block w-full space-y-1 text-start">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-bold">{auditEntityLabel(l.entity)}</span>
+              <ActionBadge action={l.action} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {actorLabel(l).name} · {formatJalaliDateTime(l.createdAt)}
+            </p>
+          </button>
+        )}
+        empty={<EmptyState title="رکوردی پیدا نشد" description={dirty ? 'فیلترها را کمی بازتر کنید یا پاکشان کنید.' : 'هنوز تغییری ثبت نشده است.'} />}
+      />
+
+      <Pager page={query.page} pageSize={query.size} total={total} onPage={(p) => patch({ page: p })} onSize={(s) => patch({ size: s })} />
+
+      <Drawer
+        open={active !== null}
+        onOpenChange={(o) => !o && setActive(null)}
+        title={active ? `${auditActionLabel(active.action)} · ${auditEntityLabel(active.entity)}` : 'جزئیات تغییر'}
+        description={active ? `${formatJalaliDateTime(active.createdAt)} · رکورد ${faNum(total)} تغییر در این فهرست` : undefined}
+      >
+        {active && (
+          <div data-testid="audit-drawer" className="space-y-4">
+            <dl className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-surface-elevated p-3 text-xs">
+              <div>
+                <dt className="text-muted-foreground">کاربر</dt>
+                <dd className="font-bold">{actorLabel(active).name}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">نشانی IP</dt>
+                <dd dir="ltr" className="text-end font-mono">
+                  {active.ip || '—'}
+                </dd>
+              </div>
+              <div className="col-span-2">
+                <dt className="text-muted-foreground">شناسه رکورد</dt>
+                <dd dir="ltr" className="break-all text-end font-mono">
+                  {active.entityId}
+                </dd>
+              </div>
+              {active.userAgent && (
+                <div className="col-span-2">
+                  <dt className="text-muted-foreground">مرورگر</dt>
+                  <dd dir="ltr" className="break-all text-end font-mono text-[10px]">
+                    {active.userAgent}
+                  </dd>
+                </div>
+              )}
+            </dl>
+            <h3 className="text-sm font-bold">تغییرات</h3>
+            <DiffView log={active} />
+          </div>
+        )}
+      </Drawer>
     </div>
   )
 }

@@ -32,3 +32,7 @@ We engineered a **Custom Admin Panel** embedded directly within the Next.js App 
 ## Alternatives Considered
 - **Strapi / Directus:** Required maintaining separate Node.js server instances, additional hosting infrastructure on Vultr, and managing multi-origin API sync.
 - **WordPress / WooCommerce:** Rejected due to performance bloat, poor Next.js integration, and severe maintenance overhead.
+
+
+## Update 2026-11
+The custom admin now includes a full CRM (leads, tasks, tickets, customer 360, merge, import, reports). That scope reinforces the decision: a headless CMS cannot model the CRM and shop workflows. Shared UI lives in `components/admin/kit`.

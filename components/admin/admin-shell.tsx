@@ -1,115 +1,24 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Role } from '@prisma/client'
 import { Link, usePathname } from '@/i18n/routing'
 import { PetBossLogo } from '@/components/shared/pet-boss-logo'
 import { Sheet } from '@/components/ui/sheet'
 import { logoutAction } from '@/app/actions/auth'
+import { CommandPalette, OPEN_CMDK_EVENT } from '@/components/admin/command-palette'
+import { NotificationBell } from '@/components/admin/notification-bell'
+import { faNum } from '@/components/admin/format'
+import { ICON, QUICK_CREATE, ROLE_FA, canSee, isNavActive, navFor, navSlug, navTitleFor } from '@/lib/admin/nav'
+import type { NotificationItem, ShellBadges } from '@/lib/admin/shell-data'
 
-const RANK: Record<Role, number> = { SUPER_ADMIN: 5, ADMIN: 4, EDITOR: 3, AUTHOR: 2, VIEWER: 1 }
-
-const ROLE_FA: Record<Role, string> = {
-  SUPER_ADMIN: 'مدیر ارشد',
-  ADMIN: 'مدیر',
-  EDITOR: 'کارشناس',
-  AUTHOR: 'نویسنده',
-  VIEWER: 'مشاهده‌گر',
+export interface AdminShellProps {
+  role: Role
+  userName: string
+  badges: ShellBadges
+  notifications?: { unread: number; items: NotificationItem[] }
+  children: React.ReactNode
 }
-
-type BadgeKey = 'openOrders' | 'unreadMessages' | 'newLeads'
-
-interface NavItem {
-  href: string
-  label: string
-  /** SVG path data (24x24, stroke) */
-  icon: string
-  minRole?: Role
-  badge?: BadgeKey
-}
-
-const ICON = {
-  dashboard: 'M3 13h8V3H3v10zm10 8h8V11h-8v10zM3 21h8v-6H3v6zM13 3v6h8V3h-8z',
-  orders: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m-6 7h6m-6 4h4',
-  products: 'm21 8-9-5-9 5m18 0-9 5m9-5v8l-9 5m0-8L3 8m9 5v8M3 8v8l9 5',
-  inventory: 'M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
-  customers: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M15 3.13a4 4 0 0 1 0 7.75M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
-  marketing: 'M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1zm13.5-2.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12',
-  posts: 'M4 5a1 1 0 0 1 1-1h11l4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5zm4 5h8m-8 4h8m-8 4h5',
-  home: 'm3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9z',
-  menus: 'M4 6h16M4 12h16M4 18h10',
-  services: 'M12 5v14m-7-7h14M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z',
-  divisions: 'M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16m0-10h2a2 2 0 0 1 2 2v8M2 21h20M8 7h4m-4 4h4m-4 4h4',
-  staff: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
-  faqs: 'M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3m.1 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
-  testimonials: 'm12 3 2.7 5.6 6.3.9-4.5 4.3 1 6.2-5.5-3-5.5 3 1-6.2L3 9.5l6.3-.9L12 3z',
-  media: 'M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm-1 12 5-5 4 4 3-3 6 6M15.5 9.5h.01',
-  social: 'M8.6 13.5 15.4 17.5m0-11-6.8 4M21 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM9 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm12 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
-  leads: 'M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z',
-  messages: 'M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm-1 2 9 6 9-6',
-  settings: 'M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M1 14h6m2-6h6m2 8h6',
-  theme: 'M12 22a10 10 0 1 1 10-10c0 2.2-1.8 3-4 3h-2a2 2 0 0 0-1.5 3.3c.3.4.5.8.5 1.2 0 1.4-1.3 2.5-3 2.5zM7.5 11h.01M10.5 7h.01M15 7.5h.01',
-  users: 'M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5l-8-3zm-3 10 2 2 4-4',
-  club: 'M12 3l2.7 5.6 6.3.9-4.5 4.3 1 6.2L12 17l-5.5 3 1-6.2L3 9.5l6.3-.9L12 3z',
-  cart: 'M3 4h2l2.4 11h10.2L20 7H6.2M9 20a1 1 0 1 0 0-.01M17 20a1 1 0 1 0 0-.01',
-  audit: 'M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5m4-1v5l3 2',
-} as const
-
-const SECTIONS: { label?: string; items: NavItem[] }[] = [
-  { items: [{ href: '/admin', label: 'داشبورد', icon: ICON.dashboard }] },
-  {
-    label: 'فروشگاه',
-    items: [
-      { href: '/admin/orders', label: 'سفارش‌ها', icon: ICON.orders, badge: 'openOrders' },
-      { href: '/admin/products', label: 'محصولات', icon: ICON.products },
-      { href: '/admin/inventory', label: 'موجودی و انقضا', icon: ICON.inventory },
-      { href: '/admin/customers', label: 'مشتریان', icon: ICON.customers },
-      { href: '/admin/marketing', label: 'بازاریابی', icon: ICON.marketing, minRole: 'EDITOR' },
-    ],
-  },
-  {
-    label: 'باشگاه مشتریان',
-    items: [
-      { href: '/admin/club', label: 'باشگاه مشتریان', icon: ICON.club, minRole: 'EDITOR' },
-      { href: '/admin/segments', label: 'گروه‌های مشتریان', icon: ICON.customers, minRole: 'EDITOR' },
-      { href: '/admin/campaigns', label: 'کمپین‌های پیامکی', icon: ICON.marketing, minRole: 'EDITOR' },
-      { href: '/admin/automations', label: 'پیام‌های خودکار', icon: ICON.settings, minRole: 'EDITOR' },
-      { href: '/admin/outbox', label: 'صف پیامک', icon: ICON.messages, minRole: 'EDITOR' },
-      { href: '/admin/carts', label: 'سبد خرید مشتریان', icon: ICON.cart, minRole: 'EDITOR' },
-    ],
-  },
-  {
-    label: 'محتوا',
-    items: [
-      { href: '/admin/posts', label: 'مقالات', icon: ICON.posts },
-      { href: '/admin/homepage', label: 'صفحه اصلی', icon: ICON.home, minRole: 'EDITOR' },
-      { href: '/admin/menus', label: 'منوها', icon: ICON.menus, minRole: 'EDITOR' },
-      { href: '/admin/services', label: 'خدمات', icon: ICON.services },
-      { href: '/admin/divisions', label: 'بخش‌ها', icon: ICON.divisions },
-      { href: '/admin/staff', label: 'کادر درمانی', icon: ICON.staff },
-      { href: '/admin/faqs', label: 'پرسش‌های متداول', icon: ICON.faqs },
-      { href: '/admin/testimonials', label: 'نظرات مشتریان', icon: ICON.testimonials, minRole: 'EDITOR' },
-      { href: '/admin/media', label: 'رسانه و تصاویر', icon: ICON.media },
-      { href: '/admin/social', label: 'شبکه‌های اجتماعی', icon: ICON.social, minRole: 'EDITOR' },
-    ],
-  },
-  {
-    label: 'ارتباط با مشتری',
-    items: [
-      { href: '/admin/leads', label: 'درخواست‌ها (سرنخ)', icon: ICON.leads, badge: 'newLeads' },
-      { href: '/admin/messages', label: 'پیام‌های تماس', icon: ICON.messages, badge: 'unreadMessages' },
-    ],
-  },
-  {
-    label: 'پیکربندی',
-    items: [
-      { href: '/admin/settings', label: 'تنظیمات سایت', icon: ICON.settings, minRole: 'ADMIN' },
-      { href: '/admin/theme', label: 'قالب', icon: ICON.theme },
-      { href: '/admin/users', label: 'کاربران و نقش‌ها', icon: ICON.users, minRole: 'SUPER_ADMIN' },
-      { href: '/admin/audit', label: 'گزارش فعالیت', icon: ICON.audit },
-    ],
-  },
-]
 
 function Icon({ d, className = 'h-[18px] w-[18px]' }: { d: string; className?: string }) {
   return (
@@ -119,60 +28,102 @@ function Icon({ d, className = 'h-[18px] w-[18px]' }: { d: string; className?: s
   )
 }
 
-export interface AdminShellProps {
-  role: Role
-  userName: string
-  badges: Record<BadgeKey, number>
-  children: React.ReactNode
-}
-
-function AdminNav({ role, badges, pathname, onNavigate }: { role: Role; badges: AdminShellProps['badges']; pathname: string; onNavigate?: () => void }) {
+function AdminNav({ role, badges, pathname, onNavigate }: { role: Role; badges: ShellBadges; pathname: string; onNavigate?: () => void }) {
   return (
     <nav aria-label="منوی مدیریت" className="space-y-5">
-      {SECTIONS.map((section, idx) => {
-        const items = section.items.filter((i) => RANK[role] >= RANK[i.minRole ?? 'VIEWER'])
-        if (items.length === 0) return null
-        return (
-          <div key={idx}>
-            {section.label && <p className="mb-1.5 px-3 text-[11px] font-bold text-muted-foreground">{section.label}</p>}
-            <ul className="space-y-0.5">
-              {items.map((item) => {
-                const active = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
-                const count = item.badge ? badges[item.badge] : 0
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      onClick={onNavigate}
-                      aria-current={active ? 'page' : undefined}
-                      className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-colors ${
-                        active ? 'bg-primary text-charcoal-950 font-bold shadow-gold' : 'text-foreground/80 hover:bg-surface-elevated hover:text-primary'
-                      }`}
-                    >
-                      <Icon d={item.icon} />
-                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                      {count > 0 && (
-                        <span
-                          className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold leading-none ${
-                            active ? 'bg-charcoal-950 text-primary' : 'bg-primary text-charcoal-950'
-                          }`}
-                        >
-                          {count.toLocaleString('fa-IR')}
-                        </span>
-                      )}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        )
-      })}
+      {navFor(role).map((group, idx) => (
+        <div key={group.label ?? idx}>
+          {group.label && <p className="mb-1.5 px-3 text-[11px] font-bold text-muted-foreground">{group.label}</p>}
+          <ul className="space-y-0.5">
+            {group.items.map((item) => {
+              const active = isNavActive(item, pathname)
+              const count = item.badge ? badges[item.badge] : 0
+              const slug = navSlug(item.href)
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={onNavigate}
+                    data-testid={`nav-${slug}`}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-colors ${
+                      active ? 'bg-primary font-bold text-charcoal-950 shadow-gold' : 'text-foreground/80 hover:bg-surface-elevated hover:text-primary'
+                    }`}
+                  >
+                    <Icon d={item.icon} />
+                    <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                    {count > 0 && (
+                      <span
+                        data-testid={`nav-badge-${slug}`}
+                        aria-label={`${faNum(count)} مورد`}
+                        className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold leading-none ${
+                          active ? 'bg-charcoal-950 text-primary' : 'bg-primary text-charcoal-950'
+                        }`}
+                      >
+                        {count > 99 ? `${faNum(99)}+` : faNum(count)}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      ))}
     </nav>
   )
 }
 
-export function AdminShell({ role, userName, badges, children }: AdminShellProps) {
+function QuickCreateMenu({ role }: { role: Role }) {
+  const [open, setOpen] = useState(false)
+  const box = useRef<HTMLDivElement>(null)
+  const pathname = usePathname()
+  const items = QUICK_CREATE.filter((c) => canSee(role, c.minRole))
+
+  useEffect(() => setOpen(false), [pathname])
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (box.current && !box.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  if (items.length === 0) return null
+  return (
+    <div ref={box} className="relative">
+      <button
+        type="button"
+        data-testid="quick-create"
+        aria-label="افزودن سریع"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-charcoal-950 hover:opacity-90"
+      >
+        <Icon d={ICON.plus} className="h-5 w-5" />
+      </button>
+      {open && (
+        <div role="menu" aria-label="افزودن سریع" className="absolute end-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-border bg-surface p-1.5 shadow-2xl">
+          {items.map((c) => (
+            <Link key={c.id} role="menuitem" href={c.href as never} className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold hover:bg-surface-hover hover:text-primary">
+              <Icon d={ICON.plus} className="h-4 w-4 text-primary" />
+              {c.label} جدید
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function AdminShell({ role, userName, badges, notifications, children }: AdminShellProps) {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -200,10 +151,15 @@ export function AdminShell({ role, userName, badges, children }: AdminShellProps
       </span>
     </div>
   )
+  const pending = badges.orders + badges.tickets + badges.tasks + badges.leads
+  const section = navTitleFor(pathname)
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-e border-border bg-surface lg:flex print:hidden">
+      <a href="#admin-main" className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-[60] focus:rounded-lg focus:bg-primary focus:px-3 focus:py-2 focus:text-charcoal-950">
+        رفتن به محتوای اصلی
+      </a>
+      <aside data-testid="admin-sidebar" className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-e border-border bg-surface lg:flex print:hidden">
         <div className="border-b border-border p-5">
           <Link href="/admin" className="flex items-center gap-2" aria-label="داشبورد مدیریت">
             <PetBossLogo size="sm" variant="gold" />
@@ -223,25 +179,39 @@ export function AdminShell({ role, userName, badges, children }: AdminShellProps
       </Sheet>
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b border-border bg-surface/90 px-4 backdrop-blur sm:h-16 lg:px-6 print:hidden">
-          <div className="flex min-w-0 items-center gap-2">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-1 border-b border-border bg-surface/90 px-3 backdrop-blur sm:h-16 sm:gap-2 sm:px-4 lg:px-6 print:hidden">
+          <div className="flex min-w-0 items-center gap-1">
             <button
               type="button"
               onClick={() => setMenuOpen(true)}
               aria-label="باز کردن منو"
               aria-expanded={menuOpen}
               aria-controls="admin-mobile-nav"
-              className="relative -ms-2 inline-flex h-11 w-11 items-center justify-center rounded-xl text-foreground hover:bg-surface-elevated lg:hidden"
+              className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-foreground hover:bg-surface-elevated lg:hidden"
             >
-              <Icon d={ICON.menus} className="h-5 w-5" />
-              {badges.openOrders + badges.unreadMessages > 0 && <span aria-hidden className="absolute end-2 top-2 h-2 w-2 rounded-full bg-primary" />}
+              <Icon d={ICON.menu} className="h-5 w-5" />
+              {pending > 0 && <span aria-hidden className="absolute end-2 top-2 h-2 w-2 rounded-full bg-primary" />}
             </button>
-            <p className="truncate text-sm font-bold">پنل مدیریت پت‌باس</p>
+            <p className="truncate text-sm font-bold">{section ?? 'پنل مدیریت پت‌باس'}</p>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-            <Link href="/" target="_blank" className="btn btn-ghost btn-sm">
-              <span className="hidden sm:inline">مشاهده سایت</span>
-              <span className="sm:hidden">سایت</span>
+          <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
+            <button
+              type="button"
+              data-testid="cmdk-trigger"
+              onClick={() => window.dispatchEvent(new Event(OPEN_CMDK_EVENT))}
+              aria-label="جست‌وجوی سریع (Ctrl+K)"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl px-3 text-muted-foreground hover:bg-surface-elevated hover:text-foreground sm:border sm:border-border sm:bg-surface-card"
+            >
+              <Icon d={ICON.search} className="h-5 w-5 sm:h-4 sm:w-4" />
+              <span className="hidden text-xs sm:inline">جست‌وجو</span>
+              <kbd className="hidden rounded-md border border-border px-1.5 py-0.5 text-[10px] md:inline" dir="ltr">
+                Ctrl K
+              </kbd>
+            </button>
+            <QuickCreateMenu role={role} />
+            <NotificationBell initial={notifications ?? { unread: 0, items: [] }} />
+            <Link href="/" target="_blank" className="btn btn-ghost btn-sm hidden sm:inline-flex">
+              مشاهده سایت
             </Link>
             <button type="button" onClick={handleLogout} className="btn btn-danger-outline btn-sm">
               خروج
@@ -249,8 +219,11 @@ export function AdminShell({ role, userName, badges, children }: AdminShellProps
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 bg-background p-4 sm:p-6 lg:p-8 print:p-0">{children}</main>
+        <main id="admin-main" tabIndex={-1} className="min-w-0 flex-1 bg-background p-4 outline-none sm:p-6 lg:p-8 print:p-0">
+          {children}
+        </main>
       </div>
+      <CommandPalette role={role} />
     </div>
   )
 }

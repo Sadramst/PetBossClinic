@@ -68,7 +68,12 @@ export async function attachReferral(customerId: string, rawCode: unknown): Prom
 export async function creditReferralOnFirstOrder(client: DbClient, refereeId: string, orderId: string): Promise<{ credited: boolean }> {
   const referee = await client.customer.findUnique({ where: { id: refereeId }, select: { referredById: true } })
   if (!referee?.referredById) return { credited: false }
-  const referrerId = referee.referredById
+  let referrerId = referee.referredById
+  for (let i = 0; i < 3; i++) {
+    const r = await client.customer.findUnique({ where: { id: referrerId }, select: { mergedIntoId: true } })
+    if (!r?.mergedIntoId) break
+    referrerId = r.mergedIntoId
+  }
   if (referrerId === refereeId) return { credited: false }
   // Only the referee's very first delivered order qualifies, and only above a minimum value.
   const first = await client.order.findFirst({ where: { customerId: refereeId, status: 'DELIVERED' }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], select: { id: true, subtotal: true, discount: true } })

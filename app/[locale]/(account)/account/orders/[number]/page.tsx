@@ -9,6 +9,7 @@ import { ClearCartOnSuccess } from '@/components/shop/clear-cart';
 import { requireCustomer } from '@/lib/customer/session';
 import { formatPrice } from '@/lib/format/price';
 import { formatJalaliDate } from '@/lib/shop/expiry';
+import { lineExpiryText as lineExpiry } from '@/lib/shop/order-expiry';
 import { ORDER_STATUS_FA } from '@/lib/shop/orders';
 import { productPath } from '@/lib/shop/urls';
 
@@ -118,6 +119,11 @@ export default async function OrderPage({
               <p className="text-xs text-muted-foreground mt-1">
                 {it.quantity.toLocaleString('fa-IR')} × {formatPrice(it.unitPrice, 'fa')}
               </p>
+              {lineExpiry(it.allocations) && (
+                <p data-testid="order-line-expiry" className="text-xs text-muted-foreground mt-0.5">
+                  تاریخ انقضا: {lineExpiry(it.allocations)}
+                </p>
+              )}
             </div>
             <span className="font-bold whitespace-nowrap">{formatPrice(it.lineTotal, 'fa')}</span>
           </div>
